@@ -56,3 +56,15 @@ func CommentInsertHandler(gctx *gin.Context) {
 
 	gctx.JSON(http.StatusOK, result)
 }
+
+func CommentSelectHandler(gctx *gin.Context) {
+
+	selectResult, err := models.SelectComments(0, 100)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询评论出错"))
+		return
+	}
+	responseResult := models.CodeOk.WithData(selectResult)
+
+	gctx.JSON(http.StatusOK, responseResult)
+}

@@ -89,6 +89,7 @@ func (s *WebServer) Init() error {
 	s.router.POST("/api/go_captcha_check_data", captcha.CheckCaptcha)
 
 	s.router.POST("/comments", comments.CommentInsertHandler)
+	s.router.GET("/comments", comments.CommentSelectHandler)
 
 	return nil
 }

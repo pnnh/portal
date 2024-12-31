@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"multiverse-authorization/neutron/services/datastore"
 )
 
@@ -51,4 +52,21 @@ do update set content = excluded.content, update_time = now();`
 		return fmt.Errorf("PGInsertComment: %w", err)
 	}
 	return nil
+}
+
+func SelectComments(offset int, limit int) ([]*CommentModel, error) {
+	sqlText := `select * from comments offset :offset limit :limit;`
+
+	sqlParams := map[string]interface{}{"offset": offset, "limit": limit}
+	var sqlResults []*CommentModel
+
+	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	return sqlResults, nil
 }
