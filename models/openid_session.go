@@ -9,7 +9,7 @@ import (
 )
 
 type OpenidSessionModel struct {
-	Pk         string    `json:"pk"`
+	Pk         string    `json:"urn"`
 	CreateTime time.Time `json:"create_time" db:"create_time"`
 	UpdateTime time.Time `json:"update_time" db:"update_time"`
 	Code       string    `json:"code"`
@@ -18,10 +18,10 @@ type OpenidSessionModel struct {
 
 func PutOpenidSession(model *OpenidSessionModel) error {
 	sqlText := `insert into portal.openid_session(pk, create_time, update_time, code, content)
-		values(:pk, :create_time, :update_time, :code, :content);`
+		values(:urn, :create_time, :update_time, :code, :content);`
 
 	sqlParams := map[string]interface{}{
-		"pk":          model.Pk,
+		"urn":         model.Pk,
 		"create_time": model.CreateTime,
 		"update_time": model.UpdateTime,
 		"code":        model.Code,
@@ -36,10 +36,10 @@ func PutOpenidSession(model *OpenidSessionModel) error {
 }
 
 func DeleteOpenidSession(pk string) error {
-	sqlText := `delete from portal.openid_session where pk = :pk or code = :pk;`
+	sqlText := `delete from portal.openid_session where pk = :urn or code = :urn;`
 
 	sqlParams := map[string]interface{}{
-		"pk": pk,
+		"urn": pk,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
@@ -50,9 +50,9 @@ func DeleteOpenidSession(pk string) error {
 }
 
 func GetOpenidSession(pk string) (*OpenidSessionModel, error) {
-	sqlText := `select * from portal.openid_session where pk = :pk or code = :pk;`
+	sqlText := `select * from portal.openid_session where pk = :urn or code = :urn;`
 
-	sqlParams := map[string]interface{}{"pk": pk}
+	sqlParams := map[string]interface{}{"urn": pk}
 	var sqlResults []*OpenidSessionModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -71,10 +71,10 @@ func GetOpenidSession(pk string) (*OpenidSessionModel, error) {
 }
 
 func UpdateOpenidSession(pk string, content string) error {
-	sqlText := `update portal.openid_session set content = :content where pk = :pk or code = :pk;`
+	sqlText := `update portal.openid_session set content = :content where pk = :urn or code = :urn;`
 
 	sqlParams := map[string]interface{}{
-		"pk":      pk,
+		"urn":     pk,
 		"content": content,
 	}
 

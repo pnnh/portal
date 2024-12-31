@@ -35,13 +35,13 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	}
 	if accountModel == nil {
 		accountModel = &models.AccountModel{
-			Pk:          helpers.NewPostId(),
+			Urn:         helpers.NewPostId(),
 			Username:    username,
 			Password:    "",
 			CreateTime:  time.Now(),
 			UpdateTime:  time.Now(),
 			Nickname:    nickname,
-			Mail:        username,
+			EMail:       username,
 			Credentials: "",
 			Session:     "",
 		}
@@ -65,7 +65,7 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
-		Username:   accountModel.Pk,
+		Username:   accountModel.Urn,
 		Type:       "signup",
 		Code:       helpers.RandNumberRunes(6),
 	}
@@ -154,7 +154,7 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
-		Username:   accountModel.Pk,
+		Username:   accountModel.Urn,
 		Type:       "signin",
 		Code:       helpers.RandNumberRunes(6),
 	}

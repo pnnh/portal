@@ -2,22 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"multiverse-authorization/handlers"
 	"multiverse-authorization/handlers/account"
 	"multiverse-authorization/handlers/auth/authorizationserver"
 	"multiverse-authorization/handlers/captcha"
-	"multiverse-authorization/handlers/console"
-	"multiverse-authorization/handlers/permissions"
+	"multiverse-authorization/handlers/comments"
 	"multiverse-authorization/handlers/public"
-	"multiverse-authorization/handlers/roles"
-	"multiverse-authorization/neutron/config"
-
-	"github.com/gin-gonic/gin"
 )
 
 type IResource interface {
@@ -38,11 +35,7 @@ func NewWebServer() (*WebServer, error) {
 		router:    router,
 		resources: make(map[string]IResource)}
 
-	webUrl, _ := config.GetConfigurationString("WEB_URL")
-	if webUrl == "" {
-		return nil, fmt.Errorf("SELF_URL未配置")
-	}
-	corsDomain := []string{webUrl}
+	corsDomain := []string{"https://huable.xyz"}
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     corsDomain,
@@ -66,29 +59,10 @@ func (s *WebServer) Init() error {
 	s.router.POST("/account/signin/webauthn/begin/:username", authHandler.BeginLogin)
 	s.router.POST("/account/signin/webauthn/finish/:username", authHandler.FinishLogin)
 
-	// s.router.POST("/account/signup/email/begin", account.MailSignupBeginHandler)
-	// s.router.POST("/account/signup/email/finish", account.MailSignupFinishHandler)
-	// s.router.POST("/account/signin/email/begin", account.MailSigninBeginHandler)
-	// s.router.POST("/account/signin/email/finish", account.MailSigninFinishHandler)
-
-	//s.router.POST("/account/signup/password/begin", account.PasswordSignupBeginHandler)
 	s.router.POST("/account/signup/password/finish", account.PasswordSignupFinishHandler)
-	//s.router.POST("/account/signin/password/begin", account.PasswordSigninBeginHandler)
 	s.router.POST("/account/signin/password/finish", account.PasswordSigninFinishHandler)
 
-	s.router.GET("/console/accounts", console.AdminSelectAccounts)
-	s.router.GET("/console/accounts/:pk", console.AdminSelectAccounts)
-
-	s.router.GET("/console/applications", console.ApplicationSelectHandler)
 	s.router.GET("/public/applications", public.PublicApplicationSelectHandler)
-
-	s.router.GET("/console/roles", roles.RoleSelectHandler)
-	s.router.GET("/console/roles/:pk", roles.RoleGetHandler)
-
-	s.router.GET("/console/permissions", permissions.PermissionSelectHandler)
-
-	// sessionHandler := &handlers.SessionHandler{}
-	// s.router.POST("/account/session/introspect", sessionHandler.Introspect)
 
 	s.router.GET("/oauth2/auth", func(gctx *gin.Context) {
 		authorizationserver.AuthEndpointHtml(gctx)
@@ -111,10 +85,10 @@ func (s *WebServer) Init() error {
 		authorizationserver.UserEndpoint(gctx)
 	})
 
-	s.router.GET("/.well-known/openid-configuration", authorizationserver.OpenIdConfigurationHandler)
-
 	s.router.GET("/api/go_captcha_data", captcha.GetCaptchaData)
 	s.router.POST("/api/go_captcha_check_data", captcha.CheckCaptcha)
+
+	s.router.POST("/comments", comments.CommentInsertHandler)
 
 	return nil
 }
@@ -137,6 +111,7 @@ func (s *WebServer) Start() error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
+	log.Println("启动服务: " + port)
 	if err := serv.ListenAndServe(); err != nil {
 		return fmt.Errorf("服务出错停止: %w", err)
 	}

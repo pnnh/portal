@@ -1,37 +1,34 @@
 package config
 
 import (
-	"flag"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	v2 "multiverse-authorization/neutron/config/v2"
 )
 
-// Deprecated: 已废弃，不再解析flag
-var configFile = flag.String("config", "config.yaml", "配置文件路径")
-
-// Deprecated: 已废弃，不再解析flag
-var runMode = flag.String("mode", "", "运行模式(debug, release)")
-
 var staticConfigModel v2.ConfigMap
 
-// Deprecated: 避免全局静态初始化行为
 func init() {
-	configLog()
-	// 在执行单元测试时，不进行后续处理
-	// if debug.IsTesting() {
-	// 	return
-	// }
-	flag.Parse()
-	model, err := v2.ParseConfig(*configFile, *runMode)
+	logrus.SetReportCaller(false)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:     false,
+		TimestampFormat: time.RFC3339,
+	})
+
+	model, err := v2.ParseConfig("config.yaml")
 	if err != nil {
-		logrus.Errorf("配置文件[%s]解析失败: %s", *configFile, err)
+		logrus.Errorf("配置文件解析失败: %s", err)
 	}
 	staticConfigModel = model
+
+	if Debug() {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
 }
 
-// Deprecated: 已废弃，采用v2 API
 func GetConfiguration(key interface{}) (interface{}, bool) {
 	if key, ok := key.(string); ok {
 		if value, err := staticConfigModel.GetValue(key); err == nil {
@@ -41,7 +38,6 @@ func GetConfiguration(key interface{}) (interface{}, bool) {
 	return nil, false
 }
 
-// Deprecated: 已废弃，采用v2 API
 func GetConfigurationString(key interface{}) (string, bool) {
 	if key, ok := key.(string); ok {
 		if value, err := staticConfigModel.GetString(key); err == nil {
@@ -51,7 +47,6 @@ func GetConfigurationString(key interface{}) (string, bool) {
 	return "", false
 }
 
-// Deprecated: 已废弃，采用v2 API
 func MustGetConfigurationString(key interface{}) string {
 	value, ok := GetConfigurationString(key)
 	if !ok {
@@ -60,7 +55,6 @@ func MustGetConfigurationString(key interface{}) string {
 	return value
 }
 
-// Deprecated: 已废弃，采用v2 API
 func GetConfigurationInt64(key interface{}) (int64, bool) {
 	if key, ok := key.(string); ok {
 		if value, err := staticConfigModel.GetInt64(key); err == nil {
@@ -70,7 +64,6 @@ func GetConfigurationInt64(key interface{}) (int64, bool) {
 	return 0, false
 }
 
-// Deprecated: 已废弃，采用v2 API
 func GetConfigOrDefaultInt64(key interface{}, defaultValue int64) int64 {
 	value, ok := GetConfigurationInt64(key)
 	if !ok {
@@ -79,20 +72,10 @@ func GetConfigOrDefaultInt64(key interface{}, defaultValue int64) int64 {
 	return value
 }
 
-// Deprecated: 已废弃，该功能应统一通过配置项来管理
 func Debug() bool {
-	var mode, ok = GetConfiguration("mode")
-	if ok && mode == "debug" {
+	var mode, ok = GetConfiguration("MODE")
+	if ok && mode == "DEBUG" {
 		return true
 	}
 	return false
-}
-
-func configLog() {
-	logrus.SetLevel(logrus.ErrorLevel)
-	logrus.SetReportCaller(false)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		ForceColors:     false,
-		TimestampFormat: time.RFC3339,
-	})
 }

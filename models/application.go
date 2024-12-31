@@ -11,8 +11,8 @@ import (
 )
 
 type ApplicationModel struct {
-	Pk             string    `json:"pk"` // 主键标识
-	Id             string    `json:"id"` // 账号
+	Pk             string    `json:"urn"` // 主键标识
+	Id             string    `json:"id"`  // 账号
 	Secret         string    `json:"-"`
 	RotatedSecrets string    `json:"-" db:"rotated_secrets"`
 	RedirectUris   string    `json:"-" db:"redirect_uris"`
@@ -44,9 +44,9 @@ func NewApplicationModel(title string) *ApplicationModel {
 }
 
 func GetApplication(pk string) (*ApplicationModel, error) {
-	sqlText := `select * from portal.applications where pk = :pk;`
+	sqlText := `select * from portal.applications where pk = :urn;`
 
-	sqlParams := map[string]interface{}{"pk": pk}
+	sqlParams := map[string]interface{}{"urn": pk}
 	var sqlResults []*ApplicationModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)

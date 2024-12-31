@@ -130,7 +130,7 @@ func ParseConfigContent(fileContent string) (ConfigMap, error) {
 	return model, nil
 }
 
-func ParseConfig(filePath string, runMode string) (ConfigMap, error) {
+func ParseConfig(filePath string) (ConfigMap, error) {
 	var model ConfigMap
 
 	if _, err := os.Stat(filePath); err == nil {
@@ -142,7 +142,6 @@ func ParseConfig(filePath string, runMode string) (ConfigMap, error) {
 		if err != nil {
 			return nil, fmt.Errorf("解析配置文件出错: %w", err)
 		}
-		model.setValue("mode", runMode)
 	}
 
 	return model, nil

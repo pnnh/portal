@@ -106,9 +106,9 @@ func (m *Table[T, M]) GetWhereParams() map[string]any {
 }
 
 func (t *Table[T, M]) Get(pk any) (*M, error) {
-	sqlText := fmt.Sprintf(`select * from %s where pk = :pk;`, t.TableName)
+	sqlText := fmt.Sprintf(`select * from %s where pk = :urn;`, t.TableName)
 
-	sqlParams := map[string]interface{}{"pk": pk}
+	sqlParams := map[string]interface{}{"urn": pk}
 	//var sqlResults []*T
 	//sqlResults := t.table.NewModels()
 	sqlResults := make([]*M, 0)

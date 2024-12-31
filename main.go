@@ -1,9 +1,6 @@
 package main
 
 import (
-	"multiverse-authorization/handlers"
-	"multiverse-authorization/handlers/auth/authorizationserver"
-
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"multiverse-authorization/neutron/config"
@@ -13,18 +10,13 @@ import (
 func main() {
 	if config.Debug() {
 		gin.SetMode(gin.DebugMode)
-		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
-		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	handlers.InitWebauthn()
-	authorizationserver.InitOAuth2()
-
-	accountDSN, ok := config.GetConfiguration("ACCOUNT_DB")
+	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
-		logrus.Errorln("ACCOUNT_DB未配置")
+		logrus.Errorln("DATABASE未配置")
 	}
 
 	if err := datastore.Init(accountDSN.(string)); err != nil {

@@ -17,23 +17,25 @@ import (
 
 // AccountModel 账号模型 table: accounts
 type AccountModel struct {
-	Pk          string    `json:"pk"`       // 主键标识
+	Urn         string    `json:"urn"`      // 主键标识
 	Username    string    `json:"username"` // 账号
 	Password    string    `json:"-"`        // 密码
 	Photo       string    `json:"-"`        // 密码
 	CreateTime  time.Time `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time `json:"update_time" db:"update_time"`
 	Nickname    string    `json:"nickname"`
-	Mail        string    `json:"mail"`
+	EMail       string    `json:"email"`
 	Credentials string    `json:"-"`
 	Session     string    `json:"-"`
 	Description string    `json:"description"`
 	Status      int       `json:"status"`
+	Website     string    `json:"website"`
+	Fingerprint string    `json:"fingerprint"`
 }
 
 func NewAccountModel(name string, displayName string) *AccountModel {
 	user := &AccountModel{
-		Pk:         helpers.NewPostId(),
+		Urn:        helpers.NewPostId(),
 		Username:   name,
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
@@ -44,9 +46,9 @@ func NewAccountModel(name string, displayName string) *AccountModel {
 }
 
 func GetAccount(pk string) (*AccountModel, error) {
-	sqlText := `select * from portal.accounts where pk = :pk and status = 1;`
+	sqlText := `select * from portal.accounts where pk = :urn and status = 1;`
 
-	sqlParams := map[string]interface{}{"pk": pk}
+	sqlParams := map[string]interface{}{"urn": pk}
 	var sqlResults []*AccountModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -88,9 +90,9 @@ func GetAccountByUsername(username string) (*AccountModel, error) {
 
 func PutAccount(model *AccountModel) error {
 	sqlText := `insert into portal.accounts(pk, create_time, update_time, username, password, nickname, status, session)
-	values(:pk, :create_time, :update_time, :username, :password, :nickname, 1, :session)`
+	values(:urn, :create_time, :update_time, :username, :password, :nickname, 1, :session)`
 
-	sqlParams := map[string]interface{}{"pk": model.Pk, "create_time": model.CreateTime, "update_time": model.UpdateTime,
+	sqlParams := map[string]interface{}{"urn": model.Urn, "create_time": model.CreateTime, "update_time": model.UpdateTime,
 		"username": model.Username, "password": model.Password, "nickname": model.Nickname,
 		"session": model.Session}
 
@@ -151,9 +153,9 @@ func UpdateAccountSession(model *AccountModel, sessionData *webauthn.SessionData
 	if model.Session == "" {
 		return fmt.Errorf("session is null")
 	}
-	sqlText := `update portal.accounts set session = :session where pk = :pk;`
+	sqlText := `update portal.accounts set session = :session where pk = :urn;`
 
-	sqlParams := map[string]interface{}{"pk": model.Pk, "session": model.Session}
+	sqlParams := map[string]interface{}{"urn": model.Urn, "session": model.Session}
 
 	_, err = datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
@@ -175,13 +177,35 @@ func UnmarshalWebauthnSession(session string) (*webauthn.SessionData, error) {
 }
 
 func UpdateAccountPassword(pk string, password string) error {
-	sqlText := `update portal.accounts set password = :password where pk = :pk;`
+	sqlText := `update portal.accounts set password = :password where pk = :urn;`
 
-	sqlParams := map[string]interface{}{"pk": pk, "password": password}
+	sqlParams := map[string]interface{}{"urn": pk, "password": password}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
 		return fmt.Errorf("UpdateAccountPassword: %w", err)
+	}
+	return nil
+}
+
+func EnsureAccount(model *AccountModel) error {
+	sqlText := `insert into accounts(urn, username, nickname, create_time, update_time, email, website, photo, fingerprint)
+values (:urn, :username, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
+on conflict (username) do nothing;`
+
+	sqlParams := map[string]interface{}{
+		"urn":         model.Urn,
+		"username":    model.Username,
+		"nickname":    model.Nickname,
+		"email":       model.EMail,
+		"website":     model.Website,
+		"photo":       model.Photo,
+		"fingerprint": model.Fingerprint,
+	}
+
+	_, err := datastore.NamedExec(sqlText, sqlParams)
+	if err != nil {
+		return fmt.Errorf("EnsureAccount: %w", err)
 	}
 	return nil
 }

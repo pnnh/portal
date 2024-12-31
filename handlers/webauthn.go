@@ -91,13 +91,13 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 	logrus.Infoln("sessionBytes: ", string(sessionBytes))
 	sessionText := base64.StdEncoding.EncodeToString(sessionBytes)
 	// accountModel := &models.AccountModel{
-	// 	Pk:          helpers.NewPostId(),
+	// 	Urn:          helpers.NewPostId(),
 	// 	Username:    username,
 	// 	Password:    "",
 	// 	CreateTime:  time.Now(),
 	// 	UpdateTime:  time.Now(),
 	// 	Nickname:    displayName,
-	// 	Mail:        username,
+	// 	EMail:        username,
 	// 	Credentials: "",
 	// 	Session:     sessionText,
 	// }

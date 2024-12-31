@@ -30,13 +30,13 @@ import (
 // }
 // if accountModel == nil {
 // 	accountModel = &models.AccountModel{
-// 		Pk:          helpers.NewPostId(),
+// 		Urn:          helpers.NewPostId(),
 // 		Username:    username,
 // 		Password:    "",
 // 		CreateTime:  time.Now(),
 // 		UpdateTime:  time.Now(),
 // 		Nickname:    nickname,
-// 		Mail:        username,
+// 		EMail:        username,
 // 		Credentials: "",
 // 		Session:     "",
 // 	}
@@ -50,11 +50,11 @@ import (
 // }
 
 // session := &models.SessionModel{
-// 	Pk:         helpers.MustUuid(),
+// 	Urn:         helpers.MustUuid(),
 // 	Content:    "",
 // 	CreateTime: time.Now(),
 // 	UpdateTime: time.Now(),
-// 	Username:   accountModel.Pk,
+// 	Username:   accountModel.Urn,
 // 	Type:       "signup_password",
 // 	Code:       helpers.RandNumberRunes(6),
 // }
@@ -65,7 +65,7 @@ import (
 // }
 
 // sessionData := map[string]interface{}{
-// 	"session": session.Pk,
+// 	"session": session.Urn,
 // }
 
 // result := models.CodeOk.WithData(sessionData)
@@ -111,13 +111,13 @@ func PasswordSignupFinishHandler(gctx *gin.Context) {
 	}
 
 	accountModel = &models.AccountModel{
-		Pk:          helpers.NewPostId(),
+		Urn:         helpers.NewPostId(),
 		Username:    username,
 		Password:    encrypted,
 		CreateTime:  time.Now(),
 		UpdateTime:  time.Now(),
 		Nickname:    username,
-		Mail:        username,
+		EMail:       username,
 		Credentials: "",
 		Session:     "",
 	}
