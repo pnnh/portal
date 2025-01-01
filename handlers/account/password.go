@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"multiverse-authorization/handlers/auth/authorizationserver"
-	helpers2 "multiverse-authorization/helpers"
+	"portal/handlers/auth/authorizationserver"
+	helpers2 "portal/helpers"
 
 	"github.com/sirupsen/logrus"
 
-	"multiverse-authorization/models"
+	"portal/models"
 
 	"github.com/gin-gonic/gin"
-	"multiverse-authorization/neutron/server/helpers"
+	"portal/neutron/server/helpers"
 )
 
 //func PasswordSignupBeginHandler(gctx *gin.Context) {

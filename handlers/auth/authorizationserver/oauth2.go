@@ -6,14 +6,14 @@ import (
 	"encoding/pem"
 	"time"
 
-	"multiverse-authorization/helpers"
+	"portal/helpers"
 
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"github.com/ory/fosite/handler/openid"
 	"github.com/ory/fosite/token/jwt"
 	"github.com/sirupsen/logrus"
-	"multiverse-authorization/neutron/config"
+	"portal/neutron/config"
 )
 
 var (

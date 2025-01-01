@@ -9,12 +9,12 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"multiverse-authorization/handlers"
-	"multiverse-authorization/handlers/account"
-	"multiverse-authorization/handlers/auth/authorizationserver"
-	"multiverse-authorization/handlers/captcha"
-	"multiverse-authorization/handlers/comments"
-	"multiverse-authorization/handlers/public"
+	"portal/handlers"
+	"portal/handlers/account"
+	"portal/handlers/auth/authorizationserver"
+	"portal/handlers/captcha"
+	"portal/handlers/comments"
+	"portal/handlers/public"
 )
 
 type IResource interface {
@@ -35,7 +35,7 @@ func NewWebServer() (*WebServer, error) {
 		router:    router,
 		resources: make(map[string]IResource)}
 
-	corsDomain := []string{"https://huable.xyz"}
+	corsDomain := []string{"http://127.0.0.1:7100", "https://huable.xyz"}
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     corsDomain,

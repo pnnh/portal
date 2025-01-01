@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	v2 "multiverse-authorization/neutron/config/v2"
+	v2 "portal/neutron/config/v2"
 )
 
 var staticConfigModel v2.ConfigMap

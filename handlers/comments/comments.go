@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"multiverse-authorization/models"
-	"multiverse-authorization/neutron/server/helpers"
+	"portal/models"
+	"portal/neutron/server/helpers"
 )
 
 func CommentInsertHandler(gctx *gin.Context) {
@@ -58,8 +58,7 @@ func CommentInsertHandler(gctx *gin.Context) {
 }
 
 func CommentSelectHandler(gctx *gin.Context) {
-
-	selectResult, err := models.SelectComments(0, 100)
+	selectResult, err := models.SelectComments(1, 30)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询评论出错"))
 		return

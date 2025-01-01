@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"multiverse-authorization/neutron/services/datastore"
+	"portal/neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/fosite"

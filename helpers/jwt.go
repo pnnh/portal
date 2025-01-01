@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"multiverse-authorization/neutron/config"
+	"portal/neutron/config"
 )
 
 func GetIssure() string {

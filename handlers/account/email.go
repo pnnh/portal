@@ -4,15 +4,15 @@ import (
 	"net/http"
 	"time"
 
-	"multiverse-authorization/handlers/auth/authorizationserver"
-	helpers2 "multiverse-authorization/helpers"
+	"portal/handlers/auth/authorizationserver"
+	helpers2 "portal/helpers"
 
-	"multiverse-authorization/models"
+	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"multiverse-authorization/neutron/config"
-	"multiverse-authorization/neutron/server/helpers"
+	"portal/neutron/config"
+	"portal/neutron/server/helpers"
 	//"github.com/pnnh/neutronrvices/email"
 )
 

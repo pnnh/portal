@@ -12,6 +12,13 @@ func NewCommonResult(code MCode, message string, data interface{}) *CommonResult
 	return &CommonResult{Code: code, Message: message, Data: data}
 }
 
+type SelectData struct {
+	Page  int   `json:"page"`
+	Size  int   `json:"size"`
+	Count int   `json:"count"`
+	Range []any `json:"range"`
+}
+
 func ParseCommonResult(data interface{}) *CommonResult {
 	if data == nil {
 		return nil

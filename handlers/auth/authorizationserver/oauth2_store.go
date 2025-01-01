@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"multiverse-authorization/models"
+	"portal/models"
 
-	quantum_helpers "multiverse-authorization/neutron/server/helpers"
+	quantum_helpers "portal/neutron/server/helpers"
 
 	"github.com/go-jose/go-jose/v3"
 

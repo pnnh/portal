@@ -3,9 +3,9 @@ package authorizationserver
 import (
 	// "encoding/base64"
 	"github.com/gin-gonic/gin"
-	// "multiverse-authorization/helpers"
-	// "multiverse-authorization/models"
-	// "multiverse-authorization/neutron/config"
+	// "portal/helpers"
+	// "portal/models"
+	// "portal/neutron/config"
 	// "github.com/sirupsen/logrus"
 	// "net/http"
 )

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"multiverse-authorization/helpers"
-	"multiverse-authorization/models"
+	"portal/helpers"
+	"portal/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"multiverse-authorization/neutron/config"
+	"portal/neutron/config"
 
 	"github.com/sirupsen/logrus"
 

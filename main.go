@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"multiverse-authorization/neutron/config"
-	"multiverse-authorization/neutron/services/datastore"
+	"portal/neutron/config"
+	"portal/neutron/services/datastore"
 )
 
 func main() {

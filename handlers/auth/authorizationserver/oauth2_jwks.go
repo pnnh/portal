@@ -6,11 +6,11 @@ import (
 	// "log"
 
 	"fmt"
-	"multiverse-authorization/helpers"
+	"portal/helpers"
 
 	"github.com/gin-gonic/gin"
 	// "github.com/ory/fosite/handler/openid"
-	// "multiverse-authorization/server/models"
+	// "portal/server/models"
 )
 
 func JwksEndpoint(gctx *gin.Context) {

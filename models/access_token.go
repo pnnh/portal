@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"multiverse-authorization/neutron/services/datastore"
+	"portal/neutron/services/datastore"
 )
 
 type AccessTokenModel struct {

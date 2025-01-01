@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"multiverse-authorization/models"
+	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wenlng/go-captcha/captcha"

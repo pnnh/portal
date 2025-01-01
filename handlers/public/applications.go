@@ -1,8 +1,8 @@
 package public
 
 import (
-	"multiverse-authorization/models"
 	"net/http"
+	"portal/models"
 
 	"github.com/gin-gonic/gin"
 )

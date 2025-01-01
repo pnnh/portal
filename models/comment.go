@@ -2,15 +2,15 @@ package models
 
 import (
 	"fmt"
+	"portal/neutron/utils"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"multiverse-authorization/neutron/services/datastore"
+	"portal/neutron/services/datastore"
 )
 
 type CommentModel struct {
 	Urn         string    `json:"urn"`     // 主键标识
-	Title       string    `json:"title"`   // 标题
 	Content     string    `json:"content"` // 内容
 	CreateTime  time.Time `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time `json:"update_time" db:"update_time"`
@@ -19,6 +19,7 @@ type CommentModel struct {
 	Referer     string    `json:"referer"`
 	Resource    string    `json:"resource"`
 	IPAddress   string    `json:"ip_address"`
+	Status      int       `json:"status"`
 	Fingerprint string    `json:"fingerprint"`
 	EMail       string    `json:"email"`
 	Nickname    string    `json:"nickname"`
@@ -54,13 +55,16 @@ do update set content = excluded.content, update_time = now();`
 	return nil
 }
 
-func SelectComments(offset int, limit int) ([]*CommentModel, error) {
-	sqlText := `select * from comments offset :offset limit :limit;`
+func SelectComments(page int, size int) (*SelectData, error) {
 
-	sqlParams := map[string]interface{}{"offset": offset, "limit": limit}
+	pagination := utils.CalcPaginationByPage(page, size)
+	baseSqlText := ` select * from comments `
+
+	pageSqlText := baseSqlText + ` offset :offset limit :limit; `
+	pageSqlParams := map[string]interface{}{"offset": pagination.Offset, "limit": pagination.Limit}
 	var sqlResults []*CommentModel
 
-	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
@@ -68,5 +72,35 @@ func SelectComments(offset int, limit int) ([]*CommentModel, error) {
 		return nil, fmt.Errorf("StructScan: %w", err)
 	}
 
-	return sqlResults, nil
+	resultRange := make([]any, 0)
+	for _, item := range sqlResults {
+		resultRange = append(resultRange, item)
+	}
+
+	countSqlText := `select count(1) as count from (` + baseSqlText + `) as temp;`
+
+	countSqlParams := map[string]interface{}{}
+	var countSqlResults []struct {
+		Count int `db:"count"`
+	}
+
+	rows, err = datastore.NamedQuery(countSqlText, countSqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &countSqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+	if len(countSqlResults) == 0 {
+		return nil, fmt.Errorf("查询评论总数有误，数据为空")
+	}
+
+	selectData := &SelectData{
+		Page:  pagination.Page,
+		Size:  pagination.Size,
+		Count: countSqlResults[0].Count,
+		Range: resultRange,
+	}
+
+	return selectData, nil
 }

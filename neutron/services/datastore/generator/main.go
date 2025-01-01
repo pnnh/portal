@@ -8,9 +8,9 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
-	"multiverse-authorization/neutron/services/datastore"
 	"os"
 	"path/filepath"
+	"portal/neutron/services/datastore"
 	"reflect"
 	"regexp"
 	"strings"
@@ -60,7 +60,7 @@ func main() {
 package %s
 
 import (
-	"multiverse-authorization/neutron/services/datastore"
+	"portal/neutron/services/datastore"
 )
 `
 	packageAndImport = fmt.Sprintf(packageAndImport, f.Name.Name)
