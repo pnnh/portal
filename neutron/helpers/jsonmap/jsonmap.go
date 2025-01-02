@@ -60,7 +60,7 @@ func (m JsonMap) GetString(key string) *MapValue[string] {
 	return NewMapValue("")
 }
 
-func GetInt[T IIntValue](m *JsonMap, key string) *MapValue[T]  {
+func GetInt[T IIntValue](m *JsonMap, key string) *MapValue[T] {
 	if v, ok := (*m)[key]; ok {
 		switch v := v.(type) {
 		case int:
@@ -80,9 +80,9 @@ func GetInt[T IIntValue](m *JsonMap, key string) *MapValue[T]  {
 		case uint32:
 			return NewMapValue((T)(v))
 		case int64:
-			return NewMapValue((T)(v)) 
+			return NewMapValue((T)(v))
 		case uint64:
-			return NewMapValue((T)(v)) 
+			return NewMapValue((T)(v))
 		case float32:
 			return NewMapValue((T)(v))
 		case float64:

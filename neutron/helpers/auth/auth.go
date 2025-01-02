@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"time"
- 
-	"github.com/golang-jwt/jwt" 
+
+	"github.com/golang-jwt/jwt"
 )
- 
+
 func ParseToken(token string, jwtKey string) (string, error) {
 	j := NewJWT(jwtKey)
 	claims, err := j.ParseToken(token)
@@ -25,9 +25,9 @@ func GenerateToken(user string, jwtKey, Issuer string) (string, error) {
 	nowUnix := time.Now().Unix()
 	claims := CustomClaims{
 		StandardClaims: jwt.StandardClaims{
-			NotBefore: nowUnix - 1000, // 签名生效时间
-			ExpiresAt: nowUnix + 3600 * 24 * 7, // 过期时间
-			Issuer:    Issuer,                    //签名的发行者
+			NotBefore: nowUnix - 1000,      // 签名生效时间
+			ExpiresAt: nowUnix + 3600*24*7, // 过期时间
+			Issuer:    Issuer,              //签名的发行者
 		},
 		User: user,
 	}
@@ -47,10 +47,10 @@ type JWT struct {
 
 // 一些常量
 var (
-	TokenExpired     error  = errors.New("Token is expired")
-	TokenNotValidYet error  = errors.New("Token not active yet")
-	TokenMalformed   error  = errors.New("That's not even a token")
-	TokenInvalid     error  = errors.New("Couldn't handle this token:")
+	TokenExpired     error = errors.New("Token is expired")
+	TokenNotValidYet error = errors.New("Token not active yet")
+	TokenMalformed   error = errors.New("That's not even a token")
+	TokenInvalid     error = errors.New("Couldn't handle this token:")
 )
 
 // 载荷，可以加一些自己需要的信息
