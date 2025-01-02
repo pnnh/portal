@@ -21,3 +21,7 @@ func MustUuid() string {
 	}
 	return id.String()
 }
+
+func EmptyUuid() string {
+	return "00000000-0000-0000-0000-000000000000"
+}

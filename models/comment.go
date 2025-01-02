@@ -2,10 +2,10 @@ package models
 
 import (
 	"fmt"
-	"portal/neutron/utils"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"portal/neutron/helpers"
 	"portal/neutron/services/datastore"
 )
 
@@ -28,9 +28,9 @@ type CommentModel struct {
 
 func PGInsertComment(model *CommentModel) error {
 	sqlText := `insert into comments(urn, content, create_time, update_time, creator, thread, referer, 
-        resource, ipaddress, fingerprint, email, nickname, website)
+        resource, ipaddress, fingerprint, email, nickname, website, status)
 values(:urn, :content, now(), now(), :creator, :thread, :referer, :resource, :ipaddress, :fingerprint, 
-       :email, :nickname, :website)
+       :email, :nickname, :website, 0)
 on conflict (urn)
 do update set content = excluded.content, update_time = now();`
 
@@ -57,8 +57,8 @@ do update set content = excluded.content, update_time = now();`
 
 func SelectComments(page int, size int) (*SelectData, error) {
 
-	pagination := utils.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from comments `
+	pagination := helpers.CalcPaginationByPage(page, size)
+	baseSqlText := ` select * from comments where status = 1 order by create_time desc `
 
 	pageSqlText := baseSqlText + ` offset :offset limit :limit; `
 	pageSqlParams := map[string]interface{}{"offset": pagination.Offset, "limit": pagination.Limit}

@@ -3,7 +3,7 @@ package authorizationserver
 import (
 	"fmt"
 
-	"portal/helpers"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 )

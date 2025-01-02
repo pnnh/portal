@@ -5,15 +5,12 @@ import (
 	"time"
 
 	"portal/handlers/auth/authorizationserver"
-	helpers2 "portal/helpers"
-
 	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"portal/neutron/config"
-	"portal/neutron/server/helpers"
-	//"github.com/pnnh/neutronrvices/email"
+	"portal/neutron/helpers"
 )
 
 func MailSignupBeginHandler(gctx *gin.Context) {
@@ -207,15 +204,15 @@ func MailSigninFinishHandler(gctx *gin.Context) {
 	user, err := models.GetAccount(sessionModel.Username)
 
 	if err != nil || user == nil {
-		helpers2.ResponseMessageError(gctx, "获取用户信息出错", err)
+		models.ResponseMessageError(gctx, "获取用户信息出错", err)
 		return
 	}
 
-	jwtToken, err := helpers2.GenerateJwtTokenRs256(user.Username,
+	jwtToken, err := helpers.GenerateJwtTokenRs256(user.Username,
 		authorizationserver.PrivateKeyString,
 		sessionModel.JwtId)
 	if (jwtToken == "") || (err != nil) {
-		helpers2.ResponseMessageError(gctx, "参数有误316", err)
+		models.ResponseMessageError(gctx, "参数有误316", err)
 		return
 	}
 

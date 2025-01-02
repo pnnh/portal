@@ -2,7 +2,7 @@ package helpers
 
 import "github.com/gin-gonic/gin"
 
-func getIpAddress(gctx *gin.Context) string {
+func GetIpAddress(gctx *gin.Context) string {
 	ip := gctx.GetHeader("X-Real-IP")
 	if ip == "" {
 		ip = gctx.GetHeader("X-Forwarded-For")

@@ -3,7 +3,7 @@ package authorizationserver
 import (
 	// "encoding/base64"
 	"github.com/gin-gonic/gin"
-	// "portal/helpers"
+	// "portal/neutron/helpers"
 	// "portal/models"
 	// "portal/neutron/config"
 	// "github.com/sirupsen/logrus"

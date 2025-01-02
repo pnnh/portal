@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"portal/handlers/auth/authorizationserver"
-	helpers2 "portal/helpers"
 
 	"portal/models"
 
 	"portal/neutron/config"
-	"portal/neutron/server/helpers"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-webauthn/webauthn/protocol"
@@ -55,17 +54,17 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 
 	username := gctx.Param("username")
 	if len(username) < 1 {
-		helpers2.ResponseCode(gctx, models.CodeInvalidParameter)
+		models.ResponseCode(gctx, models.CodeInvalidParameter)
 		return
 	}
 
 	model, err := models.GetAccountByUsername(username)
 	if err != nil {
-		helpers2.ResponseCodeMessageError(gctx, models.CodeError, "GetAccount error", err)
+		models.ResponseCodeMessageError(gctx, models.CodeError, "GetAccount error", err)
 		return
 	}
 	if model != nil {
-		helpers2.ResponseCodeMessageError(gctx, models.CodeError, "账号已存在", err)
+		models.ResponseCodeMessageError(gctx, models.CodeError, "账号已存在", err)
 		return
 	}
 	displayName := strings.Split(username, "@")[0]
@@ -80,12 +79,12 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 		registerOptions,
 	)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误2", err)
+		models.ResponseMessageError(gctx, "参数有误2", err)
 		return
 	}
 	sessionBytes, err := json.Marshal(sessionData)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "序列化sessionData出错: ", err)
+		models.ResponseMessageError(gctx, "序列化sessionData出错: ", err)
 		return
 	}
 	logrus.Infoln("sessionBytes: ", string(sessionBytes))
@@ -104,7 +103,7 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 	webauthnModel.Session = sessionText
 	logrus.Infoln("sessionData: ", sessionData)
 	if err = models.PutAccount(&webauthnModel.AccountModel); err != nil {
-		helpers2.ResponseMessageError(gctx, "PutAccount error", err)
+		models.ResponseMessageError(gctx, "PutAccount error", err)
 		return
 	}
 
@@ -122,31 +121,31 @@ func (s *WebauthnHandler) FinishRegistration(gctx *gin.Context) {
 	logrus.Infoln("FinishRegistration333")
 	username := gctx.Param("username")
 	if len(username) < 1 {
-		helpers2.ResponseMessageError(gctx, "参数有误a", nil)
+		models.ResponseMessageError(gctx, "参数有误a", nil)
 		return
 	}
 
 	user, err := models.GetAccountByUsername(username)
 
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误5", err)
+		models.ResponseMessageError(gctx, "参数有误5", err)
 		return
 	}
 	if user == nil {
-		helpers2.ResponseMessageError(gctx, fmt.Sprintf("GetAccount结果为空: %s", username), nil)
+		models.ResponseMessageError(gctx, fmt.Sprintf("GetAccount结果为空: %s", username), nil)
 		return
 	}
 	sessionText := user.Session
 	sessionBytes, err := base64.StdEncoding.DecodeString(sessionText)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, fmt.Sprintf("反序列化session出错: %s", username), nil)
+		models.ResponseMessageError(gctx, fmt.Sprintf("反序列化session出错: %s", username), nil)
 		return
 	}
 	logrus.Infoln("sessionBytes2: ", string(sessionBytes))
 	sessionData := webauthn.SessionData{}
 	err = json.Unmarshal(sessionBytes, &sessionData)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "序列化sessionData出错2: ", err)
+		models.ResponseMessageError(gctx, "序列化sessionData出错2: ", err)
 		return
 	}
 	logrus.Infoln("sessionData2: ", sessionData)
@@ -154,7 +153,7 @@ func (s *WebauthnHandler) FinishRegistration(gctx *gin.Context) {
 	webauthnModel := models.CopyWebauthnAccount(user)
 	credential, err := webAuthn.FinishRegistration(webauthnModel, sessionData, gctx.Request)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误37", err)
+		models.ResponseMessageError(gctx, "参数有误37", err)
 		return
 	}
 
@@ -162,7 +161,7 @@ func (s *WebauthnHandler) FinishRegistration(gctx *gin.Context) {
 
 	err = models.UpdateAccountCredentials(webauthnModel)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "UpdateAccountCredentials: %w", err)
+		models.ResponseMessageError(gctx, "UpdateAccountCredentials: %w", err)
 		return
 	}
 
@@ -176,32 +175,32 @@ func (s *WebauthnHandler) BeginLogin(gctx *gin.Context) {
 
 	username := gctx.Param("username")
 	if len(username) < 1 {
-		helpers2.ResponseMessageError(gctx, "参数有误b", nil)
+		models.ResponseMessageError(gctx, "参数有误b", nil)
 		return
 	}
 
 	user, err := models.GetAccountByUsername(username)
 
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误316", err)
+		models.ResponseMessageError(gctx, "参数有误316", err)
 		return
 	}
 
 	if user == nil {
-		helpers2.ResponseCode(gctx, models.CodeAccountNotExists)
+		models.ResponseCode(gctx, models.CodeAccountNotExists)
 		return
 	}
 
 	webauthnModel := models.CopyWebauthnAccount(user)
 	options, sessionData, err := webAuthn.BeginLogin(webauthnModel)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误39", err)
+		models.ResponseMessageError(gctx, "参数有误39", err)
 		return
 	}
 
 	err = models.UpdateAccountSession(user, sessionData)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "UpdateAccountSession: %w", err)
+		models.ResponseMessageError(gctx, "UpdateAccountSession: %w", err)
 		return
 	}
 	resp := make(map[string]interface{})
@@ -218,12 +217,12 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 
 	username := gctx.Param("username")
 	if len(username) < 1 {
-		helpers2.ResponseMessageError(gctx, "参数有误", nil)
+		models.ResponseMessageError(gctx, "参数有误", nil)
 		return
 	}
 	verifyData := gctx.PostForm("verifyData")
 	if len(verifyData) < 1 {
-		helpers2.ResponseMessageError(gctx, "verifyData参数有误", nil)
+		models.ResponseMessageError(gctx, "verifyData参数有误", nil)
 		return
 	}
 	source, ok := gctx.GetQuery("source")
@@ -235,35 +234,35 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 	user, err := models.GetAccountByUsername(username)
 
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误312", err)
+		models.ResponseMessageError(gctx, "参数有误312", err)
 		return
 	}
 	sessionData, err := models.UnmarshalWebauthnSession(user.Session)
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误316", err)
+		models.ResponseMessageError(gctx, "参数有误316", err)
 		return
 	}
 	webauthnModel := models.CopyWebauthnAccount(user)
 	// _, err = webAuthn.FinishLogin(webauthnModel, *sessionData, gctx.Request)
 	// if err != nil {
-	// 	helpers2.ResponseMessageError(gctx, "参数有误315", err)
+	// 	models.ResponseMessageError(gctx, "参数有误315", err)
 	// 	return
 	// }
 	fmt.Println("verifyData: \n", verifyData)
 	assertionData, err := protocol.ParseCredentialRequestResponseBody(strings.NewReader(verifyData))
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误317", err)
+		models.ResponseMessageError(gctx, "参数有误317", err)
 		return
 	}
 	credential, err := webAuthn.ValidateLogin(webauthnModel, *sessionData, assertionData)
 
 	if err != nil {
-		helpers2.ResponseMessageError(gctx, "参数有误318", err)
+		models.ResponseMessageError(gctx, "参数有误318", err)
 		return
 	}
 	logrus.Debugln("credential: ", credential)
 
-	jwkModel, err := helpers2.GetJwkModel()
+	jwkModel, err := helpers.GetJwkModel()
 	if err != nil || jwkModel == nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetJwkModel error"))
 		return
@@ -291,11 +290,11 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 		logrus.Printf("Error occurred in NewAccessResponse2222: %+v", err)
 		return
 	}
-	jwtToken, err := helpers2.GenerateJwtTokenRs256(username,
+	jwtToken, err := helpers.GenerateJwtTokenRs256(username,
 		authorizationserver.PrivateKeyString,
 		session.JwtId)
 	if (jwtToken == "") || (err != nil) {
-		helpers2.ResponseMessageError(gctx, "参数有误319", err)
+		models.ResponseMessageError(gctx, "参数有误319", err)
 		return
 	}
 

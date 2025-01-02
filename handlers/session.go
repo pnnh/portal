@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"portal/handlers/auth/authorizationserver"
-	helpers2 "portal/helpers"
+	"portal/models"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,9 +19,9 @@ func (s *SessionHandler) Introspect(gctx *gin.Context) {
 
 	jwtToken := strings.TrimPrefix(authHeader, "Bearer ")
 
-	username, err := helpers2.ParseJwtTokenRs256(jwtToken, authorizationserver.PublicKeyString)
+	username, err := helpers.ParseJwtTokenRs256(jwtToken, authorizationserver.PublicKeyString)
 	if err != nil {
-		helpers2.ResponseCodeMessageError(gctx, 401, "token解析失败", err)
+		models.ResponseCodeMessageError(gctx, 401, "token解析失败", err)
 		return
 	}
 

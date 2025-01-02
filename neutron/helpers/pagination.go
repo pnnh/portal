@@ -1,4 +1,4 @@
-package utils
+package helpers
 
 type Pagination struct {
 	Offset int `json:"offset"`

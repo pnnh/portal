@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"portal/handlers/auth/authorizationserver"
-	helpers2 "portal/helpers"
 
 	"github.com/sirupsen/logrus"
 
 	"portal/models"
 
 	"github.com/gin-gonic/gin"
-	"portal/neutron/server/helpers"
+	"portal/neutron/helpers"
 )
 
 //func PasswordSignupBeginHandler(gctx *gin.Context) {
@@ -185,7 +184,7 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
-	jwkModel, err := helpers2.GetJwkModel()
+	jwkModel, err := helpers.GetJwkModel()
 	if err != nil || jwkModel == nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetJwkModel error"))
 		return
@@ -215,11 +214,11 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
-	jwtToken, err := helpers2.GenerateJwtTokenRs256(account.Username,
+	jwtToken, err := helpers.GenerateJwtTokenRs256(account.Username,
 		authorizationserver.PrivateKeyString,
 		session.JwtId)
 	if (jwtToken == "") || (err != nil) {
-		helpers2.ResponseMessageError(gctx, "参数有误316", err)
+		models.ResponseMessageError(gctx, "参数有误316", err)
 		return
 	}
 

@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"time"
 
-	"portal/helpers"
+	"portal/neutron/helpers"
 
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"

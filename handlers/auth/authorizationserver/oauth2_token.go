@@ -3,8 +3,8 @@ package authorizationserver
 import (
 	"net/http"
 
-	"portal/helpers"
 	"portal/models"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"

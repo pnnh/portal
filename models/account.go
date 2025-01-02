@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"portal/neutron/server/helpers"
+	"portal/neutron/helpers"
 	"portal/neutron/services/datastore"
 
 	"github.com/go-webauthn/webauthn/webauthn"
@@ -188,24 +188,46 @@ func UpdateAccountPassword(pk string, password string) error {
 	return nil
 }
 
-func EnsureAccount(model *AccountModel) error {
+func EnsureAccount(username, nickname, email, website, photo, fingerprint string) (*AccountModel, error) {
+	if username == "" {
+		return nil, nil
+	}
 	sqlText := `insert into accounts(urn, username, nickname, create_time, update_time, email, website, photo, fingerprint)
 values (:urn, :username, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
 on conflict (username) do nothing;`
 
+	urn := helpers.MustUuid()
+
 	sqlParams := map[string]interface{}{
-		"urn":         model.Urn,
-		"username":    model.Username,
-		"nickname":    model.Nickname,
-		"email":       model.EMail,
-		"website":     model.Website,
-		"photo":       model.Photo,
-		"fingerprint": model.Fingerprint,
+		"urn":         urn,
+		"username":    username,
+		"nickname":    nickname,
+		"email":       email,
+		"website":     website,
+		"photo":       photo,
+		"fingerprint": fingerprint,
+	}
+
+	accountModel := &AccountModel{
+		Urn:         urn,
+		Username:    email,
+		Password:    "",
+		Photo:       "",
+		CreateTime:  time.Now().UTC(),
+		UpdateTime:  time.Now().UTC(),
+		Nickname:    "",
+		EMail:       email,
+		Credentials: "",
+		Session:     "",
+		Description: "",
+		Status:      0,
+		Website:     website,
+		Fingerprint: fingerprint,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
-		return fmt.Errorf("EnsureAccount: %w", err)
+		return nil, fmt.Errorf("EnsureAccount: %w", err)
 	}
-	return nil
+	return accountModel, nil
 }

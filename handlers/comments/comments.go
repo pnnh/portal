@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"portal/models"
-	"portal/neutron/server/helpers"
+	"portal/neutron/helpers"
 )
 
 func CommentInsertHandler(gctx *gin.Context) {
@@ -16,36 +16,24 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	accountModel := &models.AccountModel{
-		Urn:         helpers.MustUuid(),
-		Username:    model.EMail,
-		Password:    "",
-		Photo:       "",
-		CreateTime:  time.Now().UTC(),
-		UpdateTime:  time.Now().UTC(),
-		Nickname:    "",
-		EMail:       model.EMail,
-		Credentials: "",
-		Session:     "",
-		Description: "",
-		Status:      0,
-		Website:     model.Website,
-		Fingerprint: model.Fingerprint,
-	}
-
-	err := models.EnsureAccount(accountModel)
+	accountModel, err := models.EnsureAccount(model.EMail, model.Nickname, model.EMail, model.Website, "", model.Fingerprint)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新用户账户出错"))
 		return
+	}
+	if accountModel != nil {
+		model.Creator = accountModel.Urn
 	}
 
 	model.Urn = helpers.MustUuid()
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
-	model.Creator = accountModel.Urn
-	model.Thread = helpers.MustUuid()
-	model.Referer = helpers.MustUuid()
-	model.Resource = helpers.MustUuid()
+	model.Creator = helpers.EmptyUuid()
+	model.Thread = helpers.EmptyUuid()
+	model.Referer = helpers.EmptyUuid()
+	model.Resource = helpers.EmptyUuid()
+	model.IPAddress = helpers.GetIpAddress(gctx)
+
 	err = models.PGInsertComment(model)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入评论出错"))

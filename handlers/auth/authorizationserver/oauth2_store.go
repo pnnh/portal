@@ -11,7 +11,7 @@ import (
 
 	"portal/models"
 
-	quantum_helpers "portal/neutron/server/helpers"
+	quantum_helpers "portal/neutron/helpers"
 
 	"github.com/go-jose/go-jose/v3"
 

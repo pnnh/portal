@@ -1,19 +1,18 @@
-package helpers
+package models
 
 import (
 	"net/http"
-	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-func ResponseCode(gctx *gin.Context, code models.MCode) {
-	message := models.CodeMessage(code)
+func ResponseCode(gctx *gin.Context, code MCode) {
+	message := CodeMessage(code)
 	ResponseCodeMessageData(gctx, code, message, nil)
 }
 
-func ResponseCodeMessageData(gctx *gin.Context, code models.MCode, message string, data interface{}) {
+func ResponseCodeMessageData(gctx *gin.Context, code MCode, message string, data interface{}) {
 	jsonBody := gin.H{"code": code}
 	if len(message) > 0 {
 		jsonBody["message"] = message
@@ -24,7 +23,7 @@ func ResponseCodeMessageData(gctx *gin.Context, code models.MCode, message strin
 	gctx.JSON(http.StatusOK, jsonBody)
 }
 
-func ResponseCodeMessageError(gctx *gin.Context, code models.MCode, message string, err error) {
+func ResponseCodeMessageError(gctx *gin.Context, code MCode, message string, err error) {
 	if err != nil {
 		logrus.Errorln("ResponseCodeMessageError", gctx.FullPath(), message, err)
 	}
@@ -35,5 +34,5 @@ func ResponseMessageError(gctx *gin.Context, message string, err error) {
 	if err != nil {
 		logrus.Errorln("ResponseMessageError", message, err)
 	}
-	ResponseCodeMessageData(gctx, models.CodeError, message, nil)
+	ResponseCodeMessageData(gctx, CodeError, message, nil)
 }
