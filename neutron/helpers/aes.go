@@ -12,7 +12,6 @@ import (
 	"io"
 )
 
-const saltLength = 1
 const saltLength = 16
 
 func AesEncrypt(str string, key []byte) (string, error) {
@@ -107,7 +106,7 @@ func pkcs5UnPadding(origData []byte) []byte {
 
 // 生成32位md5字
 // 生成32位md5字串
-//生成32位md5字串
+// 生成32位md5字串
 func GetMd5String(s string) string {
 	h := md5.New()
 	h.Write([]byte(s))

@@ -5,14 +5,27 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"portal/business/cloudflare"
 	"portal/models"
 	"portal/neutron/helpers"
 )
 
+type CommentInsertRequest struct {
+	cloudflare.TurnstileModel
+	models.CommentModel
+}
+
 func CommentInsertHandler(gctx *gin.Context) {
-	model := &models.CommentModel{}
+	model := &CommentInsertRequest{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
 		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		return
+	}
+
+	ipAddr := helpers.GetIpAddress(gctx)
+	verifyOk, err := cloudflare.VerifyTurnstileToken(model.TurnstileModel.TurnstileToken, ipAddr)
+	if err != nil || !verifyOk {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("验证出错"))
 		return
 	}
 
@@ -31,16 +44,18 @@ func CommentInsertHandler(gctx *gin.Context) {
 	model.Creator = helpers.EmptyUuid()
 	model.Thread = helpers.EmptyUuid()
 	model.Referer = helpers.EmptyUuid()
-	model.Resource = helpers.EmptyUuid()
 	model.IPAddress = helpers.GetIpAddress(gctx)
 
-	err = models.PGInsertComment(model)
+	err = models.PGInsertComment(&model.CommentModel)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入评论出错"))
 		return
 	}
 
-	result := models.CodeOk.WithData(map[string]any{})
+	result := models.CodeOk.WithData(map[string]any{
+		"changes": 1,
+		"urn":     model.Urn,
+	})
 
 	gctx.JSON(http.StatusOK, result)
 }
