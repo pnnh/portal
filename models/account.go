@@ -67,10 +67,30 @@ func GetAccount(pk string) (*AccountModel, error) {
 }
 
 func GetAccountByUsername(username string) (*AccountModel, error) {
-	sqlText := `select *
-	from portal.accounts where username = :username and status = 1;`
+	sqlText := `select * from accounts where username = :username limit 1;`
 
 	sqlParams := map[string]interface{}{"username": username}
+	var sqlResults []*AccountModel
+
+	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	for _, v := range sqlResults {
+		return v, nil
+	}
+
+	return nil, nil
+}
+
+func GetAccountBySessionId(sessionId string) (*AccountModel, error) {
+	sqlText := `select a.* from accounts as a join sessions as s on a.urn = s.account where s.urn = :urn limit 1;`
+
+	sqlParams := map[string]interface{}{"urn": sessionId}
 	var sqlResults []*AccountModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -188,46 +208,51 @@ func UpdateAccountPassword(pk string, password string) error {
 	return nil
 }
 
-func EnsureAccount(username, nickname, email, website, photo, fingerprint string) (*AccountModel, error) {
-	if username == "" {
-		return nil, nil
-	}
-	sqlText := `insert into accounts(urn, username, nickname, create_time, update_time, email, website, photo, fingerprint)
-values (:urn, :username, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
-on conflict (username) do nothing;`
+func CheckAccountExists(username string) (bool, error) {
 
-	urn := helpers.MustUuid()
+	sqlText := `select count(1) as count from accounts where username = :username;`
+
+	sqlParams := map[string]interface{}{"username": username}
+
+	var sqlResults []struct {
+		Count int `db:"count"`
+	}
+
+	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	if err != nil {
+		return false, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return false, fmt.Errorf("StructScan: %w", err)
+	}
+	if len(sqlResults) == 0 {
+		return false, nil
+	}
+
+	return sqlResults[0].Count > 0, nil
+}
+
+func EnsureAccount(model *AccountModel) error {
+	sqlText := `insert into accounts(urn, username, password, nickname, create_time, update_time, email, website, photo, fingerprint)
+values (:urn, :username, :password, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
+on conflict (username)
+do update set nickname = excluded.nickname,
+    email = excluded.email, update_time = now();`
 
 	sqlParams := map[string]interface{}{
-		"urn":         urn,
-		"username":    username,
-		"nickname":    nickname,
-		"email":       email,
-		"website":     website,
-		"photo":       photo,
-		"fingerprint": fingerprint,
-	}
-
-	accountModel := &AccountModel{
-		Urn:         urn,
-		Username:    email,
-		Password:    "",
-		Photo:       "",
-		CreateTime:  time.Now().UTC(),
-		UpdateTime:  time.Now().UTC(),
-		Nickname:    "",
-		EMail:       email,
-		Credentials: "",
-		Session:     "",
-		Description: "",
-		Status:      0,
-		Website:     website,
-		Fingerprint: fingerprint,
+		"urn":         model.Urn,
+		"username":    model.Username,
+		"password":    model.Password,
+		"nickname":    model.Nickname,
+		"email":       model.EMail,
+		"website":     model.Website,
+		"photo":       model.Photo,
+		"fingerprint": model.Fingerprint,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("EnsureAccount: %w", err)
+		return fmt.Errorf("EnsureAccount: %w", err)
 	}
-	return accountModel, nil
+	return nil
 }

@@ -58,7 +58,7 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	}
 
 	session := &models.SessionModel{
-		Pk:         helpers.MustUuid(),
+		Urn:        helpers.MustUuid(),
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
@@ -82,7 +82,7 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	// }
 
 	sessionData := map[string]interface{}{
-		"session": session.Pk,
+		"session": session.Urn,
 	}
 
 	result := models.CodeOk.WithData(sessionData)
@@ -111,7 +111,7 @@ func MailSignupFinishHandler(gctx *gin.Context) {
 		return
 	}
 	sessionData := map[string]interface{}{
-		"session": sessionModel.Pk,
+		"session": sessionModel.Urn,
 	}
 
 	result := models.CodeOk.WithData(sessionData)
@@ -147,7 +147,7 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 	}
 
 	session := &models.SessionModel{
-		Pk:         helpers.MustUuid(),
+		Urn:        helpers.MustUuid(),
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
@@ -171,7 +171,7 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 	// }
 
 	sessionData := map[string]interface{}{
-		"session": session.Pk,
+		"session": session.Urn,
 	}
 
 	result := models.CodeOk.WithData(sessionData)

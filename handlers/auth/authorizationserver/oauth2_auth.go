@@ -134,7 +134,7 @@ func AuthEndpointJson(gctx *gin.Context) {
 	authCode := response.GetCode()
 
 	session := &models.SessionModel{
-		Pk:           uuid.New().String(),
+		Urn:          uuid.New().String(),
 		Content:      "",
 		CreateTime:   time.Now(),
 		UpdateTime:   time.Now(),

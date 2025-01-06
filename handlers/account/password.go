@@ -191,7 +191,7 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 	}
 
 	session := &models.SessionModel{
-		Pk:           helpers.NewPostId(),
+		Urn:          helpers.NewPostId(),
 		Content:      "",
 		CreateTime:   time.Now(),
 		UpdateTime:   time.Now(),

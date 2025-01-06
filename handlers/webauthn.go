@@ -268,7 +268,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 		return
 	}
 	session := &models.SessionModel{
-		Pk:           helpers.NewPostId(),
+		Urn:          helpers.NewPostId(),
 		Content:      "",
 		CreateTime:   time.Now(),
 		UpdateTime:   time.Now(),

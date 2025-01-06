@@ -19,7 +19,7 @@ func GenerateJwtTokenRs256(username string, privKeyString string, tokenId string
 		//"username": username,
 		"exp": time.Now().Add(time.Hour * 24 * 3).Unix(),
 		"iat": time.Now().Unix(),
-		"sub": username,
+		//"sub": username,
 		"iss": GetIssure(),
 		//"aud":      []string{"multiverse.cloud"},
 		"jti": tokenId,
