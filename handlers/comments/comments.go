@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"portal/business"
 	"portal/models"
 	"portal/neutron/helpers"
 )
@@ -20,15 +22,29 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
+	accountModel, err := business.FindUserFromCookie(gctx)
+	if err != nil {
+		logrus.Println("GetAccountBySessionId", err)
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错"))
+		return
+	}
+	if accountModel == nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		return
+	}
+
 	model.Urn = helpers.MustUuid()
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
-	model.Creator = helpers.EmptyUuid()
+	model.Creator = accountModel.Urn
 	model.Thread = helpers.EmptyUuid()
 	model.Referer = helpers.EmptyUuid()
 	model.IPAddress = helpers.GetIpAddress(gctx)
+	model.EMail = accountModel.EMail
+	model.Nickname = accountModel.Nickname
+	model.Website = accountModel.Website
 
-	err := models.PGInsertComment(&model.CommentModel)
+	err = models.PGInsertComment(&model.CommentModel)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入评论出错"))
 		return
@@ -43,7 +59,13 @@ func CommentInsertHandler(gctx *gin.Context) {
 }
 
 func CommentSelectHandler(gctx *gin.Context) {
-	selectResult, err := models.SelectComments(1, 30)
+	target := gctx.Query("resource")
+	if target == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("资源不存在"))
+		return
+	}
+
+	selectResult, err := models.SelectComments(target, 1, 60)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询评论出错"))
 		return

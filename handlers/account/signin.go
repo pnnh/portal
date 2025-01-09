@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"portal/business"
 	"portal/business/cloudflare"
 	"portal/models"
 	"portal/neutron/config"
@@ -91,7 +92,7 @@ func SigninHandler(gctx *gin.Context) {
 	}
 
 	// 登录成功后设置cookie
-	gctx.SetCookie("PT", jwtToken, 3600*48, "/", "", true, true)
+	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*48, "/", "", true, true)
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,

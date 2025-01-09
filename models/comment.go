@@ -55,13 +55,15 @@ do update set content = excluded.content, update_time = now();`
 	return nil
 }
 
-func SelectComments(page int, size int) (*SelectData, error) {
+func SelectComments(resource string, page int, size int) (*SelectData, error) {
 
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from comments where status = 1 order by create_time desc `
+	baseSqlText := ` select * from comments where status = 1 and resource = :resource order by create_time desc `
 
 	pageSqlText := baseSqlText + ` offset :offset limit :limit; `
-	pageSqlParams := map[string]interface{}{"offset": pagination.Offset, "limit": pagination.Limit}
+	pageSqlParams := map[string]interface{}{
+		"resource": resource,
+		"offset":   pagination.Offset, "limit": pagination.Limit}
 	var sqlResults []*CommentModel
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
@@ -79,7 +81,7 @@ func SelectComments(page int, size int) (*SelectData, error) {
 
 	countSqlText := `select count(1) as count from (` + baseSqlText + `) as temp;`
 
-	countSqlParams := map[string]interface{}{}
+	countSqlParams := map[string]interface{}{"resource": resource}
 	var countSqlResults []struct {
 		Count int `db:"count"`
 	}
