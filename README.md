@@ -1,5 +1,19 @@
 go示例项目
 
+
+### 生成gRPC服务存根
+
+```bash
+protoc  --proto_path=quark/domain \
+        --go_out=./gen \
+        --go_opt=paths=source_relative \
+        --go_opt=Mdomain.proto=portal/gen \
+        --go-grpc_out=./gen \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mdomain.proto=portal/gen \
+        domain.proto
+```
+
 ## 本地监听文件服务
 
 ```shell

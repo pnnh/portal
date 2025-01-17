@@ -1,0 +1,4 @@
+[submodule "quark"]
+	path = quark
+	url = git@github.com:pnnh/quark.git
+	branch = main
