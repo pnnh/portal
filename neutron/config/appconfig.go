@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -9,7 +10,7 @@ import (
 
 var staticConfigModel v2.ConfigMap
 
-func init() {
+func InitAppConfig() error {
 	logrus.SetReportCaller(false)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     false,
@@ -18,7 +19,7 @@ func init() {
 
 	model, err := v2.ParseConfig("config.yaml")
 	if err != nil {
-		logrus.Errorf("配置文件解析失败: %s", err)
+		return fmt.Errorf("配置文件解析失败: %w", err)
 	}
 	staticConfigModel = model
 
@@ -27,6 +28,7 @@ func init() {
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
+	return nil
 }
 
 func GetConfiguration(key interface{}) (interface{}, bool) {

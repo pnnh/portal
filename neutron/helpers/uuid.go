@@ -22,6 +22,11 @@ func MustUuid() string {
 	return id.String()
 }
 
+func IsUuid(stringValue string) bool {
+	_, err := uuid.Parse(stringValue)
+	return err == nil
+}
+
 func EmptyUuid() string {
 	return "00000000-0000-0000-0000-000000000000"
 }

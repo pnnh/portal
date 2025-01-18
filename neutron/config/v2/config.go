@@ -107,7 +107,7 @@ func ParseConfigContent(fileContent string) (ConfigMap, error) {
 
 	var model ConfigMap = configMap
 
-	var filePrefix = "file://"
+	var filePrefix = "include://"
 	var contentPrefix = "content://"
 	for key, value := range configMap {
 		stringValue, ok := value.(string)

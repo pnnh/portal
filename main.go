@@ -13,6 +13,10 @@ func main() {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+	err := config.InitAppConfig()
+	if err != nil {
+		logrus.Fatalln("初始化配置失败", err)
+	}
 
 	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
