@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"portal/models/notes"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -87,6 +88,7 @@ func (s *WebServer) Init() error {
 
 	s.router.POST("/comments", comments.CommentInsertHandler)
 	s.router.GET("/comments", comments.CommentSelectHandler)
+	s.router.GET("/articles", notes.NoteSelectHandler)
 	s.router.POST("/account/signup", account.SignupHandler)
 	s.router.POST("/account/signin", account.SigninHandler)
 	s.router.POST("/account/signout", account.SignoutHandler)
