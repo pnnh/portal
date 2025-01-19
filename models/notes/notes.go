@@ -32,11 +32,15 @@ type MTNoteModel struct {
 	Partition   sql.NullString `json:"-"`
 	CreateTime  time.Time      `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time      `json:"update_time" db:"update_time"`
+	Version     sql.NullString `json:"-"`
+	Build       sql.NullString `json:"-"`
+	Url         sql.NullString `json:"-"`
 }
 
 func PGInsertNote(model *MTNoteModel) error {
-	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time)
-values(:uid, :title, :header, :body, :description, now(), now())
+	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
+                     version, build, url)
+values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url)
 on conflict (uid)
 do update set title=excluded.title, body=excluded.body, update_time = now();`
 
@@ -46,6 +50,9 @@ do update set title=excluded.title, body=excluded.body, update_time = now();`
 		"header":      "MTNote",
 		"body":        model.Body,
 		"description": model.Description,
+		"version":     model.Version,
+		"build":       model.Build,
+		"url":         model.Url,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
@@ -104,4 +111,26 @@ func SelectNotes(page int, size int) (*models.SelectData, error) {
 	}
 
 	return selectData, nil
+}
+
+func PGGetNote(uid string) (*MTNoteModel, error) {
+
+	pageSqlText := ` select * from articles where status = 1 and uid = :uid; `
+	pageSqlParams := map[string]interface{}{
+		"uid": uid,
+	}
+	var sqlResults []*MTNoteModel
+
+	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	for _, item := range sqlResults {
+		return item, nil
+	}
+	return nil, nil
 }

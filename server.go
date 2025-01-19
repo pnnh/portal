@@ -89,6 +89,8 @@ func (s *WebServer) Init() error {
 	s.router.POST("/comments", comments.CommentInsertHandler)
 	s.router.GET("/comments", comments.CommentSelectHandler)
 	s.router.GET("/articles", notes.NoteSelectHandler)
+	s.router.GET("/articles/:uid", notes.NoteGetHandler)
+	s.router.POST("/articles/:uid/viewer", notes.NoteViewerInsertHandler)
 	s.router.POST("/account/signup", account.SignupHandler)
 	s.router.POST("/account/signin", account.SigninHandler)
 	s.router.POST("/account/signout", account.SignoutHandler)

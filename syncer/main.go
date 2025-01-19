@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/adrg/frontmatter"
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,9 @@ func visit(path string, info os.FileInfo, err error) error {
 					Title:       matter.Title,
 					Body:        string(rest),
 					Description: matter.Description,
+					Version:     sql.NullString{String: "", Valid: true},
+					Build:       sql.NullString{String: "", Valid: true},
+					Url:         sql.NullString{String: "", Valid: true},
 				}
 				err = notes.PGInsertNote(note)
 				if err != nil {
