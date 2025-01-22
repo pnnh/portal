@@ -3,11 +3,12 @@ package notes
 import (
 	"database/sql"
 	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"portal/models"
 	"portal/neutron/helpers"
 	"portal/neutron/services/datastore"
-	"time"
 )
 
 type MTNoteMatter struct {
@@ -35,14 +36,24 @@ type MTNoteModel struct {
 	Version     sql.NullString `json:"-"`
 	Build       sql.NullString `json:"-"`
 	Url         sql.NullString `json:"-"`
+	Branch      sql.NullString `json:"-"`
+	CommitId    sql.NullString `json:"-"`
+	CommitTime  sql.NullTime   `json:"-"`
+	RepoPath    sql.NullString `json:"-"`
 }
 
 func PGInsertNote(model *MTNoteModel) error {
 	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
-                     version, build, url)
-values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url)
+                     version, build, url, branch, commit, commit_time, repo_path)
+values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url, :branch, 
+       :commit, :commit_time, :repo_path)
 on conflict (uid)
-do update set title=excluded.title, body=excluded.body, update_time = now();`
+do update set title=excluded.title, 
+    header=excluded.header,
+    body=excluded.body, description=excluded.description, build=excluded.build, url=excluded.url, 
+    branch=excluded.branch, commit=excluded.commit, commit_time=excluded.commit_time,
+    repo_path=excluded.repo_path,
+    update_time = now();`
 
 	sqlParams := map[string]interface{}{
 		"uid":         model.Uid,
@@ -53,6 +64,10 @@ do update set title=excluded.title, body=excluded.body, update_time = now();`
 		"version":     model.Version,
 		"build":       model.Build,
 		"url":         model.Url,
+		"branch":      model.Branch,
+		"commit":      model.CommitId,
+		"commit_time": model.CommitTime,
+		"repo_path":   model.RepoPath,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)

@@ -3,56 +3,76 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/adrg/frontmatter"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/adrg/frontmatter"
+	"github.com/sirupsen/logrus"
 	"portal/models/notes"
 	"portal/neutron/config"
 	"portal/neutron/helpers"
 	"portal/neutron/services/datastore"
 	"portal/neutron/services/filesystem"
-	"strings"
+	"portal/services/githelper"
 )
 
 func visit(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
-	if info.IsDir() {
-		readmeFilePath := filepath.Join(path, "README.md")
-		if _, err := os.Stat(readmeFilePath); os.IsNotExist(err) {
-			return nil
-		} else {
-			noteText, err := os.ReadFile(readmeFilePath)
-			if err != nil {
-				return fmt.Errorf("读取文件失败: %w", err)
-			}
-			matter := &notes.MTNoteMatter{}
-			rest, err := frontmatter.Parse(strings.NewReader(string(noteText)), matter)
-			if err != nil {
-				return fmt.Errorf("解析文章元数据失败: %w", err)
-			}
-			if matter.Cls == "MTNote" && helpers.IsUuid(matter.Uid) {
-				fmt.Printf("%+v", matter)
-				fmt.Println("这是一个MTNote")
+	if !info.IsDir() {
+		return nil
+	}
+	readmeFilePath := filepath.Join(path, "README.md")
+	if _, err := os.Stat(readmeFilePath); os.IsNotExist(err) {
+		return nil
+	} else {
+		noteText, err := os.ReadFile(readmeFilePath)
+		if err != nil {
+			return fmt.Errorf("读取文件失败: %w", err)
+		}
+		matter := &notes.MTNoteMatter{}
+		rest, err := frontmatter.Parse(strings.NewReader(string(noteText)), matter)
+		if err != nil {
+			return fmt.Errorf("解析文章元数据失败: %w", err)
+		}
+		if matter.Cls == "MTNote" && helpers.IsUuid(matter.Uid) {
+			fmt.Printf("%+v", matter)
+			fmt.Println("这是一个MTNote")
 
-				note := &notes.MTNoteModel{
-					Uid:         matter.Uid,
-					Title:       matter.Title,
-					Body:        string(rest),
-					Description: matter.Description,
-					Version:     sql.NullString{String: "", Valid: true},
-					Build:       sql.NullString{String: "", Valid: true},
-					Url:         sql.NullString{String: "", Valid: true},
+			gitInfo, err := githelper.GitInfoGet(path)
+			if err != nil {
+				fmt.Printf("获取git信息失败: %w", err)
+			}
+
+			note := &notes.MTNoteModel{
+				Uid:         matter.Uid,
+				Title:       matter.Title,
+				Body:        string(rest),
+				Description: matter.Description,
+			}
+			if gitInfo != nil {
+				// 只有在main分支上的提交才会被记录
+				if gitInfo.Branch != "main" {
+					return nil
 				}
-				err = notes.PGInsertNote(note)
-				if err != nil {
-					fmt.Printf("插入文章失败: %w", err)
-				}
+				note.Version = sql.NullString{String: gitInfo.CommitId, Valid: true}
+				note.Build = sql.NullString{String: "", Valid: true}
+				note.Url = sql.NullString{String: gitInfo.RemoteUrl, Valid: true}
+				note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
+				note.CommitId = sql.NullString{String: gitInfo.CommitId, Valid: true}
+				note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
+				repoPath := strings.TrimPrefix(path, gitInfo.RootPath)
+				note.RepoPath = sql.NullString{String: repoPath, Valid: true}
+			}
+			err = notes.PGInsertNote(note)
+			if err != nil {
+				fmt.Printf("插入文章失败: %w", err)
 			}
 		}
 	}
+
 	return nil
 }
 

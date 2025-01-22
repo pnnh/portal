@@ -15,7 +15,11 @@ func ResolvePath(path string) (string, error) {
 	}
 
 	if strings.HasPrefix(resolvedPath, "./") {
-		resolvedPath = strings.Replace(resolvedPath, "./", "", 1)
+		dir, err := os.Getwd()
+		if err != nil {
+			return path, fmt.Errorf("获取当前目录失败: %s", err)
+		}
+		resolvedPath = strings.Replace(resolvedPath, "./", dir, 1)
 	}
 
 	if strings.HasPrefix(resolvedPath, "~/") {
@@ -23,7 +27,7 @@ func ResolvePath(path string) (string, error) {
 		if err != nil {
 			return path, fmt.Errorf("获取用户目录失败: %s", err)
 		}
-		resolvedPath = strings.Replace(resolvedPath, "/", userHomeDir+"/", 1)
+		resolvedPath = strings.Replace(resolvedPath, "~/", userHomeDir+"/", 1)
 	}
 
 	return resolvedPath, nil
