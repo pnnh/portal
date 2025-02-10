@@ -8,13 +8,14 @@ import (
 )
 
 type GitInfo struct {
-	Branch     string
-	CommitId   string
-	CommitTime time.Time
-	RemoteUrl  string
-	Tracking   string
-	IsClean    bool
-	RootPath   string
+	Branch        string
+	CommitId      string
+	CommitTime    time.Time
+	RemoteUrl     string
+	Tracking      string
+	IsClean       bool
+	RootPath      string
+	FirstCommitId string
 }
 
 // 获取指定目录的git信息
@@ -65,7 +66,61 @@ func GitInfoGet(dirPath string) (*GitInfo, error) {
 	}
 	gitInfo.RootPath = rootPath
 
+	firstCommitId, err := GitGetFirstCommitId(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("GitInfoGet: %w", err)
+	}
+	gitInfo.FirstCommitId = firstCommitId
+
 	return gitInfo, nil
+}
+
+// 获取指定目录的git远程仓库地址
+func GitGetOriginURL(dirPath string, remoteName string) (string, error) {
+	cmd := exec.Command("git", "remote", "get-url", remoteName)
+	cmd.Dir = dirPath
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("GitGetOriginURL exec: %w", err)
+	}
+	originURL := strings.TrimSpace(string(out))
+	if originURL == "" {
+		return "", fmt.Errorf("GitGetOriginURL empty: %w", err)
+	}
+	return originURL, nil
+}
+
+// 比较两次commit的先后顺序
+// 返回值：
+// -1: commitId1是commitId2的祖先
+// 0: commitId1和commitId2是同一个commit
+func GitCommitIsAncestor(dirPath, commitId1, commitId2 string) (bool, error) {
+	if commitId1 == commitId2 {
+		return false, nil
+	}
+	// 判断commitId1是否是commitId2的祖先
+	cmd := exec.Command("git", "merge-base", "--is-ancestor", commitId1, commitId2)
+	cmd.Dir = dirPath
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	return false, fmt.Errorf("GitCommitIsAncestor: %w", err)
+}
+
+// 获取git仓库最初提交的commitId，一般可以作为该仓库的唯一标识
+func GitGetFirstCommitId(dirPath string) (string, error) {
+	cmd := exec.Command("git", "rev-list", "--max-parents=0", "HEAD")
+	cmd.Dir = dirPath
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("GitGetFirstCommitId exec: %w", err)
+	}
+	firstCommitId := strings.TrimSpace(string(out))
+	if firstCommitId == "" {
+		return "", fmt.Errorf("GitGetFirstCommitId empty: %w", err)
+	}
+	return firstCommitId, nil
 }
 
 // 将git ssh地址转换为https地址

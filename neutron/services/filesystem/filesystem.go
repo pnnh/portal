@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -31,4 +32,34 @@ func ResolvePath(path string) (string, error) {
 	}
 
 	return resolvedPath, nil
+}
+
+func CopyFile(src, dst string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer func(sourceFile *os.File) {
+		err = sourceFile.Close()
+	}(sourceFile)
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer func(destinationFile *os.File) {
+		err = destinationFile.Close()
+	}(destinationFile)
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	err = destinationFile.Sync()
+	if err != nil {
+		return fmt.Errorf("failed to sync destination file: %w", err)
+	}
+
+	return nil
 }
