@@ -37,16 +37,17 @@ type MTNoteModel struct {
 	Build       sql.NullString `json:"-"`
 	Url         sql.NullString `json:"-"`
 	Branch      sql.NullString `json:"-"`
-	CommitId    sql.NullString `json:"-"`
-	CommitTime  sql.NullTime   `json:"-"`
-	RepoPath    sql.NullString `json:"-"`
+	Commit      sql.NullString `json:"-" db:"commit"`
+	CommitTime  sql.NullTime   `json:"-" db:"commit_time"`
+	RepoPath    sql.NullString `json:"-" db:"repo_path"`
+	RepoId      sql.NullString `json:"-" db:"repo_id"`
 }
 
 func PGInsertNote(model *MTNoteModel) error {
 	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
-                     version, build, url, branch, commit, commit_time, repo_path)
+                     version, build, url, branch, commit, commit_time, repo_path, repo_id)
 values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url, :branch, 
-       :commit, :commit_time, :repo_path)
+       :commit, :commit_time, :repo_path, :repo_id)
 on conflict (uid)
 do update set title=excluded.title, 
     header=excluded.header,
@@ -65,9 +66,10 @@ do update set title=excluded.title,
 		"build":       model.Build,
 		"url":         model.Url,
 		"branch":      model.Branch,
-		"commit":      model.CommitId,
+		"commit":      model.Commit,
 		"commit_time": model.CommitTime,
 		"repo_path":   model.RepoPath,
+		"repo_id":     model.RepoId,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)

@@ -88,10 +88,11 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 				note.Build = sql.NullString{String: "", Valid: true}
 				note.Url = sql.NullString{String: gitInfo.RemoteUrl, Valid: true}
 				note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
-				note.CommitId = sql.NullString{String: gitInfo.CommitId, Valid: true}
+				note.Commit = sql.NullString{String: gitInfo.CommitId, Valid: true}
 				note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
 				repoPath := strings.TrimPrefix(path, gitInfo.RootPath)
 				note.RepoPath = sql.NullString{String: repoPath, Valid: true}
+				note.RepoId = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
 			}
 			err = notes.PGInsertNote(note)
 			if err != nil {

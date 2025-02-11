@@ -5,8 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"portal/models/notes"
 	"time"
+
+	"portal/models/notes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,10 @@ func NewWebServer() (*WebServer, error) {
 		router:    router,
 		resources: make(map[string]IResource)}
 
-	corsDomain := []string{"http://127.0.0.1:7100", "https://huable.xyz"}
+	corsDomain := []string{
+		"http://127.0.0.1:7100",
+		"http://localhost:7100",
+		"https://huable.xyz"}
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     corsDomain,
