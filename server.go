@@ -107,7 +107,7 @@ func (s *WebServer) Start() error {
 	if err := s.Init(); err != nil {
 		return fmt.Errorf("初始化出错: %w", err)
 	}
-	port := os.Getenv("port")
+	port := os.Getenv("PORT")
 	if len(port) < 1 {
 		port = "8001"
 	}
