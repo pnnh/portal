@@ -90,7 +90,7 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 	logrus.Infoln("sessionBytes: ", string(sessionBytes))
 	sessionText := base64.StdEncoding.EncodeToString(sessionBytes)
 	// accountModel := &models.AccountModel{
-	// 	Urn:          helpers.NewPostId(),
+	// 	Uid:          helpers.NewPostId(),
 	// 	Username:    username,
 	// 	Password:    "",
 	// 	CreateTime:  time.Now(),
@@ -268,7 +268,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 		return
 	}
 	session := &models.SessionModel{
-		Urn:          helpers.NewPostId(),
+		Uid:          helpers.NewPostId(),
 		Content:      "",
 		CreateTime:   time.Now(),
 		UpdateTime:   time.Now(),

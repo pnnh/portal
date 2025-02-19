@@ -7,7 +7,7 @@ import (
 
 // RoleModel table: roles
 type RoleModel struct {
-	Pk          string    `json:"urn"`
+	Pk          string    `json:"uid"`
 	Name        string    `json:"name"`
 	CreateTime  time.Time `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time `json:"update_time" db:"update_time"`

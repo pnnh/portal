@@ -9,7 +9,7 @@ import (
 )
 
 type SessionModel struct {
-	Urn          string    `json:"urn"`
+	Uid          string    `json:"uid"`
 	Content      string    `json:"content"`
 	CreateTime   time.Time `json:"create_time" db:"create_time"`
 	UpdateTime   time.Time `json:"update_time" db:"update_time"`
@@ -31,12 +31,12 @@ type SessionModel struct {
 }
 
 func PutSession(model *SessionModel) error {
-	sqlText := `insert into sessions(urn, content, create_time, update_time, username, type, code,
+	sqlText := `insert into sessions(uid, content, create_time, update_time, username, type, code,
 		client_id, response_type, redirect_uri, scope, state, nonce, id_token, jwt_id, access_token, open_id, company_id, account) 
-	values(:urn, :content, :create_time, :update_time, :username, :type, :code, :client_id, :response_type, :redirect_uri,
+	values(:uid, :content, :create_time, :update_time, :username, :type, :code, :client_id, :response_type, :redirect_uri,
 		:scope, :state, :nonce, :id_token, :jwt_id, :access_token, :open_id, :company_id, :account)`
 
-	sqlParams := map[string]interface{}{"urn": model.Urn, "content": model.Content, "create_time": model.CreateTime,
+	sqlParams := map[string]interface{}{"uid": model.Uid, "content": model.Content, "create_time": model.CreateTime,
 		"update_time": model.UpdateTime, "username": model.Username, "type": model.Type,
 		"code": model.Code, "client_id": model.ClientId, "response_type": model.ResponseType,
 		"redirect_uri": model.RedirectUri, "scope": model.Scope, "state": model.State,
@@ -51,9 +51,9 @@ func PutSession(model *SessionModel) error {
 }
 
 func GetSession(pk string) (*SessionModel, error) {
-	sqlText := `select * from portal.sessions where pk = :urn;`
+	sqlText := `select * from portal.sessions where pk = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": pk}
+	sqlParams := map[string]interface{}{"uid": pk}
 	var sqlResults []*SessionModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -151,13 +151,13 @@ func FindSessionByCode(clientId, code string) (*SessionModel, error) {
 func UpdateSessionToken(id string, accessToken, idToken, jwtId string) error {
 	sqlText := `update portal.sessions set id_token=:id_token, access_token=:access_token, jwt_id=:jwt_id, 
 		update_time=:update_time
-	where pk = :urn;`
+	where pk = :uid;`
 
 	sqlParams := map[string]interface{}{
 		"update_time":  time.Now(),
 		"access_token": accessToken,
 		"jwt_id":       jwtId,
-		"urn":          id,
+		"uid":          id,
 		"id_token":     idToken,
 	}
 

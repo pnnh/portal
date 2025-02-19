@@ -34,7 +34,7 @@ func SigninHandler(gctx *gin.Context) {
 	ipAddr := helpers.GetIpAddress(gctx)
 	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
 	if err != nil || !verifyOk {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("验证出错"))
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Signin验证出错"))
 		return
 	}
 
@@ -54,7 +54,7 @@ func SigninHandler(gctx *gin.Context) {
 	}
 
 	sessionModel := &models.SessionModel{
-		Urn:          helpers.MustUuid(),
+		Uid:          helpers.MustUuid(),
 		Content:      "",
 		CreateTime:   time.Now(),
 		UpdateTime:   time.Now(),
@@ -70,7 +70,7 @@ func SigninHandler(gctx *gin.Context) {
 		IdToken:      "",
 		AccessToken:  "",
 		JwtId:        "",
-		Account:      accountModel.Urn,
+		Account:      accountModel.Uid,
 	}
 	err = models.PutSession(sessionModel)
 	if err != nil {
@@ -84,7 +84,7 @@ func SigninHandler(gctx *gin.Context) {
 		logrus.Errorln("JWT_PRIVATE_KEY 未配置")
 	}
 
-	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Urn)
+	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Uid)
 	if (jwtToken == "") || (err != nil) {
 		logrus.Println("GenerateJwtTokenRs256", err)
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("生成jwtToken错误"))
@@ -96,7 +96,7 @@ func SigninHandler(gctx *gin.Context) {
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,
-		"urn":     sessionModel.Urn,
+		"uid":     sessionModel.Uid,
 	})
 
 	gctx.JSON(http.StatusOK, result)

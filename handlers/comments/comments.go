@@ -33,10 +33,10 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	model.Urn = helpers.MustUuid()
+	model.Uid = helpers.MustUuid()
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
-	model.Creator = accountModel.Urn
+	model.Creator = accountModel.Uid
 	model.Thread = helpers.EmptyUuid()
 	model.Referer = helpers.EmptyUuid()
 	model.IPAddress = helpers.GetIpAddress(gctx)
@@ -52,7 +52,7 @@ func CommentInsertHandler(gctx *gin.Context) {
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,
-		"urn":     model.Urn,
+		"uid":     model.Uid,
 	})
 
 	gctx.JSON(http.StatusOK, result)

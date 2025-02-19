@@ -39,7 +39,7 @@ func (u *WebauthnAccount) WebAuthnID() []byte {
 	// buf := make([]byte, binary.MaxVarintLen64)
 	// binary.PutUvarint(buf, uint64(u.Id))
 	// return buf
-	return []byte(u.Urn)
+	return []byte(u.Uid)
 }
 
 // WebAuthnName returns the user's username
@@ -110,14 +110,14 @@ func (u *WebauthnAccount) CredentialExcludeList() []protocol.CredentialDescripto
 }
 
 func UpdateAccountCredentials(model *WebauthnAccount) error {
-	sqlText := `update accounts set portal.credentials = :credentials where pk = :urn;`
+	sqlText := `update accounts set portal.credentials = :credentials where pk = :uid;`
 
 	credentials, err := model.MarshalCredentials()
 	if err != nil {
 		return fmt.Errorf("MarshalCredentiials: %w", err)
 	}
 
-	sqlParams := map[string]interface{}{"urn": model.Urn, "credentials": credentials}
+	sqlParams := map[string]interface{}{"uid": model.Uid, "credentials": credentials}
 
 	_, err = datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {

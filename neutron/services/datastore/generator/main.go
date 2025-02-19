@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -10,10 +9,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"portal/neutron/services/datastore"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"portal/neutron/services/datastore"
 )
 
 type ModelField struct {
@@ -27,10 +28,10 @@ func main() {
 
 	logrus.SetLevel(logrus.DebugLevel)
 	a, err := os.Getwd()
-	log.Println("dir", a, err)
-	log.Println("args", os.Args)
+	logrus.Println("dir", a, err)
+	logrus.Println("args", os.Args)
 	goFile := os.Getenv("GOFILE")
-	log.Println("goFile", goFile)
+	logrus.Println("goFile", goFile)
 
 	fullPath := ""
 	if goFile == "" {
@@ -38,7 +39,7 @@ func main() {
 	} else {
 		fullPath = a + "/" + goFile
 	}
-	log.Println("goFile", fullPath)
+	logrus.Println("goFile", fullPath)
 
 	if fullPath == "" {
 		log.Fatalln("请指定文件路径")
@@ -70,7 +71,7 @@ import (
 
 	for _, node := range f.Decls {
 		nodeType := reflect.TypeOf(node)
-		log.Println("nodeType", nodeType.String())
+		logrus.Println("nodeType", nodeType.String())
 		switch node.(type) {
 
 		case *ast.GenDecl:

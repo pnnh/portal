@@ -32,7 +32,7 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	}
 	if accountModel == nil {
 		accountModel = &models.AccountModel{
-			Urn:         helpers.NewPostId(),
+			Uid:         helpers.NewPostId(),
 			Username:    username,
 			Password:    "",
 			CreateTime:  time.Now(),
@@ -58,11 +58,11 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	}
 
 	session := &models.SessionModel{
-		Urn:        helpers.MustUuid(),
+		Uid:        helpers.MustUuid(),
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
-		Username:   accountModel.Urn,
+		Username:   accountModel.Uid,
 		Type:       "signup",
 		Code:       helpers.RandNumberRunes(6),
 	}
@@ -82,7 +82,7 @@ func MailSignupBeginHandler(gctx *gin.Context) {
 	// }
 
 	sessionData := map[string]interface{}{
-		"session": session.Urn,
+		"session": session.Uid,
 	}
 
 	result := models.CodeOk.WithData(sessionData)
@@ -111,7 +111,7 @@ func MailSignupFinishHandler(gctx *gin.Context) {
 		return
 	}
 	sessionData := map[string]interface{}{
-		"session": sessionModel.Urn,
+		"session": sessionModel.Uid,
 	}
 
 	result := models.CodeOk.WithData(sessionData)
@@ -147,11 +147,11 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 	}
 
 	session := &models.SessionModel{
-		Urn:        helpers.MustUuid(),
+		Uid:        helpers.MustUuid(),
 		Content:    "",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
-		Username:   accountModel.Urn,
+		Username:   accountModel.Uid,
 		Type:       "signin",
 		Code:       helpers.RandNumberRunes(6),
 	}
@@ -171,7 +171,7 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 	// }
 
 	sessionData := map[string]interface{}{
-		"session": session.Urn,
+		"session": session.Uid,
 	}
 
 	result := models.CodeOk.WithData(sessionData)

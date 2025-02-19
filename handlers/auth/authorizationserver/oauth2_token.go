@@ -61,7 +61,7 @@ func TokenEndpoint(gctx *gin.Context) {
 		return
 	}
 
-	err = models.UpdateSessionToken(session.Urn, accessToken, idTokenExtra, parsedClaims.ID)
+	err = models.UpdateSessionToken(session.Uid, accessToken, idTokenExtra, parsedClaims.ID)
 	if err != nil {
 		logrus.Printf("Error occurred in NewAccessResponse2222: %+v", err)
 		oauth2.WriteAccessError(ctx, rw, accessRequest, err)

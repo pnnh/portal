@@ -10,7 +10,7 @@ import (
 )
 
 type CommentModel struct {
-	Urn         string    `json:"urn"`     // 主键标识
+	Uid         string    `json:"uid"`     // 主键标识
 	Content     string    `json:"content"` // 内容
 	CreateTime  time.Time `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time `json:"update_time" db:"update_time"`
@@ -27,15 +27,15 @@ type CommentModel struct {
 }
 
 func PGInsertComment(model *CommentModel) error {
-	sqlText := `insert into comments(urn, content, create_time, update_time, creator, thread, referer, 
+	sqlText := `insert into comments(uid, content, create_time, update_time, creator, thread, referer, 
         resource, ipaddress, fingerprint, email, nickname, website, status)
-values(:urn, :content, now(), now(), :creator, :thread, :referer, :resource, :ipaddress, :fingerprint, 
+values(:uid, :content, now(), now(), :creator, :thread, :referer, :resource, :ipaddress, :fingerprint, 
        :email, :nickname, :website, 0)
 on conflict (urn)
 do update set content = excluded.content, update_time = now();`
 
 	sqlParams := map[string]interface{}{
-		"urn":         model.Urn,
+		"uid":         model.Uid,
 		"content":     model.Content,
 		"creator":     model.Creator,
 		"thread":      model.Thread,

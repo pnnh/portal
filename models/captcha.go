@@ -9,7 +9,7 @@ import (
 )
 
 type CaptchaModel struct {
-	Pk         string    `json:"urn"`
+	Pk         string    `json:"uid"`
 	Content    string    `json:"content"`
 	CreateTime time.Time `json:"create_time" db:"create_time"`
 	UpdateTime time.Time `json:"update_time" db:"update_time"`
@@ -19,9 +19,9 @@ type CaptchaModel struct {
 
 func PutCaptcha(model *CaptchaModel) error {
 	sqlText := `insert into portal.captcha(pk, content, create_time, checked, update_time,used)
-	values(:urn, :content, :create_time, :checked, :update_time,:used)`
+	values(:uid, :content, :create_time, :checked, :update_time,:used)`
 
-	sqlParams := map[string]interface{}{"urn": model.Pk,
+	sqlParams := map[string]interface{}{"uid": model.Pk,
 		"content": model.Content, "create_time": model.CreateTime,
 		"update_time": model.UpdateTime,
 		"checked":     model.Checked,
@@ -36,9 +36,9 @@ func PutCaptcha(model *CaptchaModel) error {
 }
 
 func FindCaptcha(key string) (*CaptchaModel, error) {
-	sqlText := `select * from portal.captcha where pk = :urn;`
+	sqlText := `select * from portal.captcha where pk = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": key}
+	sqlParams := map[string]interface{}{"uid": key}
 	var sqlResults []*CaptchaModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -58,11 +58,11 @@ func FindCaptcha(key string) (*CaptchaModel, error) {
 
 func UpdateCaptcha(key string, checked int) error {
 	sqlText := `update portal.captcha set checked = :checked, update_time = :update_time 
-	where pk = :urn;`
+	where pk = :uid;`
 
 	sqlParams := map[string]interface{}{
 		"update_time": time.Now(),
-		"urn":         key,
+		"uid":         key,
 		"checked":     checked,
 	}
 
@@ -75,11 +75,11 @@ func UpdateCaptcha(key string, checked int) error {
 
 func UpdateCaptchaUsed(key string, used int) error {
 	sqlText := `update portal.captcha set used = :used, update_time = :update_time 
-	where pk = :urn;`
+	where pk = :uid;`
 
 	sqlParams := map[string]interface{}{
 		"update_time": time.Now(),
-		"urn":         key,
+		"uid":         key,
 		"used":        used,
 	}
 

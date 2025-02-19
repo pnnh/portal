@@ -9,7 +9,7 @@ import (
 )
 
 type OpenidSessionModel struct {
-	Pk         string    `json:"urn"`
+	Pk         string    `json:"uid"`
 	CreateTime time.Time `json:"create_time" db:"create_time"`
 	UpdateTime time.Time `json:"update_time" db:"update_time"`
 	Code       string    `json:"code"`
@@ -18,10 +18,10 @@ type OpenidSessionModel struct {
 
 func PutOpenidSession(model *OpenidSessionModel) error {
 	sqlText := `insert into portal.openid_session(pk, create_time, update_time, code, content)
-		values(:urn, :create_time, :update_time, :code, :content);`
+		values(:uid, :create_time, :update_time, :code, :content);`
 
 	sqlParams := map[string]interface{}{
-		"urn":         model.Pk,
+		"uid":         model.Pk,
 		"create_time": model.CreateTime,
 		"update_time": model.UpdateTime,
 		"code":        model.Code,
@@ -36,10 +36,10 @@ func PutOpenidSession(model *OpenidSessionModel) error {
 }
 
 func DeleteOpenidSession(pk string) error {
-	sqlText := `delete from portal.openid_session where pk = :urn or code = :urn;`
+	sqlText := `delete from portal.openid_session where pk = :uid or code = :uid;`
 
 	sqlParams := map[string]interface{}{
-		"urn": pk,
+		"uid": pk,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
@@ -50,9 +50,9 @@ func DeleteOpenidSession(pk string) error {
 }
 
 func GetOpenidSession(pk string) (*OpenidSessionModel, error) {
-	sqlText := `select * from portal.openid_session where pk = :urn or code = :urn;`
+	sqlText := `select * from portal.openid_session where pk = :uid or code = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": pk}
+	sqlParams := map[string]interface{}{"uid": pk}
 	var sqlResults []*OpenidSessionModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -71,10 +71,10 @@ func GetOpenidSession(pk string) (*OpenidSessionModel, error) {
 }
 
 func UpdateOpenidSession(pk string, content string) error {
-	sqlText := `update portal.openid_session set content = :content where pk = :urn or code = :urn;`
+	sqlText := `update portal.openid_session set content = :content where pk = :uid or code = :uid;`
 
 	sqlParams := map[string]interface{}{
-		"urn":     pk,
+		"uid":     pk,
 		"content": content,
 	}
 

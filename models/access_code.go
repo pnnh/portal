@@ -9,7 +9,7 @@ import (
 )
 
 type AccessCodeModel struct {
-	Pk         string    `json:"urn"`
+	Pk         string    `json:"uid"`
 	CreateTime time.Time `json:"create_time" db:"create_time"`
 	UpdateTime time.Time `json:"update_time" db:"update_time"`
 	Code       string    `json:"code"`
@@ -19,10 +19,10 @@ type AccessCodeModel struct {
 
 func PutAccessCode(model *AccessCodeModel) error {
 	sqlText := `insert into portal.access_code(pk, create_time, update_time, code, content, active)
-		values(:urn, :create_time, :update_time, :code, :content, :active);`
+		values(:uid, :create_time, :update_time, :code, :content, :active);`
 
 	sqlParams := map[string]interface{}{
-		"urn":         model.Pk,
+		"uid":         model.Pk,
 		"create_time": model.CreateTime,
 		"update_time": model.UpdateTime,
 		"code":        model.Code,
@@ -38,10 +38,10 @@ func PutAccessCode(model *AccessCodeModel) error {
 }
 
 func DeleteAccessCode(pk string) error {
-	sqlText := `delete from portal.access_code where pk = :urn or code = :urn;`
+	sqlText := `delete from portal.access_code where pk = :uid or code = :uid;`
 
 	sqlParams := map[string]interface{}{
-		"urn": pk,
+		"uid": pk,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
@@ -52,9 +52,9 @@ func DeleteAccessCode(pk string) error {
 }
 
 func GetAccessCode(pk string) (*AccessCodeModel, error) {
-	sqlText := `select * from portal.access_code where pk = :urn or code = :urn;`
+	sqlText := `select * from portal.access_code where pk = :uid or code = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": pk}
+	sqlParams := map[string]interface{}{"uid": pk}
 	var sqlResults []*AccessCodeModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -73,10 +73,10 @@ func GetAccessCode(pk string) (*AccessCodeModel, error) {
 }
 
 func UpdateAccessCodeStatus(pk string, active int) error {
-	sqlText := `update portal.access_code set active = :active where pk = :urn or code = :urn;`
+	sqlText := `update portal.access_code set active = :active where pk = :uid or code = :uid;`
 
 	sqlParams := map[string]interface{}{
-		"urn":    pk,
+		"uid":    pk,
 		"active": active,
 	}
 

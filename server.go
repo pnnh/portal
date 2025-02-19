@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"portal/models/notes"
 
 	"github.com/gin-contrib/cors"
@@ -37,7 +37,10 @@ func NewWebServer() (*WebServer, error) {
 	corsDomain := []string{
 		"http://127.0.0.1:7100",
 		"http://localhost:7100",
-		"https://huable.xyz"}
+		"https://huable.xyz",
+		"https://www.huable.xyz",
+		"https://phoenix.huable.xyz",
+		"https://portal.huable.xyz"}
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     corsDomain,
@@ -121,7 +124,7 @@ func (s *WebServer) Start() error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Println("启动服务: " + port)
+	logrus.Println("启动服务: " + port)
 	if err := serv.ListenAndServe(); err != nil {
 		return fmt.Errorf("服务出错停止: %w", err)
 	}

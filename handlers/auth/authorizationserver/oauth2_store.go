@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"portal/models"
 
 	quantum_helpers "portal/neutron/helpers"
@@ -98,7 +98,7 @@ func (s *DatabaseStore) CreateOpenIDConnectSession(_ context.Context, authorizeC
 
 	//s.IDSessions[authorizeCode] = requeste
 
-	log.Println("requester:", reflect.TypeOf(requester))
+	logrus.Println("requester:", reflect.TypeOf(requester))
 
 	data, err := json.Marshal(requester)
 	if err != nil {

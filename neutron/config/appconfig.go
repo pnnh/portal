@@ -28,6 +28,7 @@ func InitAppConfig() error {
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
+	logrus.Println("日志级别:", logrus.GetLevel())
 	return nil
 }
 

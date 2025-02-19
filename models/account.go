@@ -17,7 +17,7 @@ import (
 
 // AccountModel 账号模型 table: accounts
 type AccountModel struct {
-	Urn         string    `json:"urn"`      // 主键标识
+	Uid         string    `json:"uid"`      // 主键标识
 	Username    string    `json:"username"` // 账号
 	Password    string    `json:"-"`        // 密码
 	Photo       string    `json:"-"`        // 密码
@@ -35,7 +35,7 @@ type AccountModel struct {
 
 func NewAccountModel(name string, displayName string) *AccountModel {
 	user := &AccountModel{
-		Urn:        helpers.NewPostId(),
+		Uid:        helpers.NewPostId(),
 		Username:   name,
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
@@ -46,9 +46,9 @@ func NewAccountModel(name string, displayName string) *AccountModel {
 }
 
 func GetAccount(pk string) (*AccountModel, error) {
-	sqlText := `select * from portal.accounts where pk = :urn and status = 1;`
+	sqlText := `select * from portal.accounts where pk = :uid and status = 1;`
 
-	sqlParams := map[string]interface{}{"urn": pk}
+	sqlParams := map[string]interface{}{"uid": pk}
 	var sqlResults []*AccountModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -88,9 +88,9 @@ func GetAccountByUsername(username string) (*AccountModel, error) {
 }
 
 func GetAccountBySessionId(sessionId string) (*AccountModel, error) {
-	sqlText := `select a.* from accounts as a join sessions as s on a.urn = s.account where s.urn = :urn limit 1;`
+	sqlText := `select a.* from accounts as a join sessions as s on a.uid = s.account where s.uid = :uid limit 1;`
 
-	sqlParams := map[string]interface{}{"urn": sessionId}
+	sqlParams := map[string]interface{}{"uid": sessionId}
 	var sqlResults []*AccountModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -110,9 +110,9 @@ func GetAccountBySessionId(sessionId string) (*AccountModel, error) {
 
 func PutAccount(model *AccountModel) error {
 	sqlText := `insert into portal.accounts(pk, create_time, update_time, username, password, nickname, status, session)
-	values(:urn, :create_time, :update_time, :username, :password, :nickname, 1, :session)`
+	values(:uid, :create_time, :update_time, :username, :password, :nickname, 1, :session)`
 
-	sqlParams := map[string]interface{}{"urn": model.Urn, "create_time": model.CreateTime, "update_time": model.UpdateTime,
+	sqlParams := map[string]interface{}{"uid": model.Uid, "create_time": model.CreateTime, "update_time": model.UpdateTime,
 		"username": model.Username, "password": model.Password, "nickname": model.Nickname,
 		"session": model.Session}
 
@@ -173,9 +173,9 @@ func UpdateAccountSession(model *AccountModel, sessionData *webauthn.SessionData
 	if model.Session == "" {
 		return fmt.Errorf("session is null")
 	}
-	sqlText := `update portal.accounts set session = :session where pk = :urn;`
+	sqlText := `update portal.accounts set session = :session where pk = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": model.Urn, "session": model.Session}
+	sqlParams := map[string]interface{}{"uid": model.Uid, "session": model.Session}
 
 	_, err = datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
@@ -197,9 +197,9 @@ func UnmarshalWebauthnSession(session string) (*webauthn.SessionData, error) {
 }
 
 func UpdateAccountPassword(pk string, password string) error {
-	sqlText := `update portal.accounts set password = :password where pk = :urn;`
+	sqlText := `update portal.accounts set password = :password where pk = :uid;`
 
-	sqlParams := map[string]interface{}{"urn": pk, "password": password}
+	sqlParams := map[string]interface{}{"uid": pk, "password": password}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
@@ -233,14 +233,14 @@ func CheckAccountExists(username string) (bool, error) {
 }
 
 func EnsureAccount(model *AccountModel) error {
-	sqlText := `insert into accounts(urn, username, password, nickname, create_time, update_time, email, website, photo, fingerprint)
-values (:urn, :username, :password, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
+	sqlText := `insert into accounts(uid, username, password, nickname, create_time, update_time, email, website, photo, fingerprint)
+values (:uid, :username, :password, :nickname, now(), now(), :email, :website, :photo, :fingerprint)
 on conflict (username)
 do update set nickname = excluded.nickname,
     email = excluded.email, update_time = now();`
 
 	sqlParams := map[string]interface{}{
-		"urn":         model.Urn,
+		"uid":         model.Uid,
 		"username":    model.Username,
 		"password":    model.Password,
 		"nickname":    model.Nickname,
