@@ -41,3 +41,31 @@ func Select(dest interface{}, query string, args ...interface{}) error {
 func ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return sqlxdb.ExecContext(ctx, query, args...)
 }
+
+func NewTranscation() (*SqlxTransaction, error) {
+	tx, err := sqlxdb.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("beginx: %w", err)
+	}
+	return NewSqlxTransaction(tx), nil
+}
+
+type SqlxTransaction struct {
+	tx *sqlx.Tx
+}
+
+func NewSqlxTransaction(tx *sqlx.Tx) *SqlxTransaction {
+	return &SqlxTransaction{tx: tx}
+}
+
+func (t *SqlxTransaction) Commit() error {
+	return t.tx.Commit()
+}
+
+func (t *SqlxTransaction) Rollback() error {
+	return t.tx.Rollback()
+}
+
+func (t *SqlxTransaction) NamedQuery(query string, arg interface{}) (*sqlx.Rows, error) {
+	return t.tx.NamedQuery(query, arg)
+}

@@ -1,13 +1,29 @@
 package notes
 
 import (
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"portal/models"
+	"portal/neutron/helpers"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
-	selectResult, err := SelectNotes(1, 60)
+	keyword := gctx.Query("keyword")
+	page := gctx.Query("page")
+	size := gctx.Query("size")
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		pageInt = 1
+	}
+	sizeInt, err := strconv.Atoi(size)
+	if err != nil {
+		sizeInt = 10
+	}
+	selectResult, err := SelectNotes(keyword, pageInt, sizeInt)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
 		return
@@ -33,7 +49,34 @@ func NoteGetHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
+type ViewerInsertRequest struct {
+	ClientIp string `json:"clientIp"`
+}
+
 func NoteViewerInsertHandler(gctx *gin.Context) {
+	uid := gctx.Param("uid")
+	if uid == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		return
+	}
+	request := &ViewerInsertRequest{}
+	if err := gctx.ShouldBindJSON(request); err != nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		return
+	}
+
+	model := &MTViewerModel{
+		Uid:        helpers.MustUuid(),
+		Target:     uid,
+		Address:    request.ClientIp,
+		CreateTime: time.Now(),
+		UpdateTime: time.Now(),
+	}
+	err := PGInsertViewer(model)
+	if err != nil && !errors.Is(err, ErrViewerLogExists) {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		return
+	}
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,
 	})
