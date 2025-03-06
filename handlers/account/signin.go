@@ -41,7 +41,7 @@ func SigninHandler(gctx *gin.Context) {
 	accountModel, err := models.GetAccountByUsername(request.Username)
 	if err != nil {
 		logrus.Println("GetAccountByUsername", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错"))
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错a"))
 		return
 	}
 	if accountModel == nil {

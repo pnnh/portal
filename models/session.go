@@ -28,20 +28,23 @@ type SessionModel struct {
 	OpenId       string    `json:"open_id" db:"open_id"`
 	CompanyId    string    `json:"company_id" db:"company_id"`
 	Account      string    `json:"account"`
+	Address      string    `json:"address"`
 }
 
 func PutSession(model *SessionModel) error {
 	sqlText := `insert into sessions(uid, content, create_time, update_time, username, type, code,
-		client_id, response_type, redirect_uri, scope, state, nonce, id_token, jwt_id, access_token, open_id, company_id, account) 
+		client_id, response_type, redirect_uri, scope, state, nonce, id_token, jwt_id, access_token, open_id, company_id, 
+                     account, address) 
 	values(:uid, :content, :create_time, :update_time, :username, :type, :code, :client_id, :response_type, :redirect_uri,
-		:scope, :state, :nonce, :id_token, :jwt_id, :access_token, :open_id, :company_id, :account)`
+		:scope, :state, :nonce, :id_token, :jwt_id, :access_token, :open_id, :company_id, :account, :address)`
 
 	sqlParams := map[string]interface{}{"uid": model.Uid, "content": model.Content, "create_time": model.CreateTime,
 		"update_time": model.UpdateTime, "username": model.Username, "type": model.Type,
 		"code": model.Code, "client_id": model.ClientId, "response_type": model.ResponseType,
 		"redirect_uri": model.RedirectUri, "scope": model.Scope, "state": model.State,
 		"nonce": model.Nonce, "id_token": model.IdToken, "jwt_id": model.JwtId,
-		"access_token": model.AccessToken, "open_id": model.OpenId, "company_id": model.CompanyId, "account": model.Account}
+		"access_token": model.AccessToken, "open_id": model.OpenId, "company_id": model.CompanyId,
+		"account": model.Account, "address": model.Address}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
@@ -50,10 +53,33 @@ func PutSession(model *SessionModel) error {
 	return nil
 }
 
-func GetSession(pk string) (*SessionModel, error) {
-	sqlText := `select * from portal.sessions where pk = :uid;`
+func GetSessionById(uid string) (*SessionModel, error) {
+	sqlText := `select * from portal.sessions where uid = :uid;`
 
-	sqlParams := map[string]interface{}{"uid": pk}
+	sqlParams := map[string]interface{}{"uid": uid}
+	var sqlResults []*SessionModel
+
+	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	for _, v := range sqlResults {
+		return v, nil
+	}
+
+	return nil, nil
+}
+
+// 根据访问用户的地址信息获取匿名会话信息
+func GetSessionByAddress(address string) (*SessionModel, error) {
+	sqlText := `select * from sessions where address = :address and update_time > :nowDay;`
+
+	nowYear, nowMonth, nowDay := time.Now().AddDate(0, 0, -1).Date()
+	sqlParams := map[string]interface{}{"address": address, "nowDay": time.Date(nowYear, nowMonth, nowDay, 0, 0, 0, 0, time.UTC)}
 	var sqlResults []*SessionModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)

@@ -10,10 +10,10 @@ import (
 )
 
 func UserinfoHandler(gctx *gin.Context) {
-	accountModel, err := business.FindUserFromCookie(gctx)
+	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Println("GetAccountBySessionId", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错"))
+		logrus.Warnln("UserinfoHandler", err)
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if accountModel == nil {

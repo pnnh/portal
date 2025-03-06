@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"portal/models"
 	"portal/neutron/helpers"
 )
@@ -71,11 +72,17 @@ func NoteViewerInsertHandler(gctx *gin.Context) {
 		Address:    request.ClientIp,
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
+		Class:      "note",
 	}
-	err := PGInsertViewer(model)
-	if err != nil && !errors.Is(err, ErrViewerLogExists) {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+	opErr, itemErrs := PGInsertViewer(model)
+	if opErr != nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(opErr))
 		return
+	}
+	for key, item := range itemErrs {
+		if !errors.Is(item, ErrViewerLogExists) {
+			logrus.Warnln("NoteViewerInsertHandler", key, item)
+		}
 	}
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,

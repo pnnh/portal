@@ -24,6 +24,7 @@ type CommentModel struct {
 	EMail       string    `json:"email"`
 	Nickname    string    `json:"nickname"`
 	Website     string    `json:"website"`
+	Discover    int       `json:"discover"`
 }
 
 func PGInsertComment(model *CommentModel) error {
@@ -31,7 +32,7 @@ func PGInsertComment(model *CommentModel) error {
         resource, ipaddress, fingerprint, email, nickname, website, status)
 values(:uid, :content, now(), now(), :creator, :thread, :referer, :resource, :ipaddress, :fingerprint, 
        :email, :nickname, :website, 0)
-on conflict (urn)
+on conflict (uid)
 do update set content = excluded.content, update_time = now();`
 
 	sqlParams := map[string]interface{}{
@@ -58,7 +59,8 @@ do update set content = excluded.content, update_time = now();`
 func SelectComments(resource string, page int, size int) (*SelectData, error) {
 
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from comments where status = 1 and resource = :resource order by create_time desc `
+	baseSqlText := ` select * from comments where resource = :resource and (status = 1 or discover is null or discover <= 10) 
+                        order by create_time desc `
 
 	pageSqlText := baseSqlText + ` offset :offset limit :limit; `
 	pageSqlParams := map[string]interface{}{

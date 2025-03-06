@@ -33,6 +33,22 @@ type AccountModel struct {
 	Fingerprint string    `json:"fingerprint"`
 }
 
+var AnonymousAccount = &AccountModel{
+	Uid:         "00000000-0000-0000-0000-000000000000",
+	Username:    "anonymous",
+	Password:    "",
+	CreateTime:  time.Unix(0, 0),
+	UpdateTime:  time.Unix(0, 0),
+	Nickname:    "匿名用户",
+	EMail:       "",
+	Credentials: "",
+	Session:     "",
+	Description: "",
+	Status:      0,
+	Website:     "",
+	Fingerprint: "",
+}
+
 func NewAccountModel(name string, displayName string) *AccountModel {
 	user := &AccountModel{
 		Uid:        helpers.NewPostId(),
@@ -45,10 +61,14 @@ func NewAccountModel(name string, displayName string) *AccountModel {
 	return user
 }
 
-func GetAccount(pk string) (*AccountModel, error) {
-	sqlText := `select * from portal.accounts where pk = :uid and status = 1;`
+func GetAccount(uid string) (*AccountModel, error) {
+	// 匿名用户
+	if uid == "00000000-0000-0000-0000-000000000000" {
+		return AnonymousAccount, nil
+	}
+	sqlText := `select * from portal.accounts where uid = :uid;`
 
-	sqlParams := map[string]interface{}{"uid": pk}
+	sqlParams := map[string]interface{}{"uid": uid}
 	var sqlResults []*AccountModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)
@@ -88,6 +108,7 @@ func GetAccountByUsername(username string) (*AccountModel, error) {
 }
 
 func GetAccountBySessionId(sessionId string) (*AccountModel, error) {
+
 	sqlText := `select a.* from accounts as a join sessions as s on a.uid = s.account where s.uid = :uid limit 1;`
 
 	sqlParams := map[string]interface{}{"uid": sessionId}

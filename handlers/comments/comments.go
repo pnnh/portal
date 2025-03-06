@@ -1,6 +1,7 @@
 package comments
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"portal/business"
 	"portal/models"
+	"portal/models/notes"
 	"portal/neutron/helpers"
 )
 
@@ -22,10 +24,10 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	accountModel, err := business.FindUserFromCookie(gctx)
+	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Println("GetAccountBySessionId", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错"))
+		logrus.Warnln("CommentInsertHandler", err)
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil {
@@ -71,6 +73,32 @@ func CommentSelectHandler(gctx *gin.Context) {
 		return
 	}
 	responseResult := models.CodeOk.WithData(selectResult)
+
+	addr := helpers.GetIpAddress(gctx)
+	commentViewers := make([]*notes.MTViewerModel, 0)
+	for _, item := range selectResult.Range {
+		comment := item.(*models.CommentModel)
+		model := &notes.MTViewerModel{
+			Uid:        helpers.MustUuid(),
+			Target:     comment.Uid,
+			Address:    addr,
+			CreateTime: time.Now(),
+			UpdateTime: time.Now(),
+			Class:      "comment",
+		}
+		commentViewers = append(commentViewers, model)
+	}
+
+	opErr, itemErrs := notes.PGInsertViewer(commentViewers...)
+	if opErr != nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(opErr))
+		return
+	}
+	for key, item := range itemErrs {
+		if !errors.Is(item, notes.ErrViewerLogExists) {
+			logrus.Warnln("CommentSelectHandler", key, item)
+		}
+	}
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

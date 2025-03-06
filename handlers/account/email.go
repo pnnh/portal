@@ -97,7 +97,7 @@ func MailSignupFinishHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("code或session为空"))
 		return
 	}
-	sessionModel, err := models.GetSession(session)
+	sessionModel, err := models.GetSessionById(session)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResult(err))
 		return
@@ -186,7 +186,7 @@ func MailSigninFinishHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("code或session为空"))
 		return
 	}
-	sessionModel, err := models.GetSession(session)
+	sessionModel, err := models.GetSessionById(session)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "获取session出错"))
 		return
