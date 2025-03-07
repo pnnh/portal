@@ -54,7 +54,7 @@ func PutSession(model *SessionModel) error {
 }
 
 func GetSessionById(uid string) (*SessionModel, error) {
-	sqlText := `select * from portal.sessions where uid = :uid;`
+	sqlText := `select * from sessions where uid = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": uid}
 	var sqlResults []*SessionModel
@@ -99,7 +99,7 @@ func GetSessionByAddress(address string) (*SessionModel, error) {
 
 func FindSessionByJwtId(clientId, username, jwtId string) (*SessionModel, error) {
 
-	sqlText := `select * from portal.sessions where client_id = :client_id and username = :username and jwt_id = :jwt_id;`
+	sqlText := `select * from sessions where client_id = :client_id and username = :username and jwt_id = :jwt_id;`
 
 	sqlParams := map[string]interface{}{
 		"client_id": clientId,
@@ -125,7 +125,7 @@ func FindSessionByJwtId(clientId, username, jwtId string) (*SessionModel, error)
 }
 
 func FindSessionByAccessToken(clientId, accessToken string) (*SessionModel, error) {
-	sqlText := `select * from portal.sessions where client_id = :client_id and access_token = :access_token;`
+	sqlText := `select * from sessions where client_id = :client_id and access_token = :access_token;`
 
 	sqlParams := map[string]interface{}{
 		"client_id":    clientId,
@@ -150,7 +150,7 @@ func FindSessionByAccessToken(clientId, accessToken string) (*SessionModel, erro
 }
 
 func FindSessionByCode(clientId, code string) (*SessionModel, error) {
-	sqlText := `select * from portal.sessions where client_id = :client_id and code = :code;`
+	sqlText := `select * from sessions where client_id = :client_id and code = :code;`
 
 	sqlParams := map[string]interface{}{
 		"client_id": clientId,
@@ -175,7 +175,7 @@ func FindSessionByCode(clientId, code string) (*SessionModel, error) {
 }
 
 func UpdateSessionToken(id string, accessToken, idToken, jwtId string) error {
-	sqlText := `update portal.sessions set id_token=:id_token, access_token=:access_token, jwt_id=:jwt_id, 
+	sqlText := `update sessions set id_token=:id_token, access_token=:access_token, jwt_id=:jwt_id, 
 		update_time=:update_time
 	where pk = :uid;`
 

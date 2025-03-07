@@ -18,7 +18,7 @@ type CaptchaModel struct {
 }
 
 func PutCaptcha(model *CaptchaModel) error {
-	sqlText := `insert into portal.captcha(pk, content, create_time, checked, update_time,used)
+	sqlText := `insert into captcha(pk, content, create_time, checked, update_time,used)
 	values(:uid, :content, :create_time, :checked, :update_time,:used)`
 
 	sqlParams := map[string]interface{}{"uid": model.Pk,
@@ -36,7 +36,7 @@ func PutCaptcha(model *CaptchaModel) error {
 }
 
 func FindCaptcha(key string) (*CaptchaModel, error) {
-	sqlText := `select * from portal.captcha where pk = :uid;`
+	sqlText := `select * from captcha where pk = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": key}
 	var sqlResults []*CaptchaModel
@@ -57,7 +57,7 @@ func FindCaptcha(key string) (*CaptchaModel, error) {
 }
 
 func UpdateCaptcha(key string, checked int) error {
-	sqlText := `update portal.captcha set checked = :checked, update_time = :update_time 
+	sqlText := `update captcha set checked = :checked, update_time = :update_time 
 	where pk = :uid;`
 
 	sqlParams := map[string]interface{}{
@@ -74,7 +74,7 @@ func UpdateCaptcha(key string, checked int) error {
 }
 
 func UpdateCaptchaUsed(key string, used int) error {
-	sqlText := `update portal.captcha set used = :used, update_time = :update_time 
+	sqlText := `update captcha set used = :used, update_time = :update_time 
 	where pk = :uid;`
 
 	sqlParams := map[string]interface{}{

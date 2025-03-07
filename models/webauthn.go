@@ -110,7 +110,7 @@ func (u *WebauthnAccount) CredentialExcludeList() []protocol.CredentialDescripto
 }
 
 func UpdateAccountCredentials(model *WebauthnAccount) error {
-	sqlText := `update accounts set portal.credentials = :credentials where pk = :uid;`
+	sqlText := `update accounts set credentials = :credentials where pk = :uid;`
 
 	credentials, err := model.MarshalCredentials()
 	if err != nil {

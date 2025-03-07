@@ -91,7 +91,7 @@ func (c *ClientModel) GetResponseTypes() fosite.Arguments {
 func GetClient(id string) (*ClientModel, error) {
 	sqlText := `select pk, id, secret, rotated_secrets, redirect_uris, response_types, grant_types, scopes,
 		audience, public
-	from portal.applications where id = :id;`
+	from applications where id = :id;`
 
 	sqlParams := map[string]interface{}{"id": id}
 	var sqlResults []*ApplicationModel

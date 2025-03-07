@@ -8,22 +8,30 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"portal/business"
+	"portal/business/cloudflare"
 	"portal/models"
 	"portal/models/notes"
 	"portal/neutron/helpers"
 )
 
 type CommentInsertRequest struct {
+	cloudflare.TurnstileModel
 	models.CommentModel
 }
 
 func CommentInsertHandler(gctx *gin.Context) {
-	model := &CommentInsertRequest{}
-	if err := gctx.ShouldBindJSON(model); err != nil {
+	request := &CommentInsertRequest{}
+	if err := gctx.ShouldBindJSON(request); err != nil {
 		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
 		return
 	}
 
+	ipAddr := helpers.GetIpAddress(gctx)
+	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
+	if err != nil || !verifyOk {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Turnstile验证出错"))
+		return
+	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("CommentInsertHandler", err)
@@ -35,18 +43,18 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	model.Uid = helpers.MustUuid()
-	model.CreateTime = time.Now().UTC()
-	model.UpdateTime = time.Now().UTC()
-	model.Creator = accountModel.Uid
-	model.Thread = helpers.EmptyUuid()
-	model.Referer = helpers.EmptyUuid()
-	model.IPAddress = helpers.GetIpAddress(gctx)
-	model.EMail = accountModel.EMail
-	model.Nickname = accountModel.Nickname
-	model.Website = accountModel.Website
+	request.Uid = helpers.MustUuid()
+	request.CreateTime = time.Now().UTC()
+	request.UpdateTime = time.Now().UTC()
+	request.Creator = accountModel.Uid
+	request.Thread = helpers.EmptyUuid()
+	request.Referer = helpers.EmptyUuid()
+	request.IPAddress = helpers.GetIpAddress(gctx)
+	request.EMail = accountModel.EMail
+	request.Nickname = accountModel.Nickname
+	request.Website = accountModel.Website
 
-	err = models.PGInsertComment(&model.CommentModel)
+	err = models.PGInsertComment(&request.CommentModel)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入评论出错"))
 		return
@@ -54,7 +62,7 @@ func CommentInsertHandler(gctx *gin.Context) {
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,
-		"uid":     model.Uid,
+		"uid":     request.Uid,
 	})
 
 	gctx.JSON(http.StatusOK, result)

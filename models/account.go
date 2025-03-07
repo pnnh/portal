@@ -66,7 +66,7 @@ func GetAccount(uid string) (*AccountModel, error) {
 	if uid == "00000000-0000-0000-0000-000000000000" {
 		return AnonymousAccount, nil
 	}
-	sqlText := `select * from portal.accounts where uid = :uid;`
+	sqlText := `select * from accounts where uid = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": uid}
 	var sqlResults []*AccountModel
@@ -130,7 +130,7 @@ func GetAccountBySessionId(sessionId string) (*AccountModel, error) {
 }
 
 func PutAccount(model *AccountModel) error {
-	sqlText := `insert into portal.accounts(pk, create_time, update_time, username, password, nickname, status, session)
+	sqlText := `insert into accounts(pk, create_time, update_time, username, password, nickname, status, session)
 	values(:uid, :create_time, :update_time, :username, :password, :nickname, 1, :session)`
 
 	sqlParams := map[string]interface{}{"uid": model.Uid, "create_time": model.CreateTime, "update_time": model.UpdateTime,
@@ -145,7 +145,7 @@ func PutAccount(model *AccountModel) error {
 }
 
 func SelectAccounts(offset int, limit int) ([]*AccountModel, error) {
-	sqlText := `select * from portal.accounts offset :offset limit :limit;`
+	sqlText := `select * from accounts offset :offset limit :limit;`
 
 	sqlParams := map[string]interface{}{"offset": offset, "limit": limit}
 	var sqlResults []*AccountModel
@@ -162,7 +162,7 @@ func SelectAccounts(offset int, limit int) ([]*AccountModel, error) {
 }
 
 func CountAccounts() (int64, error) {
-	sqlText := `select count(1) as count from portal.accounts;`
+	sqlText := `select count(1) as count from accounts;`
 
 	sqlParams := map[string]interface{}{}
 	var sqlResults []struct {
@@ -194,7 +194,7 @@ func UpdateAccountSession(model *AccountModel, sessionData *webauthn.SessionData
 	if model.Session == "" {
 		return fmt.Errorf("session is null")
 	}
-	sqlText := `update portal.accounts set session = :session where pk = :uid;`
+	sqlText := `update accounts set session = :session where pk = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": model.Uid, "session": model.Session}
 
@@ -218,7 +218,7 @@ func UnmarshalWebauthnSession(session string) (*webauthn.SessionData, error) {
 }
 
 func UpdateAccountPassword(pk string, password string) error {
-	sqlText := `update portal.accounts set password = :password where pk = :uid;`
+	sqlText := `update accounts set password = :password where pk = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": pk, "password": password}
 
