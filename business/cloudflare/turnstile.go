@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/sirupsen/logrus"
-	"portal/neutron/config"
+	"portal/quark/neutron/config"
 )
 
 type TurnstileModel struct {

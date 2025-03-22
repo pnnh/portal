@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"portal/models"
 
-	quantum_helpers "portal/neutron/helpers"
+	quantum_helpers "portal/quark/neutron/helpers"
 
 	"github.com/go-jose/go-jose/v3"
 

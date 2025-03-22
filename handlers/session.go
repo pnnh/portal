@@ -6,7 +6,7 @@ import (
 
 	"portal/handlers/auth/authorizationserver"
 	"portal/models"
-	"portal/neutron/helpers"
+	"portal/quark/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 )

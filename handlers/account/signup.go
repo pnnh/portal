@@ -9,8 +9,8 @@ import (
 	"portal/business"
 	"portal/business/cloudflare"
 	"portal/models"
-	"portal/neutron/config"
-	"portal/neutron/helpers"
+	"portal/quark/neutron/config"
+	"portal/quark/neutron/helpers"
 )
 
 type SignupRequest struct {

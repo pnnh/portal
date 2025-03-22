@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"portal/models"
-	"portal/neutron/helpers"
+	"portal/quark/neutron/helpers"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"portal/neutron/config"
+	"portal/quark/neutron/config"
 
 	"github.com/sirupsen/logrus"
 

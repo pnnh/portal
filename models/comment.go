@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"portal/neutron/helpers"
-	"portal/neutron/services/datastore"
+	"portal/quark/neutron/helpers"
+	"portal/quark/neutron/services/datastore"
 )
 
 type CommentModel struct {

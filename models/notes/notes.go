@@ -7,8 +7,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"portal/models"
-	"portal/neutron/helpers"
-	"portal/neutron/services/datastore"
+	"portal/quark/neutron/helpers"
+	"portal/quark/neutron/services/datastore"
 )
 
 type MTNoteMatter struct {

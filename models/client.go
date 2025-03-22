@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"portal/neutron/services/datastore"
+	"portal/quark/neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/fosite"

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"portal/neutron/config"
-	"portal/neutron/services/datastore"
+	"portal/quark/neutron/config"
+	"portal/quark/neutron/services/datastore"
 )
 
 func main() {
