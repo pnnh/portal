@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"portal/quark/neutron/helpers"
-	"portal/quark/neutron/services/datastore"
+	"portal/neutron/helpers"
+	"portal/neutron/services/datastore"
 
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/jmoiron/sqlx"

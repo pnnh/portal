@@ -3,9 +3,9 @@ package authorizationserver
 import (
 	// "encoding/base64"
 	"github.com/gin-gonic/gin"
-	// "portal/quark/neutron/helpers"
+	// "portal/neutron/helpers"
 	// "portal/models"
-	// "portal/quark/neutron/config"
+	// "portal/neutron/config"
 	// "github.com/sirupsen/logrus"
 	// "net/http"
 )

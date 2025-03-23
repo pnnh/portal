@@ -6,7 +6,7 @@ import (
 	// "log"
 
 	"fmt"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	// "github.com/ory/fosite/handler/openid"

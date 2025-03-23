@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	"portal/models"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ory/fosite"

@@ -11,8 +11,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"portal/models"
-	"portal/quark/neutron/config"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/config"
+	"portal/neutron/helpers"
 )
 
 const AuthCookieName = "PT"

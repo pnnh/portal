@@ -12,8 +12,8 @@ import (
 
 	"portal/models"
 
-	"portal/quark/neutron/config"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/config"
+	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-webauthn/webauthn/protocol"

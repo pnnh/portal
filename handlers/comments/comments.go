@@ -11,7 +11,7 @@ import (
 	"portal/business/cloudflare"
 	"portal/models"
 	"portal/models/notes"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/helpers"
 )
 
 type CommentInsertRequest struct {

@@ -10,9 +10,9 @@ import (
 	"github.com/adrg/frontmatter"
 	"github.com/sirupsen/logrus"
 	"portal/models/notes"
-	"portal/quark/neutron/config"
-	"portal/quark/neutron/helpers"
-	"portal/quark/neutron/services/filesystem"
+	"portal/neutron/config"
+	"portal/neutron/helpers"
+	"portal/neutron/services/filesystem"
 	"portal/services/githelper"
 )
 

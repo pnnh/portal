@@ -9,8 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"portal/models/repo"
-	"portal/quark/neutron/config"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/config"
+	"portal/neutron/helpers"
 	"portal/services/githelper"
 )
 

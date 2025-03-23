@@ -2,3 +2,6 @@
 	path = quark
 	url = git@github.com:pnnh/quark.git
 	branch = main
+[submodule "neutron"]
+	path = neutron
+	url = git@github.com:pnnh/neutron.git

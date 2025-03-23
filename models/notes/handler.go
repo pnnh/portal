@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"portal/models"
-	"portal/quark/neutron/helpers"
+	"portal/neutron/helpers"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
