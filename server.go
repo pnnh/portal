@@ -7,7 +7,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"portal/models/images"
 	"portal/models/notes"
+	"portal/neutron/config"
+	"portal/neutron/services/filesystem"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -93,10 +96,23 @@ func (s *WebServer) Init() error {
 	//s.router.GET("/api/go_captcha_data", captcha.GetCaptchaData)
 	//s.router.POST("/api/go_captcha_check_data", captcha.CheckCaptcha)
 
+	s.router.Use(gin.Recovery())
+	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
+	if !ok || storageUrl == "" {
+		return fmt.Errorf("STORAGE_URL 未配置2")
+	}
+	storagePath, err := filesystem.ResolvePath(storageUrl)
+	if err != nil {
+		return fmt.Errorf("解析路径失败: %w", err)
+	}
+	s.router.Static("/storage", storagePath)
+
 	s.router.POST("/comments", comments.CommentInsertHandler)
 	s.router.GET("/comments", comments.CommentSelectHandler)
 	s.router.GET("/articles", notes.NoteSelectHandler)
 	s.router.GET("/articles/:uid", notes.NoteGetHandler)
+	s.router.GET("/images", images.ImageSelectHandler)
+	s.router.GET("/images/:uid", images.ImageGetHandler)
 	s.router.POST("/articles/:uid/viewer", notes.NoteViewerInsertHandler)
 	s.router.POST("/account/signup", account.SignupHandler)
 	s.router.POST("/account/signin", account.SigninHandler)

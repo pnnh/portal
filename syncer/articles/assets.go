@@ -1,4 +1,4 @@
-package main
+package articles
 
 import (
 	"fmt"
@@ -11,17 +11,18 @@ import (
 	"portal/models/repo"
 	"portal/neutron/config"
 	"portal/neutron/helpers"
+	"portal/neutron/services/filesystem"
 	"portal/services/githelper"
 )
 
 type SyncJob struct {
 	RepoRootPath string
 	GitInfo      *githelper.GitInfo
-	filePorter   *FilePorter
+	filePorter   *filesystem.FilePorter
 	ignoreHelper *githelper.GitIgnoreHelper
 }
 
-func NewSyncJob(repoPath string, filePorter *FilePorter) (*SyncJob, error) {
+func NewSyncJob(repoPath string, filePorter *filesystem.FilePorter) (*SyncJob, error) {
 	gitInfo, err := githelper.GitInfoGet(repoPath)
 	if err != nil {
 		logrus.Println("获取git信息失败: ", repoPath, err)
@@ -156,17 +157,15 @@ func (j *SyncJob) CopyFiles() (int, error) {
 type RepoWorker struct {
 	repoChan   chan string
 	repoJobMap map[string]*SyncJob
-	filePorter *FilePorter
+	filePorter *filesystem.FilePorter
 }
 
 func NewRepoWorker() (*RepoWorker, error) {
-
-	sourceUrl, ok := config.GetConfiguration("STORAGE_URL")
-	if !ok || sourceUrl == nil {
-		logrus.Errorln("STORAGE_URL 未配置")
-		return nil, fmt.Errorf("STORAGE_URL 未配置")
+	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
+	if !ok || storageUrl == "" {
+		logrus.Fatalln("STORAGE_URL 未配置")
 	}
-	filePorter, err := NewFilePorter()
+	filePorter, err := filesystem.NewFilePorter(storageUrl)
 	if err != nil {
 		logrus.Errorln("初始化FilePorter失败", err)
 		return nil, fmt.Errorf("初始化FilePorter失败")
