@@ -43,7 +43,7 @@ func (j *SyncJob) Sync() {
 		logrus.Println("工作区不干净跳过同步: ", j.RepoRootPath)
 		return
 	}
-	repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.FirstCommitId, j.GitInfo.Branch)
+	repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.RepoId, j.GitInfo.Branch)
 	if err != nil {
 		logrus.Fatalln("获取repo sync info失败: ", j.RepoRootPath, err)
 		return
@@ -69,7 +69,7 @@ func (j *SyncJob) Sync() {
 		Uid:          helpers.MustUuid(),
 		LastCommitId: j.GitInfo.CommitId,
 		Branch:       j.GitInfo.Branch,
-		RepoId:       j.GitInfo.FirstCommitId,
+		RepoId:       j.GitInfo.RepoId,
 	}
 	err = repo.PGInsertOrUpdateRepoSyncInfo(repoSyncInfo)
 	if err != nil {
@@ -114,9 +114,10 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 		logrus.Println("ignore file: ", path)
 		return nil
 	}
+
 	logrus.Println("matchResult: ", matchResult)
 	targetPath := strings.TrimPrefix(path, j.GitInfo.RootPath)
-	targetPath = fmt.Sprintf("%s/%s%s", j.GitInfo.FirstCommitId, j.GitInfo.Branch, targetPath)
+	targetPath = fmt.Sprintf("%s/%s%s", j.GitInfo.RepoId, j.GitInfo.Branch, targetPath)
 	fullTargetPath, err := j.filePorter.CopyFile(path, targetPath)
 	if err != nil {
 		logrus.Println("CopyFile: ", err)

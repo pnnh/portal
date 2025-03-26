@@ -111,6 +111,7 @@ func (s *WebServer) Init() error {
 	s.router.GET("/comments", comments.CommentSelectHandler)
 	s.router.GET("/articles", notes.NoteSelectHandler)
 	s.router.GET("/articles/:uid", notes.NoteGetHandler)
+	s.router.GET("/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/images", images.ImageSelectHandler)
 	s.router.GET("/images/:uid", images.ImageGetHandler)
 	s.router.POST("/articles/:uid/viewer", notes.NoteViewerInsertHandler)

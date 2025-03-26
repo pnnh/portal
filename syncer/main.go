@@ -61,6 +61,6 @@ func main() {
 			return
 		}
 		articleWorker.StartWork()
-		time.Sleep(time.Minute * 5)
+		time.Sleep(time.Minute * 120)
 	}
 }

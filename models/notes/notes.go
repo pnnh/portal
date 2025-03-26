@@ -166,3 +166,12 @@ func PGGetNote(uid string) (*MTNoteModel, error) {
 	}
 	return nil, nil
 }
+
+type MTNoteFileModel struct {
+	Title       string `json:"title"`
+	Path        string `json:"path"`
+	IsDir       bool   `json:"is_dir"`
+	IsText      bool   `json:"is_text"`
+	IsImage     bool   `json:"is_image"`
+	StoragePath string `json:"storage_path"`
+}

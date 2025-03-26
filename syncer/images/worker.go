@@ -50,7 +50,8 @@ func (w *SyncImagesWorker) visitFile(path string, info os.FileInfo, err error) e
 	if info.IsDir() {
 		return nil
 	}
-	if !filesystem.IsImageFile(path) {
+	extName := strings.Trim(strings.ToLower(filepath.Ext(path)), " ")
+	if !filesystem.IsImageFile(extName) {
 		return nil
 	}
 	if strings.Index(path, ".imagechannel") < 0 {
@@ -64,7 +65,6 @@ func (w *SyncImagesWorker) visitFile(path string, info os.FileInfo, err error) e
 	if err != nil {
 		return fmt.Errorf("helpers.StringToMD5UUID(%q): %v", path, err)
 	}
-	extName := filepath.Ext(relativePath)
 	note := &images.MTImageModel{
 		Uid:         uid,
 		Title:       info.Name(),

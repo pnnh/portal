@@ -82,6 +82,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 				Title:       matter.Title,
 				Body:        string(rest),
 				Description: matter.Description,
+				Status:      1,
 			}
 			if gitInfo != nil {
 				note.Version = sql.NullString{String: gitInfo.CommitId, Valid: true}
@@ -92,7 +93,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 				note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
 				repoPath := strings.TrimPrefix(path, gitInfo.RootPath)
 				note.RepoPath = sql.NullString{String: repoPath, Valid: true}
-				note.RepoId = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
+				note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
 			}
 			err = notes.PGInsertNote(note)
 			if err != nil {
