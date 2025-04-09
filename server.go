@@ -40,6 +40,7 @@ func NewWebServer() (*WebServer, error) {
 	corsDomain := []string{
 		"http://127.0.0.1:7100",
 		"http://localhost:7100",
+		"http://localhost:5173",
 		"https://huable.xyz",
 		"https://www.huable.xyz",
 		"https://phoenix.huable.xyz",
