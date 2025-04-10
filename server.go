@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
@@ -58,9 +60,80 @@ func NewWebServer() (*WebServer, error) {
 	return server, nil
 }
 
+func suzakuProxy(c *gin.Context) {
+
+	defer func() {
+		if p := recover(); p != nil {
+			logrus.Errorln("suzakuProxy panic: ", p)
+		}
+	}()
+	remote, err := url.Parse("http://127.0.0.1:7102")
+	if err != nil {
+		logrus.Fatalln("解析远程地址失败: ", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+	proxy.Director = func(req *http.Request) {
+		req.Header = c.Request.Header
+		req.Host = remote.Host
+		req.URL.Scheme = remote.Scheme
+		req.URL.Host = remote.Host
+		req.URL.Path = "/suzaku" + c.Param("proxyPath")
+	}
+
+	proxy.ServeHTTP(c.Writer, c.Request)
+}
+
+func lightningProxy(c *gin.Context) {
+
+	defer func() {
+		if p := recover(); p != nil {
+			logrus.Errorln("lightningProxy panic: ", p)
+		}
+	}()
+	remote, err := url.Parse("http://localhost:5173")
+	if err != nil {
+		logrus.Fatalln("解析远程地址失败2: ", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+	proxy.Director = func(req *http.Request) {
+		req.Header = c.Request.Header
+		req.Host = remote.Host
+		req.URL.Scheme = remote.Scheme
+		req.URL.Host = remote.Host
+		req.URL.Path = "/lightning" + c.Param("proxyPath")
+	}
+
+	proxy.ServeHTTP(c.Writer, c.Request)
+}
+
+func polarisProxy(c *gin.Context) {
+
+	defer func() {
+		if p := recover(); p != nil {
+			logrus.Errorln("polarisProxy panic: ", p)
+		}
+	}()
+	remote, err := url.Parse("http://127.0.0.1:7100")
+	if err != nil {
+		logrus.Fatalln("解析远程地址失败3: ", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(remote)
+	proxy.Director = func(req *http.Request) {
+		req.Header = c.Request.Header
+		req.Host = remote.Host
+		req.URL.Scheme = remote.Scheme
+		req.URL.Host = remote.Host
+		req.URL.Path = c.Request.URL.Path
+	}
+	proxy.ServeHTTP(c.Writer, c.Request)
+}
+
 func (s *WebServer) Init() error {
 	indexHandler := handlers.NewIndexHandler()
-	s.router.GET("/", indexHandler.Query)
+	s.router.GET("/portal/healthz", indexHandler.Query)
 
 	//authHandler := &handlers.WebauthnHandler{}
 	//s.router.POST("/account/signup/webauthn/begin/:username", authHandler.BeginRegistration)
@@ -106,20 +179,31 @@ func (s *WebServer) Init() error {
 	if err != nil {
 		return fmt.Errorf("解析路径失败: %w", err)
 	}
-	s.router.Static("/storage", storagePath)
+	s.router.Static("/portal/storage", storagePath)
 
-	s.router.POST("/comments", comments.CommentInsertHandler)
-	s.router.GET("/comments", comments.CommentSelectHandler)
-	s.router.GET("/articles", notes.NoteSelectHandler)
-	s.router.GET("/articles/:uid", notes.NoteGetHandler)
-	s.router.GET("/articles/:uid/assets", notes.NoteAssetsSelectHandler)
-	s.router.GET("/images", images.ImageSelectHandler)
-	s.router.GET("/images/:uid", images.ImageGetHandler)
-	s.router.POST("/articles/:uid/viewer", notes.NoteViewerInsertHandler)
-	s.router.POST("/account/signup", account.SignupHandler)
-	s.router.POST("/account/signin", account.SigninHandler)
-	s.router.POST("/account/signout", account.SignoutHandler)
-	s.router.GET("/account/userinfo", account.UserinfoHandler)
+	s.router.POST("/portal/comments", comments.CommentInsertHandler)
+	s.router.GET("/portal/comments", comments.CommentSelectHandler)
+	s.router.GET("/portal/articles", notes.NoteSelectHandler)
+	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
+	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
+	s.router.GET("/portal/images", images.ImageSelectHandler)
+	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
+	s.router.POST("/portal/articles/:uid/viewer", notes.NoteViewerInsertHandler)
+	s.router.POST("/portal/account/signup", account.SignupHandler)
+	s.router.POST("/portal/account/signin", account.SigninHandler)
+	s.router.POST("/portal/account/signout", account.SignoutHandler)
+	s.router.GET("/portal/account/userinfo", account.UserinfoHandler)
+
+	if config.Debug() {
+		s.router.Any("/suzaku/*proxyPath", suzakuProxy)
+		s.router.Any("/lightning/*proxyPath", lightningProxy)
+		s.router.NoRoute(polarisProxy)
+	}
+	//s.router.NoRoute(func(c *gin.Context) {
+	//	path := c.Request.URL.Path
+	//	logrus.Debugln("404路径: " + path)
+	//	c.JSON(404, gin.H{"code": path + "PAGE_NOT_FOUND", "message": "Page not found"})
+	//})
 
 	return nil
 }

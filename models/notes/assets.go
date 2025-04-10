@@ -34,7 +34,7 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 
 	mtNote, err := PGGetNote(uid)
 	if err != nil || mtNote == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage(err.Error()))
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
 		return
 	}
 
