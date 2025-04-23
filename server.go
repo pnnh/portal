@@ -198,12 +198,13 @@ func (s *WebServer) Init() error {
 		s.router.Any("/suzaku/*proxyPath", suzakuProxy)
 		s.router.Any("/lightning/*proxyPath", lightningProxy)
 		s.router.NoRoute(polarisProxy)
+	} else {
+		s.router.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			logrus.Debugln("404路径: " + path)
+			c.JSON(404, gin.H{"code": path + "PAGE_NOT_FOUND", "message": "Page not found"})
+		})
 	}
-	//s.router.NoRoute(func(c *gin.Context) {
-	//	path := c.Request.URL.Path
-	//	logrus.Debugln("404路径: " + path)
-	//	c.JSON(404, gin.H{"code": path + "PAGE_NOT_FOUND", "message": "Page not found"})
-	//})
 
 	return nil
 }

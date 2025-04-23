@@ -19,8 +19,6 @@ RUN go build -o ./portal
 FROM base AS runner
 WORKDIR /app
 
-ENV ENV=production
-
 RUN addgroup --system --gid 1001 golang
 RUN adduser --system --uid 1001 portal --ingroup golang
 
