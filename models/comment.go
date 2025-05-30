@@ -9,6 +9,8 @@ import (
 	"portal/neutron/services/datastore"
 )
 
+const CommentViewersRedisKey = "comment:viewers"
+
 type CommentModel struct {
 	Uid         string    `json:"uid"`     // 主键标识
 	Content     string    `json:"content"` // 内容

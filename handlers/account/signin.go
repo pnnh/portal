@@ -92,7 +92,7 @@ func SigninHandler(gctx *gin.Context) {
 	}
 
 	// 登录成功后设置cookie
-	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*48, "/", "", true, true)
+	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*72, "/", "", true, true)
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,

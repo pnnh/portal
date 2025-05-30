@@ -223,7 +223,7 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 	}
 
 	// 登录成功后设置cookie
-	gctx.SetCookie("Portal-Authorization", jwtToken, 3600*48, "/", "", true, true)
+	gctx.SetCookie("Portal-Authorization", jwtToken, 3600*72, "/", "", true, true)
 
 	// sessionData := map[string]interface{}{
 	// 	"authorization": jwtToken,

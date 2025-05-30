@@ -15,12 +15,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// AccountModel 账号模型 table: accounts
+// 基础的账号模型信息
 type AccountModel struct {
-	Uid         string    `json:"uid"`      // 主键标识
-	Username    string    `json:"username"` // 账号
-	Password    string    `json:"-"`        // 密码
-	Photo       string    `json:"-"`        // 密码
+	Uid         string    `json:"uid"` // 主键标识
+	Username    string    `json:"-"`   // 账号
+	Password    string    `json:"-"`   // 密码
+	Photo       string    `json:"photo"`
 	CreateTime  time.Time `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time `json:"update_time" db:"update_time"`
 	Nickname    string    `json:"nickname"`
@@ -31,6 +31,12 @@ type AccountModel struct {
 	Status      int       `json:"status"`
 	Website     string    `json:"website"`
 	Fingerprint string    `json:"fingerprint"`
+}
+
+// 当登录用户获取自己的信息时返回这个模型
+type SelfAccountModel struct {
+	AccountModel
+	Username string `json:"username"` // 用户名称
 }
 
 var AnonymousAccount = &AccountModel{
@@ -59,6 +65,10 @@ func NewAccountModel(name string, displayName string) *AccountModel {
 	}
 
 	return user
+}
+
+func (user *AccountModel) IsAnonymous() bool {
+	return user.Uid == "00000000-0000-0000-0000-000000000000"
 }
 
 func GetAccount(uid string) (*AccountModel, error) {
@@ -140,6 +150,26 @@ func PutAccount(model *AccountModel) error {
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
 		return fmt.Errorf("PutAccount: %w", err)
+	}
+	return nil
+}
+
+func UpdateAccountInfo(model *AccountModel) error {
+	sqlText := `update accounts set nickname = :nickname, email = :email,
+                    description = :description, photo = :photo
+where uid = :uid;`
+
+	sqlParams := map[string]interface{}{
+		"uid":         model.Uid,
+		"nickname":    model.Nickname,
+		"email":       model.EMail,
+		"description": model.Description,
+		"photo":       model.Photo,
+	}
+
+	_, err := datastore.NamedExec(sqlText, sqlParams)
+	if err != nil {
+		return fmt.Errorf("UpdateAccountInfo: %w", err)
 	}
 	return nil
 }

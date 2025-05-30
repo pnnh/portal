@@ -1,21 +1,23 @@
 package comments
 
 import (
-	"errors"
+	"database/sql"
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"portal/business"
-	"portal/business/cloudflare"
 	"portal/models"
 	"portal/models/notes"
+	"portal/neutron/config"
 	"portal/neutron/helpers"
+	"portal/neutron/services/redisdb"
 )
 
 type CommentInsertRequest struct {
-	cloudflare.TurnstileModel
+	//cloudflare.TurnstileModel
 	models.CommentModel
 }
 
@@ -26,20 +28,14 @@ func CommentInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	ipAddr := helpers.GetIpAddress(gctx)
-	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
-	if err != nil || !verifyOk {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Turnstile验证出错"))
-		return
-	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("CommentInsertHandler", err)
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
-	if accountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+	if accountModel == nil || accountModel.IsAnonymous() {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能评论"))
 		return
 	}
 
@@ -82,10 +78,19 @@ func CommentSelectHandler(gctx *gin.Context) {
 	}
 	responseResult := models.CodeOk.WithData(selectResult)
 
+	accountModel, err := business.FindAccountFromCookie(gctx)
+	if err != nil {
+		logrus.Warnln("FindAccountFromCookie查询账号出错d", err)
+	}
+
 	addr := helpers.GetIpAddress(gctx)
 	commentViewers := make([]*notes.MTViewerModel, 0)
 	for _, item := range selectResult.Range {
 		comment := item.(*models.CommentModel)
+		// 跳过匿名评论或当前用户的评论
+		if comment == nil || comment.Creator == "" {
+			continue
+		}
 		model := &notes.MTViewerModel{
 			Uid:        helpers.MustUuid(),
 			Target:     comment.Uid,
@@ -94,19 +99,40 @@ func CommentSelectHandler(gctx *gin.Context) {
 			UpdateTime: time.Now(),
 			Class:      "comment",
 		}
+		if accountModel != nil && !accountModel.IsAnonymous() {
+			if comment.Creator == accountModel.Uid {
+				continue
+			}
+			model.Source = sql.NullString{
+				String: accountModel.Uid,
+				Valid:  true,
+			}
+		}
 		commentViewers = append(commentViewers, model)
 	}
-
-	opErr, itemErrs := notes.PGInsertViewer(commentViewers...)
-	if opErr != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(opErr))
-		return
-	}
-	for key, item := range itemErrs {
-		if !errors.Is(item, notes.ErrViewerLogExists) {
-			logrus.Warnln("CommentSelectHandler", key, item)
+	if len(commentViewers) > 0 {
+		viewersJson, err := json.Marshal(commentViewers)
+		if err != nil {
+			logrus.Errorln("CommentSelectHandler json.Marshal error:", err)
+			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			return
+		}
+		redisUrl, ok := config.GetConfigurationString("REDIS_URL")
+		if !ok || redisUrl == "" {
+			logrus.Fatalln("REDIS_URL未配置")
+		}
+		redisClient, err := redisdb.ConnectRedis(gctx, redisUrl)
+		if err != nil {
+			logrus.Errorln("CommentSelectHandler ConnectRedis error:", err)
+			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			return
+		}
+		err = redisdb.Produce(gctx, redisClient, models.CommentViewersRedisKey, viewersJson)
+		if err != nil {
+			logrus.Errorln("CommentSelectHandler Producer error:", err)
+			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			return
 		}
 	}
-
 	gctx.JSON(http.StatusOK, responseResult)
 }

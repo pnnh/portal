@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -30,6 +31,16 @@ type WebServer struct {
 	resources map[string]IResource
 }
 
+func checkCorsOrigin(origin string) bool {
+	if config.Debug() {
+		return true // 在调试模式下允许所有来源
+	}
+	if strings.HasSuffix(origin, "huable.xyz") {
+		return true
+	}
+	return false
+}
+
 func NewWebServer() (*WebServer, error) {
 	router := gin.Default()
 
@@ -39,17 +50,8 @@ func NewWebServer() (*WebServer, error) {
 		router:    router,
 		resources: make(map[string]IResource)}
 
-	corsDomain := []string{
-		"http://127.0.0.1:7100",
-		"http://localhost:7100",
-		"http://localhost:5173",
-		"https://huable.xyz",
-		"https://www.huable.xyz",
-		"https://phoenix.huable.xyz",
-		"https://portal.huable.xyz"}
-
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     corsDomain,
+		AllowOriginFunc:  checkCorsOrigin,
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Portal-Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -193,11 +195,12 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/account/signin", account.SigninHandler)
 	s.router.POST("/portal/account/signout", account.SignoutHandler)
 	s.router.GET("/portal/account/userinfo", account.UserinfoHandler)
+	s.router.POST("/portal/account/userinfo/edit", account.UserinfoEditHandler)
 
 	if config.Debug() {
-		s.router.Any("/suzaku/*proxyPath", suzakuProxy)
-		s.router.Any("/lightning/*proxyPath", lightningProxy)
-		s.router.NoRoute(polarisProxy)
+		//s.router.Any("/suzaku/*proxyPath", suzakuProxy)
+		//s.router.Any("/lightning/*proxyPath", lightningProxy)
+		//s.router.NoRoute(polarisProxy)
 	} else {
 		s.router.NoRoute(func(c *gin.Context) {
 			path := c.Request.URL.Path
