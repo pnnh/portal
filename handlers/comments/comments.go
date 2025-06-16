@@ -84,6 +84,20 @@ func CommentSelectHandler(gctx *gin.Context) {
 	}
 
 	addr := helpers.GetIpAddress(gctx)
+	isBotRequest, userAgent := helpers.IsBotRequest(gctx)
+	if !isBotRequest && accountModel != nil && !accountModel.IsAnonymous() {
+		// 发送评论消息到消息队列
+		sendCommentViewerMQMessages(gctx, accountModel, selectResult, addr)
+	} else {
+		logrus.Infoln("CommentSelectHandler isBotRequest:", userAgent, "accountModel:", accountModel)
+	}
+	gctx.JSON(http.StatusOK, responseResult)
+}
+
+// 发送评论消息到消息队列
+func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.AccountModel,
+	selectResult *models.SelectData, addr string) {
+
 	commentViewers := make([]*notes.MTViewerModel, 0)
 	for _, item := range selectResult.Range {
 		comment := item.(*models.CommentModel)
@@ -134,5 +148,4 @@ func CommentSelectHandler(gctx *gin.Context) {
 			return
 		}
 	}
-	gctx.JSON(http.StatusOK, responseResult)
 }
