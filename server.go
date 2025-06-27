@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"portal/handlers/channels"
 	"portal/models/images"
 	"portal/models/notes"
 	"portal/neutron/config"
@@ -188,6 +189,8 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
+	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
+	s.router.GET("/portal/channels/:uid", channels.ChannelGetHandler)
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 	s.router.POST("/portal/articles/:uid/viewer", notes.NoteViewerInsertHandler)

@@ -12,11 +12,42 @@ func NewCommonResult(code MCode, message string, data interface{}) *CommonResult
 	return &CommonResult{Code: code, Message: message, Data: data}
 }
 
-type SelectData struct {
+type SelectResponse struct {
 	Page  int   `json:"page"`
 	Size  int   `json:"size"`
 	Count int   `json:"count"`
 	Range []any `json:"range"`
+}
+
+type IViewModel interface {
+	ToViewModel() interface{}
+}
+
+type SelectResult[T IViewModel] struct {
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+	Count int `json:"count"`
+	Range []T `json:"range"`
+}
+
+func ModelListToViewList[T IViewModel](models []T) []any {
+	result := make([]any, 0)
+	for _, model := range models {
+		result = append(result, model.ToViewModel())
+	}
+	return result
+}
+
+func SelectResultToResponse[T IViewModel](result *SelectResult[T]) *SelectResponse {
+	if result == nil {
+		return nil
+	}
+	return &SelectResponse{
+		Page:  result.Page,
+		Size:  result.Size,
+		Count: result.Count,
+		Range: ModelListToViewList(result.Range),
+	}
 }
 
 func ParseCommonResult(data interface{}) *CommonResult {

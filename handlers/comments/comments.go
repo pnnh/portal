@@ -96,7 +96,7 @@ func CommentSelectHandler(gctx *gin.Context) {
 
 // 发送评论消息到消息队列
 func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.AccountModel,
-	selectResult *models.SelectData, addr string) {
+	selectResult *models.SelectResponse, addr string) {
 
 	commentViewers := make([]*notes.MTViewerModel, 0)
 	for _, item := range selectResult.Range {

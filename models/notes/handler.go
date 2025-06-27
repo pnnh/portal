@@ -16,6 +16,7 @@ func NoteSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
 	page := gctx.Query("page")
 	size := gctx.Query("size")
+	channel := gctx.Query("channel")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		pageInt = 1
@@ -24,7 +25,7 @@ func NoteSelectHandler(gctx *gin.Context) {
 	if err != nil {
 		sizeInt = 10
 	}
-	selectResult, err := SelectNotes(keyword, pageInt, sizeInt)
+	selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
 		return

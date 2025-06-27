@@ -68,7 +68,7 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "listFirstLevel出错"))
 		return
 	}
-	selectData := &models.SelectData{
+	selectData := &models.SelectResponse{
 		Page:  1,
 		Size:  999,
 		Count: len(fileList),

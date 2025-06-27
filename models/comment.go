@@ -58,7 +58,7 @@ do update set content = excluded.content, update_time = now();`
 	return nil
 }
 
-func SelectComments(resource string, page int, size int) (*SelectData, error) {
+func SelectComments(resource string, page int, size int) (*SelectResponse, error) {
 
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from comments where resource = :resource and (status = 1 or discover is null or discover <= 10) 
@@ -101,7 +101,7 @@ func SelectComments(resource string, page int, size int) (*SelectData, error) {
 		return nil, fmt.Errorf("查询评论总数有误，数据为空")
 	}
 
-	selectData := &SelectData{
+	selectData := &SelectResponse{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,

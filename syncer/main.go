@@ -8,7 +8,6 @@ import (
 	"portal/neutron/services/datastore"
 	"portal/neutron/services/filesystem"
 	"portal/syncer/articles"
-	"portal/syncer/images"
 )
 
 func main() {
@@ -41,21 +40,38 @@ func main() {
 	if !ok || blogUrl == "" {
 		logrus.Fatalln("BLOG_URL 未配置")
 	}
-	resolvedPath, err := filesystem.ResolvePath(blogUrl)
+	blogDir, err := filesystem.ResolvePath(blogUrl)
 	if err != nil {
 		logrus.Fatalln("解析路径失败", err)
 		return
 	}
-	imagesWorker, err := images.NewSyncImagesWorker(resolvedPath)
+	//imagesWorker, err := images.NewSyncImagesWorker(blogDir)
+	//if err != nil {
+	//	logrus.Errorln("初始化ImagesWorker失败", err)
+	//	return
+	//}
+	//go imagesWorker.StartWork()
+
+	sourceUrl, ok := config.GetConfiguration("SOURCE_URL")
+	if !ok || sourceUrl == nil {
+		logrus.Fatalln("SOURCE_URL 未配置")
+	}
+	sourceDir, err := filesystem.ResolvePath(sourceUrl.(string))
 	if err != nil {
-		logrus.Errorln("初始化ImagesWorker失败", err)
+		logrus.Fatalln("解析路径失败", err)
 		return
 	}
-	go imagesWorker.StartWork()
+	go SyncDirectoryForever(repoWorker, sourceDir)
+	go SyncDirectoryForever(repoWorker, blogDir)
 
+	<-make(chan struct{})
+}
+
+func SyncDirectoryForever(repoWorker *articles.RepoWorker, dirPath string) {
+	logrus.Println("开始定时同步目录:", dirPath)
 	for {
 		// 文章同步Worker
-		articleWorker, err := articles.NewArticleWorker(repoWorker)
+		articleWorker, err := articles.NewArticleWorker(repoWorker, dirPath)
 		if err != nil {
 			logrus.Errorln("初始化ArticleWorker失败", err)
 			return

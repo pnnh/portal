@@ -79,7 +79,7 @@ do update set title=excluded.title,
 	return nil
 }
 
-func SelectNotes(keyword string, page int, size int) (*models.SelectData, error) {
+func SelectNotes(channel, keyword string, page int, size int) (*models.SelectResponse, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -88,6 +88,10 @@ func SelectNotes(keyword string, page int, size int) (*models.SelectData, error)
 	if keyword != "" {
 		whereText += ` and (title like :keyword or description like :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
+	}
+	if channel != "" {
+		whereText += ` and channel = :channel `
+		baseSqlParams["channel"] = channel
 	}
 	orderText := ` order by create_time desc `
 
@@ -135,7 +139,7 @@ func SelectNotes(keyword string, page int, size int) (*models.SelectData, error)
 		return nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 
-	selectData := &models.SelectData{
+	selectData := &models.SelectResponse{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,
