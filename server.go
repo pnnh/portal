@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -61,77 +59,6 @@ func NewWebServer() (*WebServer, error) {
 	}))
 
 	return server, nil
-}
-
-func suzakuProxy(c *gin.Context) {
-
-	defer func() {
-		if p := recover(); p != nil {
-			logrus.Errorln("suzakuProxy panic: ", p)
-		}
-	}()
-	remote, err := url.Parse("http://127.0.0.1:7102")
-	if err != nil {
-		logrus.Fatalln("解析远程地址失败: ", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-	proxy.Director = func(req *http.Request) {
-		req.Header = c.Request.Header
-		req.Host = remote.Host
-		req.URL.Scheme = remote.Scheme
-		req.URL.Host = remote.Host
-		req.URL.Path = "/suzaku" + c.Param("proxyPath")
-	}
-
-	proxy.ServeHTTP(c.Writer, c.Request)
-}
-
-func lightningProxy(c *gin.Context) {
-
-	defer func() {
-		if p := recover(); p != nil {
-			logrus.Errorln("lightningProxy panic: ", p)
-		}
-	}()
-	remote, err := url.Parse("http://localhost:5173")
-	if err != nil {
-		logrus.Fatalln("解析远程地址失败2: ", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-	proxy.Director = func(req *http.Request) {
-		req.Header = c.Request.Header
-		req.Host = remote.Host
-		req.URL.Scheme = remote.Scheme
-		req.URL.Host = remote.Host
-		req.URL.Path = "/lightning" + c.Param("proxyPath")
-	}
-
-	proxy.ServeHTTP(c.Writer, c.Request)
-}
-
-func polarisProxy(c *gin.Context) {
-
-	defer func() {
-		if p := recover(); p != nil {
-			logrus.Errorln("polarisProxy panic: ", p)
-		}
-	}()
-	remote, err := url.Parse("http://127.0.0.1:7100")
-	if err != nil {
-		logrus.Fatalln("解析远程地址失败3: ", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(remote)
-	proxy.Director = func(req *http.Request) {
-		req.Header = c.Request.Header
-		req.Host = remote.Host
-		req.URL.Scheme = remote.Scheme
-		req.URL.Host = remote.Host
-		req.URL.Path = c.Request.URL.Path
-	}
-	proxy.ServeHTTP(c.Writer, c.Request)
 }
 
 func (s *WebServer) Init() error {

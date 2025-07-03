@@ -1,7 +1,10 @@
 package account
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -90,9 +93,29 @@ func SigninHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("生成jwtToken错误"))
 		return
 	}
+	selfUrl, ok := config.GetConfigurationString("PUBLIC_SELF_URL")
+	if !ok || selfUrl == "" {
+		logrus.Errorln("PUBLIC_SELF_URL 未配置")
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("PUBLIC_SELF_URL Unknown"))
+		return
+	}
+	parsedUrl, err := url.Parse(selfUrl)
+	if err != nil {
+		logrus.Errorln("PUBLIC_SELF_URL 解析错误", err)
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("PUBLIC_SELF_URL Parse Error"))
+		return
+	}
+	selfHostname := parsedUrl.Hostname()
+	hostArr := strings.Split(selfHostname, ".")
+	if len(hostArr) < 2 {
+		logrus.Errorln("PUBLIC_SELF_URL Hostname Error", selfHostname)
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("PUBLIC_SELF_URL Hostname Error"))
+		return
+	}
+	cookieDomain := fmt.Sprintf(".%s.%s", hostArr[len(hostArr)-2], hostArr[len(hostArr)-1])
 
 	// 登录成功后设置cookie
-	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*72, "/", "", true, true)
+	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*72, "/", cookieDomain, true, true)
 
 	result := models.CodeOk.WithData(map[string]any{
 		"changes": 1,
