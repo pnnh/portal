@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -9,34 +10,36 @@ import (
 )
 
 type SessionModel struct {
-	Uid          string    `json:"uid"`
-	Content      string    `json:"content"`
-	CreateTime   time.Time `json:"create_time" db:"create_time"`
-	UpdateTime   time.Time `json:"update_time" db:"update_time"`
-	Username     string    `json:"username"`
-	Type         string    `json:"type"`
-	Code         string    `json:"code"`
-	ClientId     string    `json:"client_id" db:"client_id"`
-	ResponseType string    `json:"response_type" db:"response_type"`
-	RedirectUri  string    `json:"redirect_uri" db:"redirect_uri"`
-	Scope        string    `json:"scope"`
-	State        string    `json:"state"`
-	Nonce        string    `json:"nonce"`
-	IdToken      string    `json:"id_token" db:"id_token"`
-	JwtId        string    `json:"jwt_id" db:"jwt_id"`
-	AccessToken  string    `json:"access_token" db:"access_token"`
-	OpenId       string    `json:"open_id" db:"open_id"`
-	CompanyId    string    `json:"company_id" db:"company_id"`
-	Account      string    `json:"account"`
-	Address      string    `json:"address"`
+	Uid          string         `json:"uid"`
+	Content      string         `json:"content"`
+	CreateTime   time.Time      `json:"create_time" db:"create_time"`
+	UpdateTime   time.Time      `json:"update_time" db:"update_time"`
+	Username     string         `json:"username"`
+	Type         string         `json:"type"`
+	Code         string         `json:"code"`
+	ClientId     string         `json:"client_id" db:"client_id"`
+	ResponseType string         `json:"response_type" db:"response_type"`
+	RedirectUri  string         `json:"redirect_uri" db:"redirect_uri"`
+	Scope        string         `json:"scope"`
+	State        string         `json:"state"`
+	Nonce        string         `json:"nonce"`
+	IdToken      string         `json:"id_token" db:"id_token"`
+	JwtId        string         `json:"jwt_id" db:"jwt_id"`
+	AccessToken  string         `json:"access_token" db:"access_token"`
+	OpenId       string         `json:"open_id" db:"open_id"`
+	CompanyId    string         `json:"company_id" db:"company_id"`
+	Account      string         `json:"account"`
+	Address      string         `json:"address"`
+	Link         sql.NullString `json:"link" db:"link"`
+	Client       sql.NullString `json:"client" db:"client"`
 }
 
 func PutSession(model *SessionModel) error {
 	sqlText := `insert into sessions(uid, content, create_time, update_time, username, type, code,
 		client_id, response_type, redirect_uri, scope, state, nonce, id_token, jwt_id, access_token, open_id, company_id, 
-                     account, address) 
+                     account, address, link, client) 
 	values(:uid, :content, :create_time, :update_time, :username, :type, :code, :client_id, :response_type, :redirect_uri,
-		:scope, :state, :nonce, :id_token, :jwt_id, :access_token, :open_id, :company_id, :account, :address)`
+		:scope, :state, :nonce, :id_token, :jwt_id, :access_token, :open_id, :company_id, :account, :address, :link, :client)`
 
 	sqlParams := map[string]interface{}{"uid": model.Uid, "content": model.Content, "create_time": model.CreateTime,
 		"update_time": model.UpdateTime, "username": model.Username, "type": model.Type,
@@ -44,7 +47,7 @@ func PutSession(model *SessionModel) error {
 		"redirect_uri": model.RedirectUri, "scope": model.Scope, "state": model.State,
 		"nonce": model.Nonce, "id_token": model.IdToken, "jwt_id": model.JwtId,
 		"access_token": model.AccessToken, "open_id": model.OpenId, "company_id": model.CompanyId,
-		"account": model.Account, "address": model.Address}
+		"account": model.Account, "address": model.Address, "link": model.Link, "client": model.Client}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
@@ -57,6 +60,30 @@ func GetSessionById(uid string) (*SessionModel, error) {
 	sqlText := `select * from sessions where uid = :uid;`
 
 	sqlParams := map[string]interface{}{"uid": uid}
+	var sqlResults []*SessionModel
+
+	rows, err := datastore.NamedQuery(sqlText, sqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	for _, v := range sqlResults {
+		return v, nil
+	}
+
+	return nil, nil
+}
+
+func GetSessionByLink(app, link string) (*SessionModel, error) {
+	sqlText := `select * from sessions where client = :client and link = :link;`
+
+	sqlParams := map[string]interface{}{
+		"link":   link,
+		"client": app,
+	}
 	var sqlResults []*SessionModel
 
 	rows, err := datastore.NamedQuery(sqlText, sqlParams)

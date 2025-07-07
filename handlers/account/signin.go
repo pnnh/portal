@@ -1,6 +1,7 @@
 package account
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -21,6 +22,7 @@ type SigninRequest struct {
 	Username    string `json:"username"`    // 账号
 	Password    string `json:"password"`    // 密码
 	Fingerprint string `json:"fingerprint"` // 指纹
+	Link        string `json:"link"`
 }
 
 func SigninHandler(gctx *gin.Context) {
@@ -74,6 +76,14 @@ func SigninHandler(gctx *gin.Context) {
 		AccessToken:  "",
 		JwtId:        "",
 		Account:      accountModel.Uid,
+	}
+	if request.Link != "" {
+		sessionModel.Link = sql.NullString{String: request.Link, Valid: true}
+	} else {
+		sessionModel.Link = sql.NullString{
+			String: "",
+			Valid:  false,
+		}
 	}
 	err = models.PutSession(sessionModel)
 	if err != nil {

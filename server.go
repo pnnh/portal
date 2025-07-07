@@ -126,6 +126,9 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/account/signout", account.SignoutHandler)
 	s.router.GET("/portal/account/userinfo", account.UserinfoHandler)
 	s.router.POST("/portal/account/userinfo/edit", account.UserinfoEditHandler)
+	s.router.GET("/portal/account/session", account.SessionQueryHandler)
+	s.router.GET("/portal/account/auth/app", account.AppQueryHandler)
+	s.router.POST("/portal/account/auth/permit", account.PermitAppLoginHandler)
 
 	if config.Debug() {
 		//s.router.Any("/suzaku/*proxyPath", suzakuProxy)
