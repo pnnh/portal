@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"neutron/config"
+	"neutron/services/filesystem"
 	"portal/models"
-	"portal/neutron/config"
-	"portal/neutron/services/filesystem"
 )
 
 func NoteAssetsSelectHandler(gctx *gin.Context) {

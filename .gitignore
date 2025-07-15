@@ -6,4 +6,3 @@ go.work
 go.work.sum
 target/bin/
 debug/
-config.yaml

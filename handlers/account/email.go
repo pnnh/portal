@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"portal/neutron/config"
-	"portal/neutron/helpers"
+	"neutron/config"
+	"neutron/helpers"
 )
 
 func MailSignupBeginHandler(gctx *gin.Context) {

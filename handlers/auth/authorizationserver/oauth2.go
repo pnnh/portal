@@ -6,14 +6,14 @@ import (
 	"encoding/pem"
 	"time"
 
-	"portal/neutron/helpers"
+	"neutron/helpers"
 
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"github.com/ory/fosite/handler/openid"
 	"github.com/ory/fosite/token/jwt"
 	"github.com/sirupsen/logrus"
-	"portal/neutron/config"
+	"neutron/config"
 )
 
 var (

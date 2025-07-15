@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"neutron/helpers"
 	"portal/models"
-	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ory/fosite"

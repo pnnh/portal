@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"neutron/config"
+	"neutron/helpers"
+	"neutron/services/filesystem"
 	"portal/models/repo"
-	"portal/neutron/config"
-	"portal/neutron/helpers"
-	"portal/neutron/services/filesystem"
 	"portal/services/githelper"
 )
 

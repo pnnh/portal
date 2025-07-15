@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
+	"neutron/helpers"
 	"portal/handlers/auth/authorizationserver"
 	"portal/models"
-	"portal/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 )

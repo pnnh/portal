@@ -8,12 +8,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"neutron/config"
+	"neutron/helpers"
+	"neutron/services/redisdb"
 	"portal/business"
 	"portal/models"
 	"portal/models/notes"
-	"portal/neutron/config"
-	"portal/neutron/helpers"
-	"portal/neutron/services/redisdb"
 )
 
 type CommentInsertRequest struct {

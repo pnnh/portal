@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"portal/neutron/helpers"
-	"portal/neutron/services/datastore"
+	"neutron/helpers"
+	"neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
 )

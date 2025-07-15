@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"neutron/config"
+	"neutron/services/filesystem"
 	"portal/handlers/channels"
 	"portal/models/images"
 	"portal/models/notes"
-	"portal/neutron/config"
-	"portal/neutron/services/filesystem"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

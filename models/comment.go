@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"portal/neutron/helpers"
-	"portal/neutron/services/datastore"
+	"neutron/helpers"
+	"neutron/services/datastore"
 )
 
 const CommentViewersRedisKey = "comment:viewers"

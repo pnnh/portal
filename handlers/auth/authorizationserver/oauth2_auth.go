@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"neutron/helpers"
 	"portal/models"
-	"portal/neutron/helpers"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"portal/neutron/config"
+	"neutron/config"
 
 	"github.com/sirupsen/logrus"
 

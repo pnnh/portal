@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"neutron/config"
+	"neutron/services/datastore"
+	"neutron/services/redisdb"
 	"portal/models"
 	"portal/models/notes"
-	"portal/neutron/config"
-	"portal/neutron/services/datastore"
-	"portal/neutron/services/redisdb"
 )
 
 func main() {

@@ -9,8 +9,8 @@ import (
 
 	"github.com/adrg/frontmatter"
 	"github.com/sirupsen/logrus"
+	"neutron/helpers"
 	"portal/models/notes"
-	"portal/neutron/helpers"
 	"portal/services/githelper"
 )
 

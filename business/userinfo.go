@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
+	"neutron/config"
+	"neutron/helpers"
 	"portal/models"
-	"portal/neutron/config"
-	"portal/neutron/helpers"
 )
 
 const AuthCookieName = "PT"

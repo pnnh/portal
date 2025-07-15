@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"portal/neutron/config"
-	"portal/neutron/services/datastore"
-	"portal/neutron/services/filesystem"
+	"neutron/config"
+	"neutron/services/datastore"
+	"neutron/services/filesystem"
 	"portal/syncer/articles"
 )
 

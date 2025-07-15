@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"portal/neutron/helpers"
+	"neutron/helpers"
 )
 
 type GitInfo struct {

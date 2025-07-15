@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"portal/neutron/services/datastore"
+	"neutron/services/datastore"
 )
 
 type OpenidSessionModel struct {

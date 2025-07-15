@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"neutron/helpers"
 	"portal/models"
-	"portal/neutron/helpers"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
