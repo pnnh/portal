@@ -1,4 +1,4 @@
-DATABASE: "host=104.214.169.124 user=lighting password=[E~P2VZnWPzU<&a^ dbname=portal port=5432 sslmode=disable"
+DATABASE: "host=172.188.112.215 user=lighting password=[E~P2VZnWPzU<&a^ dbname=portal port=5432 sslmode=disable"
 CLOUDFLARE_TURNSTILE_SECRET: "1x0000000000000000000000000000000AA"
 JWT_PUBLIC_KEY: |
     -----BEGIN PUBLIC KEY-----

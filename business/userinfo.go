@@ -92,10 +92,7 @@ func FindAccountFromCookie(gctx *gin.Context) (*models.AccountModel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("查询用户会话出错: %s", err)
 	}
-	if sessionModel == nil {
-		return nil, fmt.Errorf("用户会话不存在")
-	}
-	if sessionModel.Type == "anonymous" {
+	if sessionModel == nil || sessionModel.Type == "anonymous" {
 		return models.AnonymousAccount, nil
 	}
 	accountModel, err := models.GetAccountBySessionId(sessionModel.Uid)

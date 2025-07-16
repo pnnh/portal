@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"portal/business"
 	"portal/models"
 	"portal/models/channels"
 )
@@ -13,6 +14,7 @@ func ChannelSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
 	page := gctx.Query("page")
 	size := gctx.Query("size")
+	lang := gctx.Query("lang")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		pageInt = 1
@@ -21,7 +23,10 @@ func ChannelSelectHandler(gctx *gin.Context) {
 	if err != nil {
 		sizeInt = 10
 	}
-	selectResult, err := channels.SelectChannels(keyword, pageInt, sizeInt)
+	if lang == "" {
+		lang = business.DefaultLanguage
+	}
+	selectResult, err := channels.SelectChannels(keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
 		return

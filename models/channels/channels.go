@@ -19,6 +19,8 @@ type MTChannelModel struct {
 	Status      int            `json:"status"`
 	CreateTime  time.Time      `json:"create_time" db:"create_time"`
 	UpdateTime  time.Time      `json:"update_time" db:"update_time"`
+	Cid         sql.NullString `json:"cid" db:"cid"`
+	Lang        sql.NullString `json:"lang" db:"lang"`
 }
 
 func (m MTChannelModel) ToViewModel() interface{} {
@@ -40,7 +42,7 @@ type MTChannelView struct {
 	Image       string `json:"image"`
 }
 
-func SelectChannels(keyword string, page int, size int) (*models.SelectResult[MTChannelModel], error) {
+func SelectChannels(keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from channels `
 	baseSqlParams := map[string]interface{}{}
@@ -49,6 +51,10 @@ func SelectChannels(keyword string, page int, size int) (*models.SelectResult[MT
 	if keyword != "" {
 		whereText += ` and (name like :keyword or description like :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
+	}
+	if lang != "" {
+		whereText += ` and lang = :lang `
+		baseSqlParams["lang"] = lang
 	}
 	orderText := ` order by create_time desc `
 

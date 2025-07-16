@@ -41,6 +41,8 @@ type MTNoteModel struct {
 	CommitTime  sql.NullTime   `json:"-" db:"commit_time"`
 	RepoPath    sql.NullString `json:"-" db:"repo_path"`
 	RepoId      sql.NullString `json:"-" db:"repo_id"`
+	Cid         sql.NullString `json:"cid" db:"cid"`
+	Lang        sql.NullString `json:"lang" db:"lang"`
 }
 
 func PGInsertNote(model *MTNoteModel) error {
@@ -79,7 +81,7 @@ do update set title=excluded.title,
 	return nil
 }
 
-func SelectNotes(channel, keyword string, page int, size int) (*models.SelectResponse, error) {
+func SelectNotes(channel, keyword string, page int, size int, lang string) (*models.SelectResponse, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -92,6 +94,10 @@ func SelectNotes(channel, keyword string, page int, size int) (*models.SelectRes
 	if channel != "" {
 		whereText += ` and channel = :channel `
 		baseSqlParams["channel"] = channel
+	}
+	if lang != "" {
+		whereText += ` and lang = :lang `
+		baseSqlParams["lang"] = lang
 	}
 	orderText := ` order by create_time desc `
 

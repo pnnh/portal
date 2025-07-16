@@ -13,7 +13,7 @@ func main() {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	err := config.InitAppConfig()
+	err := config.InitAppConfig("config.yaml")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)
 	}

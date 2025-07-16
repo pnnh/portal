@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"neutron/helpers"
+	"portal/business"
 	"portal/models"
 )
 
@@ -17,6 +18,7 @@ func NoteSelectHandler(gctx *gin.Context) {
 	page := gctx.Query("page")
 	size := gctx.Query("size")
 	channel := gctx.Query("channel")
+	lang := gctx.Query("lang")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		pageInt = 1
@@ -25,7 +27,10 @@ func NoteSelectHandler(gctx *gin.Context) {
 	if err != nil {
 		sizeInt = 10
 	}
-	selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt)
+	if lang == "" {
+		lang = business.DefaultLanguage
+	}
+	selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
 		return
