@@ -32,7 +32,7 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		decodedParent = string(decodeString)
 	}
 
-	mtNote, err := PGGetNote(uid)
+	mtNote, err := PGGetNote(uid, "")
 	if err != nil || mtNote == nil {
 		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
 		return

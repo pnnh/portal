@@ -40,11 +40,12 @@ func ChannelSelectHandler(gctx *gin.Context) {
 
 func ChannelGetHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
+	lang := gctx.Query("lang")
 	if uid == "" {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
 		return
 	}
-	selectResult, err := channels.PGGetChannel(uid)
+	selectResult, err := channels.PGGetChannel(uid, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
 		return

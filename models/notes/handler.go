@@ -35,18 +35,21 @@ func NoteSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
-	responseResult := models.CodeOk.WithData(selectResult)
+
+	selectResponse := models.SelectResultToResponse(selectResult)
+	responseResult := models.CodeOk.WithData(selectResponse)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
 func NoteGetHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
+	lang := gctx.Query("lang")
 	if uid == "" {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
 		return
 	}
-	selectResult, err := PGGetNote(uid)
+	selectResult, err := PGGetNote(uid, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
 		return

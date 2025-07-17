@@ -33,6 +33,12 @@ func (m MTChannelModel) ToViewModel() interface{} {
 	if m.Description.Valid {
 		view.Description = m.Description.String
 	}
+	if m.Cid.Valid {
+		view.Cid = m.Cid.String
+	}
+	if m.Lang.Valid {
+		view.Lang = m.Lang.String
+	}
 	return view
 }
 
@@ -40,6 +46,8 @@ type MTChannelView struct {
 	MTChannelModel
 	Description string `json:"description"`
 	Image       string `json:"image"`
+	Cid         string `json:"cid"`
+	Lang        string `json:"lang"`
 }
 
 func SelectChannels(keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
@@ -112,10 +120,11 @@ func SelectChannels(keyword string, page int, size int, lang string) (*models.Se
 	return selectData, nil
 }
 
-func PGGetChannel(uid string) (*MTChannelModel, error) {
-	pageSqlText := ` select * from channels where status = 1 and uid = :uid; `
+func PGGetChannel(uid, lang string) (*MTChannelModel, error) {
+	pageSqlText := ` select * from channels where status = 1 and  ((uid = :uid) or (cid = :uid and lang = :lang)); `
 	pageSqlParams := map[string]interface{}{
-		"uid": uid,
+		"uid":  uid,
+		"lang": lang,
 	}
 	var sqlResults []*MTChannelModel
 

@@ -45,6 +45,26 @@ type MTNoteModel struct {
 	Lang        sql.NullString `json:"lang" db:"lang"`
 }
 
+func (m MTNoteModel) ToViewModel() interface{} {
+	view := &MTNoteView{
+		MTNoteModel: m,
+	}
+	if m.Cid.Valid {
+		view.Cid = m.Cid.String
+	}
+	if m.Lang.Valid {
+		view.Lang = m.Lang.String
+	}
+	return view
+
+}
+
+type MTNoteView struct {
+	MTNoteModel
+	Cid  string `json:"cid" db:"cid"`
+	Lang string `json:"lang" db:"lang"`
+}
+
 func PGInsertNote(model *MTNoteModel) error {
 	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
                      version, build, url, branch, commit, commit_time, repo_path, repo_id)
@@ -81,7 +101,7 @@ do update set title=excluded.title,
 	return nil
 }
 
-func SelectNotes(channel, keyword string, page int, size int, lang string) (*models.SelectResponse, error) {
+func SelectNotes(channel, keyword string, page int, size int, lang string) (*models.SelectResult[MTNoteModel], error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -108,7 +128,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTNoteModel
+	var sqlResults []MTNoteModel
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
@@ -118,7 +138,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 		return nil, fmt.Errorf("StructScan: %w", err)
 	}
 
-	resultRange := make([]any, 0)
+	resultRange := make([]MTNoteModel, 0)
 	for _, item := range sqlResults {
 		resultRange = append(resultRange, item)
 	}
@@ -145,7 +165,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 		return nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 
-	selectData := &models.SelectResponse{
+	selectData := &models.SelectResult[MTNoteModel]{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,
@@ -155,11 +175,14 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 	return selectData, nil
 }
 
-func PGGetNote(uid string) (*MTNoteModel, error) {
+// PGGetNote 获取单个笔记信息
+// obsolete 处理向后兼容逻辑。早期是通过单个uid查询，后期可以通过cid和lang查询。
+func PGGetNote(uid string, lang string) (*MTNoteModel, error) {
+	pageSqlText := ` select * from articles where status = 1 and ((uid = :uid) or (cid = :uid and lang = :lang)); `
 
-	pageSqlText := ` select * from articles where status = 1 and uid = :uid; `
 	pageSqlParams := map[string]interface{}{
-		"uid": uid,
+		"uid":  uid,
+		"lang": lang,
 	}
 	var sqlResults []*MTNoteModel
 
