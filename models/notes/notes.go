@@ -27,8 +27,8 @@ type MTNoteModel struct {
 	Keywords    string         `json:"keywords"`
 	Status      int            `json:"status"`
 	Cover       sql.NullString `json:"-"`
-	Owner       sql.NullString `json:"-"`
-	Channel     sql.NullString `json:"-"`
+	Owner       string         `json:"-"`
+	Channel     string         `json:"channel"`
 	Discover    int            `json:"discover"`
 	Partition   sql.NullString `json:"-"`
 	CreateTime  time.Time      `json:"create_time" db:"create_time"`
@@ -41,20 +41,24 @@ type MTNoteModel struct {
 	CommitTime  sql.NullTime   `json:"-" db:"commit_time"`
 	RepoPath    sql.NullString `json:"-" db:"repo_path"`
 	RepoId      sql.NullString `json:"-" db:"repo_id"`
-	Cid         sql.NullString `json:"cid" db:"cid"`
-	Lang        sql.NullString `json:"lang" db:"lang"`
+	Cid         string         `json:"cid" db:"cid"`
+	Lang        string         `json:"lang" db:"lang"`
+	Nid         int64          `json:"nid" db:"nid"`
+	Dc          string         `json:"-" db:"dc"`
 }
 
 func (m MTNoteModel) ToViewModel() interface{} {
 	view := &MTNoteView{
 		MTNoteModel: m,
 	}
-	if m.Cid.Valid {
-		view.Cid = m.Cid.String
-	}
-	if m.Lang.Valid {
-		view.Lang = m.Lang.String
-	}
+	//if m.Cid.Valid {
+	//	view.Cid = m.Cid.String
+	//}
+	//if m.Lang.Valid {
+	//	view.Lang = m.Lang.String
+	//}
+	view.Cid = m.Cid
+	view.Lang = m.Lang
 	return view
 
 }
@@ -67,16 +71,11 @@ type MTNoteView struct {
 
 func PGInsertNote(model *MTNoteModel) error {
 	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
-                     version, build, url, branch, commit, commit_time, repo_path, repo_id)
+                     version, build, url, branch, commit, commit_time, repo_path, repo_id, cid, lang, dc, channel, owner)
 values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url, :branch, 
-       :commit, :commit_time, :repo_path, :repo_id)
+       :commit, :commit_time, :repo_path, :repo_id, :cid, :lang, :dc, :channel, :owner)
 on conflict (uid)
-do update set title=excluded.title, 
-    header=excluded.header,
-    body=excluded.body, description=excluded.description, build=excluded.build, url=excluded.url, 
-    branch=excluded.branch, commit=excluded.commit, commit_time=excluded.commit_time,
-    repo_path=excluded.repo_path,
-    update_time = now();`
+do nothing;`
 
 	sqlParams := map[string]interface{}{
 		"uid":         model.Uid,
@@ -92,11 +91,33 @@ do update set title=excluded.title,
 		"commit_time": model.CommitTime,
 		"repo_path":   model.RepoPath,
 		"repo_id":     model.RepoId,
+		"cid":         model.Cid,
+		"lang":        model.Lang,
+		"dc":          model.Dc,
+		"channel":     model.Channel,
+		"owner":       model.Owner,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
 		return fmt.Errorf("PGInsertNote: %w", err)
+	}
+	return nil
+}
+
+func PGUpdateNote(model *MTNoteModel) error {
+	sqlText := `update articles set title = :title,  body = :body, description = :description, 
+	update_time = now() where uid = :uid;`
+
+	sqlParams := map[string]interface{}{
+		"uid":         model.Uid,
+		"title":       model.Title,
+		"body":        model.Body,
+		"description": model.Description,
+	}
+
+	if _, err := datastore.NamedExec(sqlText, sqlParams); err != nil {
+		return fmt.Errorf("PGUpdateNote: %w", err)
 	}
 	return nil
 }
@@ -178,7 +199,13 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 // PGGetNote 获取单个笔记信息
 // obsolete 处理向后兼容逻辑。早期是通过单个uid查询，后期可以通过cid和lang查询。
 func PGGetNote(uid string, lang string) (*MTNoteModel, error) {
-	pageSqlText := ` select * from articles where status = 1 and ((uid = :uid) or (cid = :uid and lang = :lang)); `
+	if uid == "" {
+		return nil, fmt.Errorf("PGGetNote uid is empty")
+	}
+	pageSqlText := ` select * from articles where status = 1 and uid = :uid; `
+	if lang != "" {
+		pageSqlText = ` select * from articles where status = 1 and cid = :uid and lang = :lang; `
+	}
 
 	pageSqlParams := map[string]interface{}{
 		"uid":  uid,

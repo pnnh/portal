@@ -77,6 +77,9 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 			Body:        string(rest),
 			Description: matter.Description,
 			Status:      1,
+			Cid:         matter.Uid,
+			Lang:        "zh",
+			Dc:          "hk",
 		}
 
 		gitInfo, err := githelper.GitInfoGet(path)

@@ -11,6 +11,7 @@ import (
 	"neutron/helpers"
 	"portal/business"
 	"portal/models"
+	"portal/models/channels"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
@@ -40,6 +41,122 @@ func NoteSelectHandler(gctx *gin.Context) {
 	responseResult := models.CodeOk.WithData(selectResponse)
 
 	gctx.JSON(http.StatusOK, responseResult)
+}
+
+func NoteInsertHandler(gctx *gin.Context) {
+	accountModel, err := business.FindAccountFromCookie(gctx)
+	if err != nil {
+		logrus.Warnln("NoteInsertHandler", err)
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		return
+	}
+	if accountModel == nil || accountModel.IsAnonymous() {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
+		return
+	}
+
+	model := &MTNoteModel{}
+	if err := gctx.ShouldBindJSON(model); err != nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		return
+	}
+	if model.Title == "" || model.Body == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题或内容不能为空"))
+		return
+	}
+	if model.Lang == "" || (model.Lang != business.LangZh && model.Lang != business.LangEn) {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Lang参数错误"))
+		return
+	}
+	if model.Channel == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Channel参数不能为空"))
+		return
+	}
+
+	model.Uid = helpers.MustUuid()
+	model.Owner = accountModel.Uid
+	model.CreateTime = time.Now().UTC()
+	model.UpdateTime = time.Now().UTC()
+	model.Status = 0 // 待审核
+	model.Cid = model.Uid
+	model.Dc = business.CurrentDC
+
+	channelModel, err := channels.PGGetChannel(model.Channel, model.Lang)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		return
+	}
+	if channelModel == nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("频道不存在"))
+		return
+	}
+
+	err = PGInsertNote(model)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入笔记出错"))
+		return
+	}
+
+	result := models.CodeOk.WithData(map[string]any{
+		"changes": 1,
+		"uid":     model.Uid,
+	})
+
+	gctx.JSON(http.StatusOK, result)
+}
+
+func NoteUpdateHandler(gctx *gin.Context) {
+	uid := gctx.Param("uid")
+	if uid == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		return
+	}
+	accountModel, err := business.FindAccountFromCookie(gctx)
+	if err != nil {
+		logrus.Warnln("NoteUpdateHandler", err)
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		return
+	}
+	if accountModel == nil || accountModel.IsAnonymous() {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能修改笔记"))
+		return
+	}
+
+	model := &MTNoteModel{}
+	if err := gctx.ShouldBindJSON(model); err != nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		return
+	}
+	if model.Title == "" || model.Body == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题或内容不能为空"))
+		return
+	}
+	oldModel, err := PGGetNote(uid, "")
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
+		return
+	}
+	if oldModel == nil {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("笔记不存在"))
+		return
+	}
+	if oldModel.Owner != accountModel.Uid {
+		gctx.JSON(http.StatusOK, models.CodeUnauthorized.WithMessage("没有权限修改该笔记"))
+		return
+	}
+
+	model.Uid = uid
+	model.UpdateTime = time.Now().UTC()
+
+	err = PGUpdateNote(model)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新笔记出错"))
+		return
+	}
+
+	result := models.CodeOk.WithData(model.Uid)
+
+	gctx.JSON(http.StatusOK, result)
 }
 
 func NoteGetHandler(gctx *gin.Context) {

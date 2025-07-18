@@ -114,9 +114,12 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
+	s.router.POST("/portal/articles", notes.NoteInsertHandler)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
+	s.router.PUT("/portal/articles/:uid", notes.NoteUpdateHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
+	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler) // 补全频道
 	s.router.GET("/portal/channels/:uid", channels.ChannelGetHandler)
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)

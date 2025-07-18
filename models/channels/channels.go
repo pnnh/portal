@@ -3,6 +3,7 @@ package channels
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -48,6 +49,7 @@ type MTChannelView struct {
 	Image       string `json:"image"`
 	Cid         string `json:"cid"`
 	Lang        string `json:"lang"`
+	Match       string `json:"match"` // 用于自动完成时的匹配
 }
 
 func SelectChannels(keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
@@ -114,6 +116,67 @@ func SelectChannels(keyword string, page int, size int, lang string) (*models.Se
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,
+		Range: resultRange,
+	}
+
+	return selectData, nil
+}
+
+// 输入频道时自动完成
+func CompleteChannels(keyword string, lang string) (*models.SelectResult[MTChannelView], error) {
+	if keyword == "" {
+		return nil, fmt.Errorf("keyword cannot be empty")
+	}
+	baseSqlText := ` select * from channels `
+	baseSqlParams := map[string]interface{}{}
+
+	whereText := ` where status = 1 `
+	exactMatch := false
+	if helpers.IsUuid(keyword) {
+		exactMatch = true
+		whereText += ` and uid = :keyword or (cid = :keyword and lang = :lang) `
+		baseSqlParams["lang"] = lang
+		baseSqlParams["keyword"] = keyword
+	} else {
+		whereText += ` and (name ilike :keyword or description ilike :keyword) `
+		baseSqlParams["keyword"] = "%" + keyword + "%"
+	}
+	orderText := ` order by create_time desc `
+
+	pageSqlText := fmt.Sprintf("%s %s %s %s", baseSqlText, whereText, orderText, ` limit :limit; `)
+	limitSize := 10 // 限制返回10条数据
+	pageSqlParams := map[string]interface{}{
+		"limit": limitSize,
+	}
+	for k, v := range baseSqlParams {
+		pageSqlParams[k] = v
+	}
+	var sqlResults []*MTChannelModel
+
+	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	resultRange := make([]MTChannelView, 0)
+	for _, item := range sqlResults {
+		viewModel := item.ToViewModel().(*MTChannelView)
+		if exactMatch {
+			viewModel.Match = "exact"
+		}
+		resultRange = append(resultRange, *viewModel)
+	}
+	if len(resultRange) == 1 && strings.ToLower(resultRange[0].Name) == strings.ToLower(keyword) {
+		resultRange[0].Match = "exact"
+	}
+
+	selectData := &models.SelectResult[MTChannelView]{
+		Page:  1,
+		Size:  limitSize,
+		Count: len(resultRange),
 		Range: resultRange,
 	}
 

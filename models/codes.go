@@ -35,6 +35,7 @@ const (
 	CodeNotFound         MCode = 404
 	StatusAccountExists  MCode = 607 // 账号已存在
 	CodeInvalidParams    MCode = 609 // 参数无效
+	CodeUnauthorized     MCode = 401 // 未授权
 )
 
 func CodeMessage(code MCode) string {

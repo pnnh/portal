@@ -38,6 +38,21 @@ func ChannelSelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
+// 输入时自动完成
+func ChannelCompleteHandler(gctx *gin.Context) {
+	keyword := gctx.Query("keyword")
+	lang := gctx.Query("lang")
+	selectResult, err := channels.CompleteChannels(keyword, lang)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		return
+	}
+
+	responseResult := models.CodeOk.WithData(selectResult)
+
+	gctx.JSON(http.StatusOK, responseResult)
+}
+
 func ChannelGetHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	lang := gctx.Query("lang")

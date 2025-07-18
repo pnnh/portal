@@ -55,6 +55,15 @@ var AnonymousAccount = &AccountModel{
 	Fingerprint: "",
 }
 
+var DebugAccount = &AccountModel{
+	Uid:        "00000000-0000-0000-0000-000000000001",
+	Username:   "debug",
+	Password:   "",
+	CreateTime: time.Unix(0, 0),
+	UpdateTime: time.Unix(0, 0),
+	Nickname:   "调试用户",
+}
+
 func NewAccountModel(name string, displayName string) *AccountModel {
 	user := &AccountModel{
 		Uid:        helpers.NewPostId(),
