@@ -30,7 +30,7 @@ func (w *ArticleWorker) StartWork() {
 
 	err := filepath.Walk(w.rootPath, w.visitFile)
 	if err != nil {
-		logrus.Fatalln("error walking the path %v: %v\n", w.rootPath, err)
+		logrus.Fatalln("error walking the path", w.rootPath, err)
 	}
 }
 
@@ -99,7 +99,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		}
 		err = notes.PGInsertNote(note)
 		if err != nil {
-			fmt.Printf("插入文章失败: %w", err)
+			fmt.Printf("插入文章失败: %v", err)
 		}
 	}
 

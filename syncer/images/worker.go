@@ -39,7 +39,7 @@ func NewSyncImagesWorker(repoPath string) (*SyncImagesWorker, error) {
 func (w *SyncImagesWorker) StartWork() {
 	err := filepath.Walk(w.repoPath, w.visitFile)
 	if err != nil {
-		logrus.Fatalln("error walking the path %v: %v\n", w.repoPath, err)
+		logrus.Fatalln("error walking the path", w.repoPath, err)
 	}
 }
 

@@ -24,7 +24,7 @@ func GetCaptchaData(ctx *gin.Context) {
 			"code":    1,
 			"message": "GenCaptcha err",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 	if err := writeCache(dots, key); err != nil {
@@ -32,7 +32,7 @@ func GetCaptchaData(ctx *gin.Context) {
 			"code":    1,
 			"message": "GenCaptcha err",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 	bt, _ := json.Marshal(map[string]interface{}{
@@ -41,7 +41,7 @@ func GetCaptchaData(ctx *gin.Context) {
 		"thumb_base64": tb64,
 		"captcha_key":  key,
 	})
-	_, _ = fmt.Fprintf(w, string(bt))
+	_, _ = fmt.Fprintf(w, "%s", string(bt))
 }
 
 func CheckCaptcha(ctx *gin.Context) {
@@ -53,7 +53,7 @@ func CheckCaptcha(ctx *gin.Context) {
 			"code":    code,
 			"message": "illegal param",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 	dots := r.Form.Get("dots")
@@ -63,7 +63,7 @@ func CheckCaptcha(ctx *gin.Context) {
 			"code":    code,
 			"message": "dots or key param is empty",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 
@@ -73,7 +73,7 @@ func CheckCaptcha(ctx *gin.Context) {
 			"code":    code,
 			"message": "illegal key",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 	if cacheData == "" {
@@ -81,7 +81,7 @@ func CheckCaptcha(ctx *gin.Context) {
 			"code":    code,
 			"message": "illegal key2",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 	src := strings.Split(dots, ",")
@@ -92,7 +92,7 @@ func CheckCaptcha(ctx *gin.Context) {
 			"code":    code,
 			"message": "illegal key3",
 		})
-		_, _ = fmt.Fprintf(w, string(bt))
+		_, _ = fmt.Fprintf(w, "%s", string(bt))
 		return
 	}
 
@@ -125,7 +125,7 @@ func CheckCaptcha(ctx *gin.Context) {
 				"code":    code,
 				"message": "更新验证码状态出错",
 			})
-			_, _ = fmt.Fprintf(w, string(bt))
+			_, _ = fmt.Fprintf(w, "%s", string(bt))
 			return
 		}
 	}
@@ -133,7 +133,7 @@ func CheckCaptcha(ctx *gin.Context) {
 	bt, _ := json.Marshal(map[string]interface{}{
 		"code": code,
 	})
-	_, _ = fmt.Fprintf(w, string(bt))
+	_, _ = fmt.Fprintf(w, "%s", string(bt))
 	return
 }
 
