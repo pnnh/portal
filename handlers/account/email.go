@@ -208,9 +208,10 @@ func MailSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(user.Username,
 		authorizationserver.PrivateKeyString,
-		sessionModel.JwtId)
+		sessionModel.JwtId, issuer)
 	if (jwtToken == "") || (err != nil) {
 		models.ResponseMessageError(gctx, "参数有误316", err)
 		return

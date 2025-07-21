@@ -52,7 +52,7 @@ func AuthEndpointHtml(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("JWT_KEY未配置"))
 		return
 	}
-	selfUrl, _ := config.GetConfigurationString("SELF_URL")
+	selfUrl, _ := config.GetConfigurationString("PUBLIC_SELF_URL")
 	if selfUrl == "" {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("SELF_URL未配置"))
 		return

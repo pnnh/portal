@@ -6,8 +6,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	"neutron/helpers"
-
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	"github.com/ory/fosite/handler/openid"
@@ -60,15 +58,15 @@ func InitOAuth2() {
 var oauth2 fosite.OAuth2Provider
 
 func getUserServer() string {
-	issure := config.MustGetConfigurationString("SELF_URL")
-	return issure
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	return issuer
 }
 
 func newSession(user string) *openid.DefaultSession {
-	issure := helpers.GetIssure()
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
 	return &openid.DefaultSession{
 		Claims: &jwt.IDTokenClaims{
-			Issuer:      issure,
+			Issuer:      issuer,
 			Subject:     user,
 			Audience:    []string{},
 			ExpiresAt:   time.Now().Add(time.Hour * 72),

@@ -1,24 +1,45 @@
 package main
 
 import (
+	"flag"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"neutron/config"
 	"neutron/services/datastore"
 )
 
+var (
+	configFlag string
+)
+
+func init() {
+	flag.StringVar(&configFlag, "config", "", "config file path")
+}
+
 func main() {
+	flag.Parse()
+	logrus.Println("config url:", configFlag)
+	if configFlag == "" {
+		configFlag = os.Getenv("PSCONFIG")
+	}
+	if configFlag == "" {
+		logrus.Fatalln("please set PSCONFIG")
+		return
+	}
+
 	if config.Debug() {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	err := config.InitAppConfig("config.yaml")
+	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "portal")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)
 	}
 
-	accountDSN, ok := config.GetConfiguration("DATABASE")
+	accountDSN, ok := config.GetConfiguration("app.DATABASE")
 	if !ok || accountDSN == nil {
 		logrus.Errorln("DATABASE未配置")
 	}

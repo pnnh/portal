@@ -3,13 +3,13 @@ package authorizationserver
 import (
 	"fmt"
 
-	"neutron/helpers"
+	"neutron/config"
 
 	"github.com/gin-gonic/gin"
 )
 
 func OpenIdConfigurationHandler(gctx *gin.Context) {
-	issuer := helpers.GetIssure()
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
 	resourcesServer := getUserServer()
 
 	responseTemplate := `

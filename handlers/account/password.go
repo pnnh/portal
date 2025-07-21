@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"neutron/config"
 	"portal/handlers/auth/authorizationserver"
 
 	"github.com/sirupsen/logrus"
@@ -214,9 +215,10 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(account.Username,
 		authorizationserver.PrivateKeyString,
-		session.JwtId)
+		session.JwtId, issuer)
 	if (jwtToken == "") || (err != nil) {
 		models.ResponseMessageError(gctx, "参数有误316", err)
 		return

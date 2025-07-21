@@ -290,9 +290,10 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 		logrus.Printf("Error occurred in NewAccessResponse2222: %+v", err)
 		return
 	}
+	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(username,
 		authorizationserver.PrivateKeyString,
-		session.JwtId)
+		session.JwtId, issuer)
 	if (jwtToken == "") || (err != nil) {
 		models.ResponseMessageError(gctx, "参数有误319", err)
 		return

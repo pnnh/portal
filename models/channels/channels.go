@@ -22,6 +22,7 @@ type MTChannelModel struct {
 	UpdateTime  time.Time      `json:"update_time" db:"update_time"`
 	Cid         sql.NullString `json:"cid" db:"cid"`
 	Lang        sql.NullString `json:"lang" db:"lang"`
+	Owner       string         `json:"owner" db:"owner"`
 }
 
 func (m MTChannelModel) ToViewModel() interface{} {

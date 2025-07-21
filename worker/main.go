@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	err := config.InitAppConfig("config.yaml")
+	err := config.InitAppConfig("config.yaml", "huable", "polaris", config.GetEnvName(), "worker")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)
 	}
