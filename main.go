@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -15,17 +16,18 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFlag, "config", "", "config file path")
+	flag.StringVar(&configFlag, "config", "config.yaml", "config file path")
 }
 
 func main() {
 	flag.Parse()
-	logrus.Println("config url:", configFlag)
-	if configFlag == "" {
-		configFlag = os.Getenv("PSCONFIG")
+	logrus.Println("config:", configFlag)
+	if strings.HasSuffix(configFlag, "env://") {
+		envName := configFlag[len("env://"):]
+		configFlag = os.Getenv(envName)
 	}
 	if configFlag == "" {
-		logrus.Fatalln("please set PSCONFIG")
+		logrus.Fatalln("please set config")
 		return
 	}
 
