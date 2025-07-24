@@ -26,7 +26,7 @@ func VerifyTurnstileToken(token string, ipAddr string) (bool, error) {
 	}
 	posturl := "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
-	turnstileSecret, ok := config.GetConfigurationString("project.CLOUDFLARE_TURNSTILE_SECRET")
+	turnstileSecret, ok := config.GetConfigurationString("app.CLOUDFLARE_TURNSTILE_SECRET")
 	if !ok || turnstileSecret == "" {
 		logrus.Errorln("CLOUDFLARE_TURNSTILE_SECRET 未配置")
 	}

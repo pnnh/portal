@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"portal/business"
+	"portal/business/channels"
 	"portal/models"
-	"portal/models/channels"
 )
 
 func ChannelSelectHandler(gctx *gin.Context) {

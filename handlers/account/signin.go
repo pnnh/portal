@@ -96,7 +96,7 @@ func SigninHandler(gctx *gin.Context) {
 	if !ok || jwtPrivateKey == "" {
 		logrus.Errorln("JWT_PRIVATE_KEY 未配置")
 	}
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 
 	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Uid, issuer)
 	if (jwtToken == "") || (err != nil) {
@@ -104,7 +104,7 @@ func SigninHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("生成jwtToken错误"))
 		return
 	}
-	selfUrl, ok := config.GetConfigurationString("PUBLIC_SELF_URL")
+	selfUrl, ok := config.GetConfigurationString("app.PUBLIC_PORTAL_URL")
 	if !ok || selfUrl == "" {
 		logrus.Errorln("PUBLIC_SELF_URL 未配置")
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("PUBLIC_SELF_URL Unknown"))

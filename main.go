@@ -22,7 +22,7 @@ func init() {
 func main() {
 	flag.Parse()
 	logrus.Println("config:", configFlag)
-	if strings.HasSuffix(configFlag, "env://") {
+	if strings.HasPrefix(configFlag, "env://") {
 		envName := configFlag[len("env://"):]
 		configFlag = os.Getenv(envName)
 	}

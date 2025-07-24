@@ -215,7 +215,7 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(account.Username,
 		authorizationserver.PrivateKeyString,
 		session.JwtId, issuer)

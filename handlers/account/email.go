@@ -208,7 +208,7 @@ func MailSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(user.Username,
 		authorizationserver.PrivateKeyString,
 		sessionModel.JwtId, issuer)

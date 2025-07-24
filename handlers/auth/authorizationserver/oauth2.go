@@ -58,12 +58,12 @@ func InitOAuth2() {
 var oauth2 fosite.OAuth2Provider
 
 func getUserServer() string {
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	return issuer
 }
 
 func newSession(user string) *openid.DefaultSession {
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	return &openid.DefaultSession{
 		Claims: &jwt.IDTokenClaims{
 			Issuer:      issuer,

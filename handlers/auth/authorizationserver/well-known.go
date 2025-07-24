@@ -9,7 +9,7 @@ import (
 )
 
 func OpenIdConfigurationHandler(gctx *gin.Context) {
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	resourcesServer := getUserServer()
 
 	responseTemplate := `

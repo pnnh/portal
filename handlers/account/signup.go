@@ -116,7 +116,7 @@ func SignupHandler(gctx *gin.Context) {
 		logrus.Errorln("JWT_PRIVATE_KEY 未配置")
 	}
 
-	issuer := config.MustGetConfigurationString("PUBLIC_SELF_URL")
+	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Uid, issuer)
 	if (jwtToken == "") || (err != nil) {
 		logrus.Println("GenerateJwtTokenRs256", err)

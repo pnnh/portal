@@ -10,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"neutron/helpers"
 	"portal/business"
+	"portal/business/channels"
 	"portal/models"
-	"portal/models/channels"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
