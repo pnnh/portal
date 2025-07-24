@@ -18,9 +18,9 @@ func main() {
 		logrus.Fatalln("初始化配置失败", err)
 	}
 
-	accountDSN, ok := config.GetConfiguration("DATABASE")
+	accountDSN, ok := config.GetConfiguration("app.DATABASE")
 	if !ok || accountDSN == nil {
-		logrus.Errorln("DATABASE未配置")
+		logrus.Errorln("DATABASE未配置2")
 	}
 
 	if err := datastore.Init(accountDSN.(string)); err != nil {

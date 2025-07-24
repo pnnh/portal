@@ -202,10 +202,7 @@ func PGGetNote(uid string, lang string) (*MTNoteModel, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGGetNote uid is empty")
 	}
-	pageSqlText := ` select * from articles where status = 1 and uid = :uid; `
-	if lang != "" {
-		pageSqlText = ` select * from articles where status = 1 and cid = :uid and lang = :lang; `
-	}
+	pageSqlText := ` select * from articles where status = 1 and (uid = :uid or (cid = :uid and lang = :lang)); `
 
 	pageSqlParams := map[string]interface{}{
 		"uid":  uid,

@@ -29,9 +29,9 @@ func main() {
 
 	logrus.Println("Redis初始化完成")
 
-	accountDSN, ok := config.GetConfiguration("DATABASE")
+	accountDSN, ok := config.GetConfiguration("app.DATABASE")
 	if !ok || accountDSN == nil {
-		logrus.Errorln("DATABASE未配置")
+		logrus.Errorln("DATABASE未配置3")
 	}
 
 	if err := datastore.Init(accountDSN.(string)); err != nil {
