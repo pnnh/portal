@@ -33,7 +33,6 @@ COPY --from=builder --chown=portal:golang /app/portal .
 USER portal
 
 ENV PORT=8001
-EXPOSE 8001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["./portal", "-config", "config.yaml"]
+CMD ["./portal", "-config", "env://CONFIG"]
