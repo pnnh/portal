@@ -34,6 +34,10 @@ type SessionModel struct {
 	Client       sql.NullString `json:"client" db:"client"`
 }
 
+type SessionViewModel struct {
+	Uid string `json:"uid"`
+}
+
 func PutSession(model *SessionModel) error {
 	sqlText := `insert into sessions(uid, content, create_time, update_time, username, type, code,
 		client_id, response_type, redirect_uri, scope, state, nonce, id_token, jwt_id, access_token, open_id, company_id, 

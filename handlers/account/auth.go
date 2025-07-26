@@ -29,15 +29,24 @@ func AppQueryHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("app cannot be empty"))
 		return
 	}
-	if appName != "thunder" {
+	var appInfo map[string]string
+	if appName == "thunder" {
+		appInfo = map[string]string{
+			"name":        "thunder",
+			"description": "多元宇宙授权平台",
+			"version":     "1.0.0",
+			"title":       "ThunderApp",
+		}
+	} else if appName == "square" {
+		appInfo = map[string]string{
+			"name":        "square",
+			"description": "短链平台",
+			"version":     "1.0.0",
+			"title":       "SquareApp",
+		}
+	} else {
 		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("应用不存在"))
 		return
-	}
-	appInfo := map[string]string{
-		"name":        "thunder",
-		"description": "多元宇宙授权平台",
-		"version":     "1.0.0",
-		"title":       "ThunderApp",
 	}
 
 	result := models.CodeOk.WithData(appInfo)
@@ -118,10 +127,10 @@ func PermitAppLoginHandler(gctx *gin.Context) {
 		return
 	}
 
-	result := models.CodeOk.WithData(map[string]any{
-		"changes": 1,
-		"uid":     sessionModel.Uid,
-	})
+	sessionView := &models.SessionViewModel{
+		Uid: sessionModel.Uid,
+	}
+	result := models.CodeOk.WithData(sessionView)
 
 	gctx.JSON(http.StatusOK, result)
 }
