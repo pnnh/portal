@@ -43,10 +43,10 @@ func NoteSelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func NoteInsertHandler(gctx *gin.Context) {
+func NoteConsoleInsertHandler(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Warnln("NoteInsertHandler", err)
+		logrus.Warnln("NoteConsoleInsertHandler", err)
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
@@ -91,7 +91,7 @@ func NoteInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	err = PGInsertNote(model)
+	err = PGConsoleInsertNote(model)
 	if err != nil {
 		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入笔记出错"))
 		return
@@ -101,60 +101,6 @@ func NoteInsertHandler(gctx *gin.Context) {
 		"changes": 1,
 		"uid":     model.Uid,
 	})
-
-	gctx.JSON(http.StatusOK, result)
-}
-
-func NoteUpdateHandler(gctx *gin.Context) {
-	uid := gctx.Param("uid")
-	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
-		return
-	}
-	accountModel, err := business.FindAccountFromCookie(gctx)
-	if err != nil {
-		logrus.Warnln("NoteUpdateHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
-		return
-	}
-	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能修改笔记"))
-		return
-	}
-
-	model := &MTNoteModel{}
-	if err := gctx.ShouldBindJSON(model); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
-		return
-	}
-	if model.Title == "" || model.Body == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题或内容不能为空"))
-		return
-	}
-	oldModel, err := PGGetNote(uid, "")
-	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
-		return
-	}
-	if oldModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("笔记不存在"))
-		return
-	}
-	if oldModel.Owner != accountModel.Uid {
-		gctx.JSON(http.StatusOK, models.CodeUnauthorized.WithMessage("没有权限修改该笔记"))
-		return
-	}
-
-	model.Uid = uid
-	model.UpdateTime = time.Now().UTC()
-
-	err = PGUpdateNote(model)
-	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新笔记出错"))
-		return
-	}
-
-	result := models.CodeOk.WithData(model.Uid)
 
 	gctx.JSON(http.StatusOK, result)
 }

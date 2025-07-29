@@ -45,6 +45,7 @@ type MTNoteModel struct {
 	Lang        string         `json:"lang" db:"lang"`
 	Nid         int64          `json:"nid" db:"nid"`
 	Dc          string         `json:"-" db:"dc"`
+	Name        string         `json:"name" db:"name"`
 }
 
 func (m MTNoteModel) ToViewModel() interface{} {
@@ -69,7 +70,7 @@ type MTNoteView struct {
 	Lang string `json:"lang" db:"lang"`
 }
 
-func PGInsertNote(model *MTNoteModel) error {
+func PGConsoleInsertNote(model *MTNoteModel) error {
 	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
                      version, build, url, branch, commit, commit_time, repo_path, repo_id, cid, lang, dc, channel, owner)
 values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url, :branch, 
@@ -100,24 +101,7 @@ do nothing;`
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)
 	if err != nil {
-		return fmt.Errorf("PGInsertNote: %w", err)
-	}
-	return nil
-}
-
-func PGUpdateNote(model *MTNoteModel) error {
-	sqlText := `update articles set title = :title,  body = :body, description = :description, 
-	update_time = now() where uid = :uid;`
-
-	sqlParams := map[string]interface{}{
-		"uid":         model.Uid,
-		"title":       model.Title,
-		"body":        model.Body,
-		"description": model.Description,
-	}
-
-	if _, err := datastore.NamedExec(sqlText, sqlParams); err != nil {
-		return fmt.Errorf("PGUpdateNote: %w", err)
+		return fmt.Errorf("PGConsoleInsertNote: %w", err)
 	}
 	return nil
 }

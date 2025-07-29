@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"neutron/config"
 	"neutron/services/filesystem"
-	"portal/handlers/channels"
+	"portal/business/channels"
 	"portal/models/images"
 	"portal/models/notes"
 
@@ -114,13 +114,21 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
-	s.router.POST("/portal/articles", notes.NoteInsertHandler)
+	s.router.GET("/portal/console/articles", notes.ConsoleNotesSelectHandler)
+	s.router.POST("/portal/console/articles", notes.NoteConsoleInsertHandler)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
-	s.router.PUT("/portal/articles/:uid", notes.NoteUpdateHandler)
+	s.router.GET("/portal/console/articles/:uid", notes.ConsoleNoteGetHandler)
+	s.router.PUT("/portal/console/articles/:uid", notes.ConsoleNoteUpdateHandler)
+	s.router.DELETE("/portal/console/articles/:uid", notes.ConsoleNoteDeleteHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
+	s.router.GET("/portal/console/channels", channels.ConsoleChannelSelectHandler)
+	s.router.POST("/portal/console/channels", channels.ConsoleChannelInsertHandler)
 	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler) // 补全频道
 	s.router.GET("/portal/channels/:uid", channels.ChannelGetHandler)
+	s.router.GET("/portal/console/channels/:uid", channels.ConsoleChannelGetHandler)
+	s.router.PUT("/portal/console/channels/:uid", channels.ConsoleChannelUpdateHandler)
+	s.router.DELETE("/portal/console/channels/:uid", channels.ConsoleChannelDeleteHandler)
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 	s.router.POST("/portal/articles/:uid/viewer", notes.NoteViewerInsertHandler)
@@ -133,17 +141,11 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/account/auth/app", account.AppQueryHandler)
 	s.router.POST("/portal/account/auth/permit", account.PermitAppLoginHandler)
 
-	if config.Debug() {
-		//s.router.Any("/suzaku/*proxyPath", suzakuProxy)
-		//s.router.Any("/lightning/*proxyPath", lightningProxy)
-		//s.router.NoRoute(polarisProxy)
-	} else {
-		s.router.NoRoute(func(c *gin.Context) {
-			path := c.Request.URL.Path
-			logrus.Debugln("404路径: " + path)
-			c.JSON(404, gin.H{"code": path + "PAGE_NOT_FOUND", "message": "Page not found"})
-		})
-	}
+	s.router.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		logrus.Debugln("404路径: " + path)
+		c.JSON(404, gin.H{"code": path + "PAGE_NOT_FOUND", "message": "Page not found"})
+	})
 
 	return nil
 }

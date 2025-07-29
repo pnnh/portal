@@ -97,7 +97,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 			note.RepoPath = sql.NullString{String: repoPath, Valid: true}
 			note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
 		}
-		err = notes.PGInsertNote(note)
+		err = notes.PGConsoleInsertNote(note)
 		if err != nil {
 			fmt.Printf("插入文章失败: %v", err)
 		}

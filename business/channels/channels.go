@@ -3,18 +3,23 @@ package channels
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"neutron/helpers"
 	"neutron/services/datastore"
+	"portal/business"
 	"portal/models"
 )
 
 type MTChannelModel struct {
 	Uid         string         `json:"uid"`
 	Name        string         `json:"name"`
+	Title       sql.NullString `json:"title"`
 	Description sql.NullString `json:"description"`
 	Image       sql.NullString `json:"image"`
 	Status      int            `json:"status"`
@@ -41,6 +46,8 @@ func (m MTChannelModel) ToViewModel() interface{} {
 	if m.Lang.Valid {
 		view.Lang = m.Lang.String
 	}
+	view.Title = m.Title.String
+
 	return view
 }
 
@@ -51,6 +58,7 @@ type MTChannelView struct {
 	Cid         string `json:"cid"`
 	Lang        string `json:"lang"`
 	Match       string `json:"match"` // 用于自动完成时的匹配
+	Title       string `json:"title"`
 }
 
 func SelectChannels(keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
@@ -124,7 +132,7 @@ func SelectChannels(keyword string, page int, size int, lang string) (*models.Se
 }
 
 // 输入频道时自动完成
-func CompleteChannels(keyword string, lang string) (*models.SelectResult[MTChannelView], error) {
+func PGCompleteChannels(keyword string, lang string) (*models.SelectResult[MTChannelView], error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword cannot be empty")
 	}
@@ -204,4 +212,68 @@ func PGGetChannel(uid, lang string) (*MTChannelModel, error) {
 		return item, nil
 	}
 	return nil, nil
+}
+
+func ChannelSelectHandler(gctx *gin.Context) {
+	keyword := gctx.Query("keyword")
+	page := gctx.Query("page")
+	size := gctx.Query("size")
+	lang := gctx.Query("lang")
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		pageInt = 1
+	}
+	sizeInt, err := strconv.Atoi(size)
+	if err != nil {
+		sizeInt = 10
+	}
+	if lang == "" {
+		lang = business.DefaultLanguage
+	}
+	selectResult, err := SelectChannels(keyword, pageInt, sizeInt, lang)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		return
+	}
+
+	selectResponse := models.SelectResultToResponse(selectResult)
+	responseResult := models.CodeOk.WithData(selectResponse)
+
+	gctx.JSON(http.StatusOK, responseResult)
+}
+
+// 输入时自动完成
+func ChannelCompleteHandler(gctx *gin.Context) {
+	keyword := gctx.Query("keyword")
+	lang := gctx.Query("lang")
+	selectResult, err := PGCompleteChannels(keyword, lang)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		return
+	}
+
+	responseResult := models.CodeOk.WithData(selectResult)
+
+	gctx.JSON(http.StatusOK, responseResult)
+}
+
+func ChannelGetHandler(gctx *gin.Context) {
+	uid := gctx.Param("uid")
+	lang := gctx.Query("lang")
+	if uid == "" {
+		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		return
+	}
+	selectResult, err := PGGetChannel(uid, lang)
+	if err != nil {
+		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		return
+	}
+	var modelData any
+	if selectResult != nil {
+		modelData = selectResult.ToViewModel()
+	}
+	responseResult := models.CodeOk.WithData(modelData)
+
+	gctx.JSON(http.StatusOK, responseResult)
 }
