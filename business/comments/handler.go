@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	nemodels "neutron/models"
+	"portal/business/notes"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,29 +15,28 @@ import (
 	"neutron/services/redisdb"
 	"portal/business"
 	"portal/models"
-	"portal/models/notes"
 )
 
 type CommentInsertRequest struct {
 	//cloudflare.TurnstileModel
-	models.CommentModel
+	CommentModel
 }
 
 func CommentInsertHandler(gctx *gin.Context) {
 	request := &CommentInsertRequest{}
 	if err := gctx.ShouldBindJSON(request); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("CommentInsertHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能评论"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能评论"))
 		return
 	}
 
@@ -50,13 +51,13 @@ func CommentInsertHandler(gctx *gin.Context) {
 	request.Nickname = accountModel.Nickname
 	request.Website = accountModel.Website
 
-	err = models.PGInsertComment(&request.CommentModel)
+	err = PGInsertComment(&request.CommentModel)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入评论出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入评论出错"))
 		return
 	}
 
-	result := models.CodeOk.WithData(map[string]any{
+	result := nemodels.NECodeOk.WithData(map[string]any{
 		"changes": 1,
 		"uid":     request.Uid,
 	})
@@ -67,16 +68,16 @@ func CommentInsertHandler(gctx *gin.Context) {
 func CommentSelectHandler(gctx *gin.Context) {
 	target := gctx.Query("resource")
 	if target == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("资源不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("资源不存在"))
 		return
 	}
 
-	selectResult, err := models.SelectComments(target, 1, 60)
+	selectResult, err := SelectComments(target, 1, 60)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询评论出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询评论出错"))
 		return
 	}
-	responseResult := models.CodeOk.WithData(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResult)
 
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
@@ -96,11 +97,11 @@ func CommentSelectHandler(gctx *gin.Context) {
 
 // 发送评论消息到消息队列
 func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.AccountModel,
-	selectResult *models.SelectResponse, addr string) {
+	selectResult *nemodels.NESelectResponse, addr string) {
 
 	commentViewers := make([]*notes.MTViewerModel, 0)
 	for _, item := range selectResult.Range {
-		comment := item.(*models.CommentModel)
+		comment := item.(*CommentModel)
 		// 跳过匿名评论或当前用户的评论
 		if comment == nil || comment.Creator == "" {
 			continue
@@ -128,7 +129,7 @@ func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.Account
 		viewersJson, err := json.Marshal(commentViewers)
 		if err != nil {
 			logrus.Errorln("CommentSelectHandler json.Marshal error:", err)
-			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
 		}
 		redisUrl, ok := config.GetConfigurationString("app.REDIS_URL")
@@ -138,13 +139,13 @@ func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.Account
 		redisClient, err := redisdb.ConnectRedis(gctx, redisUrl)
 		if err != nil {
 			logrus.Errorln("CommentSelectHandler ConnectRedis error:", err)
-			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
 		}
-		err = redisdb.Produce(gctx, redisClient, models.CommentViewersRedisKey, viewersJson)
+		err = redisdb.Produce(gctx, redisClient, CommentViewersRedisKey, viewersJson)
 		if err != nil {
 			logrus.Errorln("CommentSelectHandler Producer error:", err)
-			gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
 		}
 	}

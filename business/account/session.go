@@ -2,6 +2,7 @@ package account
 
 import (
 	"net/http"
+	nemodels "neutron/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -19,28 +20,28 @@ func SessionQueryHandler(gctx *gin.Context) {
 		sessionAccountModel, err = models.GetSessionById(session)
 		if err != nil {
 			logrus.Warnln("UserinfoHandler2", err)
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 			return
 		}
 	} else if link != "" && app != "" {
 		sessionAccountModel, err = models.GetSessionByLink(app, link)
 		if err != nil {
 			logrus.Warnln("UserinfoHandler3", err)
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错e"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错e"))
 			return
 		}
 	} else {
-		gctx.JSON(http.StatusBadRequest, models.CodeError.WithMessage("parameters invalid"))
+		gctx.JSON(http.StatusBadRequest, nemodels.NECodeError.WithMessage("parameters invalid"))
 		return
 	}
 	if sessionAccountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	databaseAccountModel, err := models.GetAccount(sessionAccountModel.Account)
 	if err != nil || databaseAccountModel == nil {
 		logrus.Warnln("UserinfoHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号信息出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号信息出错"))
 		return
 	}
 	selfAccountModel := &models.SelfAccountModel{
@@ -48,7 +49,7 @@ func SessionQueryHandler(gctx *gin.Context) {
 		Username:     sessionAccountModel.Username,
 	}
 
-	result := models.CodeOk.WithData(selfAccountModel)
+	result := nemodels.NECodeOk.WithData(selfAccountModel)
 
 	gctx.JSON(http.StatusOK, result)
 }

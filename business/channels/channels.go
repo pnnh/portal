@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	nemodels "neutron/models"
 	"strconv"
 	"strings"
 	"time"
@@ -12,11 +13,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"neutron/helpers"
 	"neutron/services/datastore"
-	"portal/business"
-	"portal/models"
 )
 
-type MTChannelModel struct {
+type MTChannelTable struct {
+	Error       error          `json:"-" db:"-"`
 	Uid         string         `json:"uid"`
 	Name        string         `json:"name"`
 	Title       sql.NullString `json:"title"`
@@ -30,23 +30,97 @@ type MTChannelModel struct {
 	Owner       string         `json:"owner" db:"owner"`
 }
 
+func (m *MTChannelTable) FromMap(tableMap *datastore.TableMap) *MTChannelTable {
+	if tableMap == nil {
+		m.Error = fmt.Errorf("tableMap cannot be nil")
+		return m
+	}
+	m.Uid = tableMap.GetString("uid")
+	m.Name = tableMap.GetString("name")
+	m.Title = tableMap.GetNullString("title")
+	m.Description = tableMap.GetNullString("description")
+	m.Image = tableMap.GetNullString("image")
+	m.Status = tableMap.GetInt("status")
+	m.CreateTime = tableMap.GetTime("create_time")
+	m.UpdateTime = tableMap.GetTime("update_time")
+	m.Cid = tableMap.GetNullString("cid")
+	m.Lang = tableMap.GetNullString("lang")
+	m.Owner = tableMap.GetString("owner")
+
+	return m
+}
+
+func (m *MTChannelTable) TableName() string {
+	return "channels"
+}
+
+func (m *MTChannelTable) PGGetByUid(uid string) *MTChannelTable {
+	getMap, err := datastore.NewGetQuery("channels",
+		"status = 1 and uid = :uid", "", "",
+		map[string]any{"uid": uid})
+	if err != nil {
+		m.Error = fmt.Errorf("NewGetQuery: %w", err)
+		return m
+	}
+	table := m.FromMap(getMap)
+	if table.Error != nil {
+		m.Error = fmt.Errorf("FromTableMap: %w", err)
+		return m
+	}
+	return table
+}
+
+func (m *MTChannelTable) ToModel() *MTChannelModel {
+	return &MTChannelModel{
+		MTChannelTable: *m,
+		Title:          m.Title.String,
+		Description:    m.Description.String,
+		Image:          m.Image.String,
+		Cid:            m.Cid.String,
+		Lang:           m.Lang.String,
+	}
+}
+
+type MTChannelModel struct {
+	MTChannelTable
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Image       string `json:"image"`
+	Cid         string `json:"cid"`
+	Lang        string `json:"lang"`
+}
+
+func (m *MTChannelModel) FromTable(table *MTChannelTable) (*MTChannelModel, error) {
+	if table == nil {
+		return nil, fmt.Errorf("table cannot be nil")
+	}
+	m.Uid = table.Uid
+	m.Name = table.Name
+	m.Title = table.Title.String
+	m.Description = table.Description.String
+	m.Image = table.Image.String
+	m.Status = table.Status
+	m.CreateTime = table.CreateTime
+	m.UpdateTime = table.UpdateTime
+	m.Cid = table.Cid.String
+	m.Lang = table.Lang.String
+	m.Owner = table.Owner
+
+	return m, nil
+}
+
+//func (m *MTChannelModel) GetByUid(uid string) (*MTChannelModel, error) {
+//	table:= (&MTChannelTable{}).PGGetByUid(uid)
+//	if table.Error != nil {
+//		return nil, fmt.Errorf("FromTableMap: %w", table.Error)
+//	}
+//	return m.FromTable(table)
+//}
+
 func (m MTChannelModel) ToViewModel() interface{} {
 	view := &MTChannelView{
 		MTChannelModel: m,
 	}
-	if m.Image.Valid {
-		view.Image = m.Image.String
-	}
-	if m.Description.Valid {
-		view.Description = m.Description.String
-	}
-	if m.Cid.Valid {
-		view.Cid = m.Cid.String
-	}
-	if m.Lang.Valid {
-		view.Lang = m.Lang.String
-	}
-	view.Title = m.Title.String
 
 	return view
 }
@@ -61,7 +135,7 @@ type MTChannelView struct {
 	Title       string `json:"title"`
 }
 
-func SelectChannels(keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
+func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.NESelectResult[MTChannelModel], error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from channels `
 	baseSqlParams := map[string]interface{}{}
@@ -121,7 +195,7 @@ func SelectChannels(keyword string, page int, size int, lang string) (*models.Se
 		return nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 
-	selectData := &models.SelectResult[MTChannelModel]{
+	selectData := &nemodels.NESelectResult[MTChannelModel]{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,
@@ -132,7 +206,7 @@ func SelectChannels(keyword string, page int, size int, lang string) (*models.Se
 }
 
 // 输入频道时自动完成
-func PGCompleteChannels(keyword string, lang string) (*models.SelectResult[MTChannelView], error) {
+func PGCompleteChannels(keyword string, lang string) (*nemodels.NESelectResult[MTChannelView], error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword cannot be empty")
 	}
@@ -182,7 +256,7 @@ func PGCompleteChannels(keyword string, lang string) (*models.SelectResult[MTCha
 		resultRange[0].Match = "exact"
 	}
 
-	selectData := &models.SelectResult[MTChannelView]{
+	selectData := &nemodels.NESelectResult[MTChannelView]{
 		Page:  1,
 		Size:  limitSize,
 		Count: len(resultRange),
@@ -192,11 +266,32 @@ func PGCompleteChannels(keyword string, lang string) (*models.SelectResult[MTCha
 	return selectData, nil
 }
 
-func PGGetChannel(uid, lang string) (*MTChannelModel, error) {
-	pageSqlText := ` select * from channels where status = 1 and  ((uid = :uid) or (cid = :uid and lang = :lang)); `
+func PGGetChannelByCid(cid, lang string) (*MTChannelModel, error) {
+	pageSqlText := ` select * from channels where status = 1 and cid = :cid and lang = :lang; `
 	pageSqlParams := map[string]interface{}{
-		"uid":  uid,
+		"cid":  cid,
 		"lang": lang,
+	}
+	var sqlResults []*MTChannelModel
+
+	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
+	}
+
+	for _, item := range sqlResults {
+		return item, nil
+	}
+	return nil, nil
+}
+
+func PGConsoleGetChannelByUid(uid string) (*MTChannelModel, error) {
+	pageSqlText := ` select * from channels where uid = :uid; `
+	pageSqlParams := map[string]interface{}{
+		"uid": uid,
 	}
 	var sqlResults []*MTChannelModel
 
@@ -228,16 +323,16 @@ func ChannelSelectHandler(gctx *gin.Context) {
 		sizeInt = 10
 	}
 	if lang == "" {
-		lang = business.DefaultLanguage
+		lang = nemodels.DefaultLanguage
 	}
 	selectResult, err := SelectChannels(keyword, pageInt, sizeInt, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 
-	selectResponse := models.SelectResultToResponse(selectResult)
-	responseResult := models.CodeOk.WithData(selectResponse)
+	selectResponse := nemodels.NESelectResultToResponse(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResponse)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
@@ -248,32 +343,42 @@ func ChannelCompleteHandler(gctx *gin.Context) {
 	lang := gctx.Query("lang")
 	selectResult, err := PGCompleteChannels(keyword, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 
-	responseResult := models.CodeOk.WithData(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResult)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func ChannelGetHandler(gctx *gin.Context) {
-	uid := gctx.Param("uid")
-	lang := gctx.Query("lang")
-	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+func ChannelGetByCidHandler(gctx *gin.Context) {
+	cid := gctx.Param("cid")
+	lang := gctx.Param("lang")
+	wangLang := gctx.Param("wantLang")
+	if lang == "" {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithLocalMessage(nemodels.LangEn,
+			"lang不能为空", "lang cannot be empty"))
 		return
 	}
-	selectResult, err := PGGetChannel(uid, lang)
+	if cid == "" || wangLang == "" {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithLocalMessage(lang,
+			"cid或wantLang不能为空", "cid or wantLang cannot be empty"))
+		return
+	}
+
+	selectResult, err := PGGetChannelByCid(cid, wangLang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithLocalError(lang, err, "查询频道出错", "query channel failed"))
 		return
 	}
-	var modelData any
-	if selectResult != nil {
-		modelData = selectResult.ToViewModel()
+	if selectResult == nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeNotFound.WithLocalMessage(lang, "频道不存在", "channel not found"))
+		return
 	}
-	responseResult := models.CodeOk.WithData(modelData)
+	var modelData = selectResult.ToViewModel()
+
+	responseResult := nemodels.NECodeOk.WithData(modelData)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	nemodels "neutron/models"
 	"strings"
 	"time"
 
@@ -54,17 +55,17 @@ func (s *WebauthnHandler) BeginRegistration(gctx *gin.Context) {
 
 	username := gctx.Param("username")
 	if len(username) < 1 {
-		models.ResponseCode(gctx, models.CodeInvalidParameter)
+		models.ResponseCode(gctx, nemodels.NECodeInvalidParameter)
 		return
 	}
 
 	model, err := models.GetAccountByUsername(username)
 	if err != nil {
-		models.ResponseCodeMessageError(gctx, models.CodeError, "GetAccount error", err)
+		models.ResponseCodeMessageError(gctx, nemodels.NECodeError, "GetAccount error", err)
 		return
 	}
 	if model != nil {
-		models.ResponseCodeMessageError(gctx, models.CodeError, "账号已存在", err)
+		models.ResponseCodeMessageError(gctx, nemodels.NECodeError, "账号已存在", err)
 		return
 	}
 	displayName := strings.Split(username, "@")[0]
@@ -187,7 +188,7 @@ func (s *WebauthnHandler) BeginLogin(gctx *gin.Context) {
 	}
 
 	if user == nil {
-		models.ResponseCode(gctx, models.CodeAccountNotExists)
+		models.ResponseCode(gctx, nemodels.NECodeAccountNotExists)
 		return
 	}
 
@@ -227,7 +228,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 	}
 	source, ok := gctx.GetQuery("source")
 	if source == "" || !ok {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("code或session为空a"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("code或session为空a"))
 		return
 	}
 
@@ -264,7 +265,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 
 	jwkModel, err := helpers.GetJwkModel()
 	if err != nil || jwkModel == nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetJwkModel error"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetJwkModel error"))
 		return
 	}
 	session := &models.SessionModel{
@@ -301,7 +302,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 
 	sourceData, err := base64.URLEncoding.DecodeString(source)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "source解析失败"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "source解析失败"))
 		return
 	}
 	sourceUrl := string(sourceData)
@@ -317,7 +318,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 
 	// dj, err := json.Marshal(resp)
 	// if err != nil {
-	// 	gctx.JSON(http.StatusOK, models.CodeError.WithMessage("source解析失败222"))
+	// 	gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("source解析失败222"))
 	// 	return
 	// }
 	// gctx.JSON(http.StatusOK, resp)

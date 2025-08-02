@@ -3,12 +3,17 @@ package notes
 import (
 	"database/sql"
 	"fmt"
+	"github.com/iancoleman/strcase"
+	nemodels "neutron/models"
+	"neutron/services/maputil"
+	"neutron/services/strutil"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"neutron/helpers"
 	"neutron/services/datastore"
-	"portal/models"
 )
 
 type MTNoteMatter struct {
@@ -18,7 +23,7 @@ type MTNoteMatter struct {
 	Description string `json:"description"`
 }
 
-type MTNoteModel struct {
+type MTNoteTable struct {
 	Uid         string         `json:"uid"`
 	Title       string         `json:"title"`
 	Header      string         `json:"header"`
@@ -43,9 +48,37 @@ type MTNoteModel struct {
 	RepoId      sql.NullString `json:"-" db:"repo_id"`
 	Cid         string         `json:"cid" db:"cid"`
 	Lang        string         `json:"lang" db:"lang"`
-	Nid         int64          `json:"nid" db:"nid"`
+	Nid         int64          `json:"nid" db:"nid" insert:"skip"`
 	Dc          string         `json:"-" db:"dc"`
 	Name        string         `json:"name" db:"name"`
+}
+
+func (t *MTNoteTable) ToModel() *MTNoteModel {
+	return &MTNoteModel{
+		MTNoteTable: *t,
+		Partition:   t.Partition.String,
+		Version:     t.Version.String,
+		Build:       t.Build.String,
+		Url:         t.Url.String,
+		Branch:      t.Branch.String,
+		Commit:      t.Commit.String,
+		CommitTime:  t.CommitTime.Time,
+		RepoPath:    t.RepoPath.String,
+		RepoId:      t.RepoId.String,
+	}
+}
+
+type MTNoteModel struct {
+	MTNoteTable
+	Partition  string    `json:"-"`
+	Version    string    `json:"-"`
+	Build      string    `json:"-"`
+	Url        string    `json:"-"`
+	Branch     string    `json:"-"`
+	Commit     string    `json:"-" db:"commit"`
+	CommitTime time.Time `json:"-" db:"commit_time"`
+	RepoPath   string    `json:"-" db:"repo_path"`
+	RepoId     string    `json:"-" db:"repo_id"`
 }
 
 func (m MTNoteModel) ToViewModel() interface{} {
@@ -70,43 +103,83 @@ type MTNoteView struct {
 	Lang string `json:"lang" db:"lang"`
 }
 
-func PGConsoleInsertNote(model *MTNoteModel) error {
-	sqlText := `insert into articles(uid, title, header, body, description, create_time, update_time, 
-                     version, build, url, branch, commit, commit_time, repo_path, repo_id, cid, lang, dc, channel, owner)
-values(:uid, :title, :header, :body, :description, now(), now(), :version, :build, :url, :branch, 
-       :commit, :commit_time, :repo_path, :repo_id, :cid, :lang, :dc, :channel, :owner)
-on conflict (uid)
-do nothing;`
+func ReflectColumns(s interface{}) (map[string]any, error) {
+	v := reflect.ValueOf(s)
+	t := reflect.TypeOf(s)
 
-	sqlParams := map[string]interface{}{
-		"uid":         model.Uid,
-		"title":       model.Title,
-		"header":      "MTNote",
-		"body":        model.Body,
-		"description": model.Description,
-		"version":     model.Version,
-		"build":       model.Build,
-		"url":         model.Url,
-		"branch":      model.Branch,
-		"commit":      model.Commit,
-		"commit_time": model.CommitTime,
-		"repo_path":   model.RepoPath,
-		"repo_id":     model.RepoId,
-		"cid":         model.Cid,
-		"lang":        model.Lang,
-		"dc":          model.Dc,
-		"channel":     model.Channel,
-		"owner":       model.Owner,
+	// 如果是指针，取其元素
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+		v = v.Elem()
 	}
 
-	_, err := datastore.NamedExec(sqlText, sqlParams)
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("getStructFields kind is not struct")
+	}
+	columnMap := make(map[string]any)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		fmt.Printf("成员名: %s, 类型: %s, 类型名称: %s, 值: %v\n",
+			field.Name,
+			field.Type.Kind(),      // 基本类型，如 string、int、struct 等
+			field.Type.Name(),      // 类型名称，如 int、string、自定义类型名
+			fieldValue.Interface(), // 字段值
+		)
+		colName := strcase.ToSnake(field.Name)
+		dbTag := field.Tag.Get("db")
+		if dbTag == "-" {
+			continue
+		} else if dbTag != "" {
+			colName = dbTag
+		}
+		insertTag := field.Tag.Get("insert")
+		if insertTag == "skip" {
+			continue
+		}
+		var colValue any
+		switch val := fieldValue.Interface().(type) {
+		case sql.NullString:
+			if val.Valid {
+				colValue = val.String
+			}
+		default:
+			colValue = val
+		}
+		columnMap[colName] = colValue
+	}
+	return columnMap, nil
+}
+
+func PGConsoleInsertNote(model *MTNoteModel) error {
+	columnMap, err := ReflectColumns(&model.MTNoteTable)
+	if err != nil {
+		return fmt.Errorf("PGConsoleInsertNote ReflectColumns: %w", err)
+	}
+
+	colNames := maputil.StringMapKeys(columnMap)
+	colText := strings.Join(colNames, ", ")
+	colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
+		return fmt.Sprintf(":%s, ", s)
+	}, func(s string) string {
+		return strings.TrimRight(s, ", ")
+	})
+
+	sqlText := fmt.Sprintf(`insert into articles(%s)
+values(%s)
+on conflict (uid)
+do nothing;`, colText, colPlaceholders)
+
+	_, err = datastore.NamedExec(sqlText, columnMap)
 	if err != nil {
 		return fmt.Errorf("PGConsoleInsertNote: %w", err)
 	}
 	return nil
 }
 
-func SelectNotes(channel, keyword string, page int, size int, lang string) (*models.SelectResult[MTNoteModel], error) {
+func SelectNotes(channel, keyword string, page int, size int, lang string) (*nemodels.NESelectResult[MTNoteModel], error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -170,7 +243,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*mod
 		return nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 
-	selectData := &models.SelectResult[MTNoteModel]{
+	selectData := &nemodels.NESelectResult[MTNoteModel]{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	nemodels "neutron/models"
 	"strings"
 	"time"
 
@@ -49,18 +50,18 @@ func AuthEndpointHtml(gctx *gin.Context) {
 	}
 	webUrl, _ := config.GetConfigurationString("WEB_URL")
 	if webUrl == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("JWT_KEY未配置"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("JWT_KEY未配置"))
 		return
 	}
 	selfUrl, _ := config.GetConfigurationString("app.PUBLIC_PORTAL_URL")
 	if selfUrl == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("SELF_URL未配置"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("SELF_URL未配置"))
 		return
 	}
 	// 检查是否已经登录
 	authUser, err := parseUsername(gctx)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "username为空"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "username为空"))
 		return
 	}
 	if authUser == "" {
@@ -87,23 +88,23 @@ func AuthEndpointJson(gctx *gin.Context) {
 
 	username := gctx.PostForm("username")
 	if username == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("username为空2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("username为空2"))
 		return
 	}
 	clientId := gctx.Query("client_id")
 	if clientId == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("client_id为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("client_id为空"))
 		return
 	}
 
 	authedUser, err := parseUsername(gctx)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "username为空3"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "username为空3"))
 		return
 	}
 	// 若用户名不一致认为是重新登陆
 	if username != authedUser {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("出现错误，请重新登陆"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("出现错误，请重新登陆"))
 		return
 	}
 

@@ -3,6 +3,7 @@ package account
 import (
 	"fmt"
 	"net/http"
+	nemodels "neutron/models"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
@@ -19,17 +20,17 @@ func UserinfoHandler(gctx *gin.Context) {
 	sessionAccountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("UserinfoHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if sessionAccountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	databaseAccountModel, err := models.GetAccount(sessionAccountModel.Uid)
 	if err != nil {
 		logrus.Warnln("UserinfoHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号信息出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号信息出错"))
 		return
 	}
 	selfAccountModel := &models.SelfAccountModel{
@@ -37,7 +38,7 @@ func UserinfoHandler(gctx *gin.Context) {
 		Username:     sessionAccountModel.Username,
 	}
 
-	result := models.CodeOk.WithData(selfAccountModel)
+	result := nemodels.NECodeOk.WithData(selfAccountModel)
 
 	gctx.JSON(http.StatusOK, result)
 }
@@ -46,11 +47,11 @@ func UserinfoEditHandler(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("UserinfoHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	// 获取上传的文件
@@ -58,30 +59,30 @@ func UserinfoEditHandler(gctx *gin.Context) {
 	if err == nil && file != nil {
 		if file.Size > 10*1024*1024 { // 限制文件大小为10MB
 			logrus.Warningln("文件大小超过限制", file.Filename)
-			gctx.JSON(http.StatusOK, models.CodeError.WithMessage("文件大小超过限制"))
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("文件大小超过限制"))
 			return
 		}
 		if !filesystem.IsImageFile(file.Filename) {
 			logrus.Warningln("上传的文件不是图片", file.Filename)
-			gctx.JSON(http.StatusOK, models.CodeError.WithMessage("上传的文件不是图片"))
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("上传的文件不是图片"))
 			return
 		}
 		storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
 		if !ok || storageUrl == "" {
 			logrus.Warnln("UserinfoHandler STORAGE_URL 未配置2")
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "STORAGE_URL 未配置"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "STORAGE_URL 未配置"))
 			return
 		}
 		storagePath, err := filesystem.ResolvePath(storageUrl)
 		if err != nil {
 			logrus.Warnln("UserinfoHandler", fmt.Sprintf("解析路径失败: %v", err))
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "解析路径失败"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "解析路径失败"))
 			return
 		}
 		fileUuid, err := helpers.NewUuid()
 		if err != nil {
 			logrus.Warnln("UserinfoHandler", fmt.Sprintf("生成UUID失败: %v", err))
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "生成UUID失败"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "生成UUID失败"))
 			return
 		}
 		extName := filesystem.LowerExtName(file.Filename)
@@ -91,7 +92,7 @@ func UserinfoEditHandler(gctx *gin.Context) {
 		photoStorageDir := fmt.Sprintf("%s/%s/%s", storagePath, "photos", accountModel.Uid)
 		if err := filesystem.MkdirAll(photoStorageDir); err != nil {
 			logrus.Warnln("UserinfoHandler", fmt.Sprintf("创建目录失败: %v", err))
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "创建目录失败"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "创建目录失败"))
 			return
 		}
 		savePath := filepath.Join(photoStorageDir, filename)
@@ -110,11 +111,11 @@ func UserinfoEditHandler(gctx *gin.Context) {
 	err = models.UpdateAccountInfo(accountModel)
 	if err != nil {
 		logrus.Warnln("UserinfoEditHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新账号信息出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "更新账号信息出错"))
 		return
 	}
 
-	result := models.CodeOk
+	result := nemodels.NECodeOk
 
 	gctx.JSON(http.StatusOK, result)
 }

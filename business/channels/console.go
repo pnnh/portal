@@ -3,6 +3,7 @@ package channels
 import (
 	"fmt"
 	"net/http"
+	nemodels "neutron/models"
 	"strconv"
 	"time"
 
@@ -12,36 +13,35 @@ import (
 	"neutron/helpers"
 	"neutron/services/datastore"
 	"portal/business"
-	"portal/models"
 )
 
 func ConsoleChannelGetHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	lang := gctx.Query("lang")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("ConsoleChannelsSelectHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if accountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	selectResult, err := PGConsoleGetChannel(accountModel.Uid, uid, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 	var modelData any
 	if selectResult != nil {
 		modelData = selectResult.ToViewModel()
 	}
-	responseResult := models.CodeOk.WithData(modelData)
+	responseResult := nemodels.NECodeOk.WithData(modelData)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
@@ -73,25 +73,25 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("ChannelConsoleInsertHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能发布频道"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能发布频道"))
 		return
 	}
 
 	model := &MTChannelView{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 	if model.Name == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题或内容不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空"))
 		return
 	}
-	if model.Lang == "" || (model.Lang != business.LangZh && model.Lang != business.LangEn) {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Lang参数错误"))
+	if model.Lang == "" || (model.Lang != nemodels.LangZh && model.Lang != nemodels.LangEn) {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
 		return
 	}
 
@@ -104,11 +104,11 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 
 	err = PGConsoleInsertChannel(model)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入频道出错"))
 		return
 	}
 
-	result := models.CodeOk.WithData(model.Uid)
+	result := nemodels.NECodeOk.WithData(model.Uid)
 
 	gctx.JSON(http.StatusOK, result)
 }
@@ -139,44 +139,44 @@ do nothing;`
 func ConsoleChannelUpdateHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("ChannelUpdateHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能修改频道"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能修改频道"))
 		return
 	}
 
 	model := &MTChannelView{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 	if model.Title == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题不能为空"))
 		return
 	}
 	if model.Name == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("名称不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("名称不能为空"))
 		return
 	}
 	oldModel, err := PGConsoleGetChannel(accountModel.Uid, uid, "")
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 	if oldModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("频道不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("频道不存在"))
 		return
 	}
 	if oldModel.Owner != accountModel.Uid {
-		gctx.JSON(http.StatusOK, models.CodeUnauthorized.WithMessage("没有权限修改该频道"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeUnauthorized.WithMessage("没有权限修改该频道"))
 		return
 	}
 
@@ -185,11 +185,11 @@ func ConsoleChannelUpdateHandler(gctx *gin.Context) {
 
 	err = PGConsoleUpdateChannel(model)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "更新频道出错"))
 		return
 	}
 
-	result := models.CodeOk.WithData(model.Uid)
+	result := nemodels.NECodeOk.WithData(model.Uid)
 
 	gctx.JSON(http.StatusOK, result)
 }
@@ -230,26 +230,26 @@ func ConsoleChannelSelectHandler(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("ConsoleChannelsSelectHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if accountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	selectResult, err := ConsoleSelectChannels(accountModel.Uid, keyword, pageInt, sizeInt, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 
-	selectResponse := models.SelectResultToResponse(selectResult)
-	responseResult := models.CodeOk.WithData(selectResponse)
+	selectResponse := nemodels.NESelectResultToResponse(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResponse)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func ConsoleSelectChannels(owner, keyword string, page int, size int, lang string) (*models.SelectResult[MTChannelModel], error) {
+func ConsoleSelectChannels(owner, keyword string, page int, size int, lang string) (*nemodels.NESelectResult[MTChannelModel], error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from channels `
 	baseSqlParams := map[string]interface{}{}
@@ -310,7 +310,7 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 		return nil, fmt.Errorf("查询频道总数有误，数据为空")
 	}
 
-	selectData := &models.SelectResult[MTChannelModel]{
+	selectData := &nemodels.NESelectResult[MTChannelModel]{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,
@@ -324,32 +324,32 @@ func ConsoleChannelDeleteHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	lang := gctx.Query("lang")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("ConsoleChannelsSelectHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错b"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
 		return
 	}
 	if accountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
 	err = PGConsoleDeleteChannel(accountModel.Uid, uid, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
-	responseResult := models.CodeOk.WithData(uid)
+	responseResult := nemodels.NECodeOk.WithData(uid)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
 func PGConsoleDeleteChannel(owner, uid string, lang string) error {
 	if uid == "" {
-		return fmt.Errorf("PGConsoleGetChannel uid is empty")
+		return fmt.Errorf("PGConsoleDeleteChannel uid is empty")
 	}
 	pageSqlText := ` delete from channels where (owner = :owner and (uid = :uid or (cid = :uid and lang = :lang))); `
 

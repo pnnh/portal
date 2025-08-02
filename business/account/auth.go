@@ -3,6 +3,7 @@ package account
 import (
 	"database/sql"
 	"net/http"
+	nemodels "neutron/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,16 +18,16 @@ func AppQueryHandler(gctx *gin.Context) {
 	sessionAccountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("UserinfoHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if sessionAccountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("用户未登录"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("用户未登录"))
 		return
 	}
 	appName := gctx.Query("app")
 	if appName == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("app cannot be empty"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("app cannot be empty"))
 		return
 	}
 	var appInfo map[string]string
@@ -45,11 +46,11 @@ func AppQueryHandler(gctx *gin.Context) {
 			"title":       "SquareApp",
 		}
 	} else {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("应用不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("应用不存在"))
 		return
 	}
 
-	result := models.CodeOk.WithData(appInfo)
+	result := nemodels.NECodeOk.WithData(appInfo)
 
 	gctx.JSON(http.StatusOK, result)
 }
@@ -64,30 +65,30 @@ func PermitAppLoginHandler(gctx *gin.Context) {
 	sessionAccountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("UserinfoHandlercc", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	request := &PermitAppLoginRequest{}
 	if err := gctx.ShouldBindJSON(request); err != nil {
-		gctx.JSON(http.StatusBadRequest, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusBadRequest, nemodels.NECodeError.WithError(err))
 		return
 	}
 	if request.App == "" || request.Link == "" {
-		gctx.JSON(http.StatusBadRequest, models.CodeError.WithMessage("parameter app or link is empty"))
+		gctx.JSON(http.StatusBadRequest, nemodels.NECodeError.WithMessage("parameter app or link is empty"))
 		return
 	}
 	if sessionAccountModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在fc"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在fc"))
 		return
 	}
 	oldSession, err := models.GetSessionByLink(request.App, request.Link)
 	if err != nil {
 		logrus.Warnln("PermitAppLoginHandler GetSessionByLink", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询会话出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询会话出错"))
 		return
 	}
 	if oldSession != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("会话已存在，请勿重复授权"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("会话已存在，请勿重复授权"))
 		return
 	}
 
@@ -123,14 +124,14 @@ func PermitAppLoginHandler(gctx *gin.Context) {
 	err = models.PutSession(sessionModel)
 	if err != nil {
 		logrus.Println("PutSession", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("更新会话错误"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("更新会话错误"))
 		return
 	}
 
 	sessionView := &models.SessionViewModel{
 		Uid: sessionModel.Uid,
 	}
-	result := models.CodeOk.WithData(sessionView)
+	result := nemodels.NECodeOk.WithData(sessionView)
 
 	gctx.JSON(http.StatusOK, result)
 }

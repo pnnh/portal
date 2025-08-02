@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"portal/business/account"
+	"portal/business/comments"
+	"portal/business/notes"
 	"strings"
 	"time"
 
@@ -11,14 +14,10 @@ import (
 	"neutron/config"
 	"neutron/services/filesystem"
 	"portal/business/channels"
-	"portal/models/images"
-	"portal/models/notes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"portal/handlers"
-	"portal/handlers/account"
-	"portal/handlers/comments"
 )
 
 type IResource interface {
@@ -115,22 +114,24 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
 	s.router.GET("/portal/console/articles", notes.ConsoleNotesSelectHandler)
+	s.router.GET("/portal/:lang/console/articles", notes.ConsoleNotesSelectHandler)
 	s.router.POST("/portal/console/articles", notes.NoteConsoleInsertHandler)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
 	s.router.GET("/portal/console/articles/:uid", notes.ConsoleNoteGetHandler)
+	s.router.GET("/portal/:lang/console/articles/:uid", notes.ConsoleNoteGetHandler)
 	s.router.PUT("/portal/console/articles/:uid", notes.ConsoleNoteUpdateHandler)
 	s.router.DELETE("/portal/console/articles/:uid", notes.ConsoleNoteDeleteHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
 	s.router.GET("/portal/console/channels", channels.ConsoleChannelSelectHandler)
 	s.router.POST("/portal/console/channels", channels.ConsoleChannelInsertHandler)
-	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler) // 补全频道
-	s.router.GET("/portal/channels/:uid", channels.ChannelGetHandler)
+	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler)
+	s.router.GET("/portal/channels/:uid", channels.ChannelGetByUidHandler)
+	s.router.GET("/portal/:lang/channels/uid/:uid", channels.ChannelGetByUidHandler)
+	s.router.GET("/portal/:lang/channels/cid/:cid/:wantLang", channels.ChannelGetByCidHandler)
 	s.router.GET("/portal/console/channels/:uid", channels.ConsoleChannelGetHandler)
 	s.router.PUT("/portal/console/channels/:uid", channels.ConsoleChannelUpdateHandler)
 	s.router.DELETE("/portal/console/channels/:uid", channels.ConsoleChannelDeleteHandler)
-	s.router.GET("/portal/images", images.ImageSelectHandler)
-	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 	s.router.POST("/portal/articles/:uid/viewer", notes.NoteViewerInsertHandler)
 	s.router.POST("/portal/account/signup", account.SignupHandler)
 	s.router.POST("/portal/account/signin", account.SigninHandler)

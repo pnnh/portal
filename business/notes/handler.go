@@ -3,6 +3,7 @@ package notes
 import (
 	"errors"
 	"net/http"
+	nemodels "neutron/models"
 	"strconv"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"neutron/helpers"
 	"portal/business"
 	"portal/business/channels"
-	"portal/models"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
@@ -29,16 +29,16 @@ func NoteSelectHandler(gctx *gin.Context) {
 		sizeInt = 10
 	}
 	if lang == "" {
-		lang = business.DefaultLanguage
+		lang = nemodels.DefaultLanguage
 	}
 	selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
 
-	selectResponse := models.SelectResultToResponse(selectResult)
-	responseResult := models.CodeOk.WithData(selectResponse)
+	selectResponse := nemodels.NESelectResultToResponse(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResponse)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
@@ -47,29 +47,29 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
 		logrus.Warnln("NoteConsoleInsertHandler", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询账号出错c"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
 		return
 	}
 
 	model := &MTNoteModel{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 	if model.Title == "" || model.Body == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("标题或内容不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空"))
 		return
 	}
-	if model.Lang == "" || (model.Lang != business.LangZh && model.Lang != business.LangEn) {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Lang参数错误"))
+	if model.Lang == "" || (model.Lang != nemodels.LangZh && model.Lang != nemodels.LangEn) {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
 		return
 	}
 	if model.Channel == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Channel参数不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Channel参数不能为空"))
 		return
 	}
 
@@ -78,26 +78,28 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
 	model.Status = 0 // 待审核
-	model.Cid = model.Uid
 	model.Dc = business.CurrentDC
+	if model.Name == "" {
+		model.Name = model.Uid
+	}
 
-	channelModel, err := channels.PGGetChannel(model.Channel, model.Lang)
+	channelModel, err := channels.PGConsoleGetChannelByUid(model.Channel)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 	if channelModel == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("频道不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("频道不存在2"))
 		return
 	}
 
 	err = PGConsoleInsertNote(model)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "插入笔记出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
 		return
 	}
 
-	result := models.CodeOk.WithData(map[string]any{
+	result := nemodels.NECodeOk.WithData(map[string]any{
 		"changes": 1,
 		"uid":     model.Uid,
 	})
@@ -109,15 +111,15 @@ func NoteGetHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	lang := gctx.Query("lang")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	selectResult, err := PGGetNote(uid, lang)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "查询笔记出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
-	responseResult := models.CodeOk.WithData(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(selectResult)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
@@ -129,12 +131,12 @@ type ViewerInsertRequest struct {
 func NoteViewerInsertHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	request := &ViewerInsertRequest{}
 	if err := gctx.ShouldBindJSON(request); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
@@ -148,7 +150,7 @@ func NoteViewerInsertHandler(gctx *gin.Context) {
 	}
 	opErr, itemErrs := PGInsertViewer(model)
 	if opErr != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(opErr))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(opErr))
 		return
 	}
 	for key, item := range itemErrs {
@@ -156,7 +158,7 @@ func NoteViewerInsertHandler(gctx *gin.Context) {
 			logrus.Warnln("NoteViewerInsertHandler", key, item)
 		}
 	}
-	result := models.CodeOk.WithData(map[string]any{
+	result := nemodels.NECodeOk.WithData(map[string]any{
 		"changes": 1,
 	})
 

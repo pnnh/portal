@@ -1,7 +1,8 @@
-package models
+package comments
 
 import (
 	"fmt"
+	nemodels "neutron/models"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -58,7 +59,7 @@ do update set content = excluded.content, update_time = now();`
 	return nil
 }
 
-func SelectComments(resource string, page int, size int) (*SelectResponse, error) {
+func SelectComments(resource string, page int, size int) (*nemodels.NESelectResponse, error) {
 
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from comments where resource = :resource and (status = 1 or discover is null or discover <= 10) 
@@ -101,7 +102,7 @@ func SelectComments(resource string, page int, size int) (*SelectResponse, error
 		return nil, fmt.Errorf("查询评论总数有误，数据为空")
 	}
 
-	selectData := &SelectResponse{
+	selectData := &nemodels.NESelectResponse{
 		Page:  pagination.Page,
 		Size:  pagination.Size,
 		Count: countSqlResults[0].Count,

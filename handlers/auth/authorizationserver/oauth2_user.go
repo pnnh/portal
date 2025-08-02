@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"portal/models"
@@ -26,48 +27,48 @@ func UserEndpoint(gctx *gin.Context) {
 
 	id, secret, ok := gctx.Request.BasicAuth()
 	if !ok {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("idToken为空2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("idToken为空2"))
 		return
 	}
 
 	clientID, err := url.QueryUnescape(id)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空3"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空3"))
 		return
 	}
 
 	clientSecret, err := url.QueryUnescape(secret)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空4"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空4"))
 		return
 	}
 
 	client, err := fositeStore.GetClient(ctx, clientID)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空5"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空5"))
 		return
 	}
 
 	if err := checkClientSecret(ctx, client, []byte(clientSecret)); err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空6"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空6"))
 		return
 	}
 
 	idToken := gctx.PostForm("id_token")
 	if idToken == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("idToken为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("idToken为空"))
 		return
 	}
 	parsedClaims, err := helpers.ParseJwtTokenRs256(idToken, PublicKeyString)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空"))
 		return
 	}
 	//logrus.Infoln("parsedClaims: ", parsedClaims)
 
 	session, err := models.FindSessionByJwtId(clientID, parsedClaims.Subject, parsedClaims.ID)
 	if err != nil || session == nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空4"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空4"))
 		return
 	}
 

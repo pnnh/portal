@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	nemodels "neutron/models"
 
 	"portal/models"
 
@@ -42,24 +43,24 @@ func IntrospectionEndpoint(gctx *gin.Context) {
 
 	accessToken := gctx.PostForm("token")
 	if accessToken == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("access_token为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("access_token为空"))
 		return
 	}
 	id, _, ok := gctx.Request.BasicAuth()
 	if !ok {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("idToken为空2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("idToken为空2"))
 		return
 	}
 
 	clientId, err := url.QueryUnescape(id)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空3"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空3"))
 		return
 	}
 
 	session, err := models.FindSessionByAccessToken(clientId, accessToken)
 	if err != nil || session == nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空4"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空4"))
 		return
 	}
 

@@ -2,6 +2,7 @@ package authorizationserver
 
 import (
 	"net/http"
+	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"portal/models"
@@ -19,13 +20,13 @@ func TokenEndpoint(gctx *gin.Context) {
 	authCode := gctx.PostForm("code")
 	clientId := gctx.PostForm("client_id")
 	if authCode == "" || clientId == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("BasicAuth 2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("BasicAuth 2"))
 		return
 	}
 
 	session, err := models.FindSessionByCode(clientId, authCode)
 	if session == nil || err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
@@ -57,7 +58,7 @@ func TokenEndpoint(gctx *gin.Context) {
 
 	parsedClaims, err := helpers.ParseJwtTokenRs256(idTokenExtra, PublicKeyString)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "idToken为空"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "idToken为空"))
 		return
 	}
 

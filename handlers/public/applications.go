@@ -10,14 +10,14 @@ import (
 func PublicApplicationSelectHandler(gctx *gin.Context) {
 	accounts, err := models.SelectApplicationsByStatus(1)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 	sessionData := map[string]interface{}{
 		"list": accounts,
 	}
 
-	result := models.CodeOk.WithData(sessionData)
+	result := nemodels.NECodeOk.WithData(sessionData)
 
 	gctx.JSON(http.StatusOK, result)
 }

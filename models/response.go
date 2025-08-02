@@ -5,14 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	nemodels "neutron/models"
 )
 
-func ResponseCode(gctx *gin.Context, code MCode) {
-	message := CodeMessage(code)
+func ResponseCode(gctx *gin.Context, code nemodels.NECode) {
+	message := nemodels.NECodeMessage(nemodels.LangZh, code)
 	ResponseCodeMessageData(gctx, code, message, nil)
 }
 
-func ResponseCodeMessageData(gctx *gin.Context, code MCode, message string, data interface{}) {
+func ResponseCodeMessageData(gctx *gin.Context, code nemodels.NECode, message string, data interface{}) {
 	jsonBody := gin.H{"code": code}
 	if len(message) > 0 {
 		jsonBody["message"] = message
@@ -23,7 +24,7 @@ func ResponseCodeMessageData(gctx *gin.Context, code MCode, message string, data
 	gctx.JSON(http.StatusOK, jsonBody)
 }
 
-func ResponseCodeMessageError(gctx *gin.Context, code MCode, message string, err error) {
+func ResponseCodeMessageError(gctx *gin.Context, code nemodels.NECode, message string, err error) {
 	if err != nil {
 		logrus.Errorln("ResponseCodeMessageError", gctx.FullPath(), message, err)
 	}
@@ -34,5 +35,5 @@ func ResponseMessageError(gctx *gin.Context, message string, err error) {
 	if err != nil {
 		logrus.Errorln("ResponseMessageError", message, err)
 	}
-	ResponseCodeMessageData(gctx, CodeError, message, nil)
+	ResponseCodeMessageData(gctx, nemodels.NECodeError, message, nil)
 }

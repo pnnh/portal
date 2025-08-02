@@ -2,6 +2,7 @@ package account
 
 import (
 	"net/http"
+	nemodels "neutron/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,15 +27,15 @@ type SignupRequest struct {
 func SignupHandler(gctx *gin.Context) {
 	request := &SignupRequest{}
 	if err := gctx.ShouldBindJSON(request); err != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 	if request.Username == "" || request.Password == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号或密码为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号或密码为空"))
 		return
 	}
 	if request.Password != request.ConfimPassword {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("两次密码不一致"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("两次密码不一致"))
 		return
 	}
 
@@ -42,25 +43,25 @@ func SignupHandler(gctx *gin.Context) {
 	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
 	if err != nil || !verifyOk {
 		logrus.Println("VerifyTurnstileToken", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("Signup验证出错"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Signup验证出错"))
 		return
 	}
 
 	isExist, err := models.CheckAccountExists(request.Username)
 	if err != nil {
 		logrus.Println("CheckAccountExists", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("查询账户出错"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("查询账户出错"))
 		return
 	}
 	if isExist {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账户已存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账户已存在"))
 		return
 	}
 
 	hashPassword, err := helpers.HashPassword(request.Password)
 	if err != nil {
 		logrus.Println("HashPassword", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("密码加密出错"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("密码加密出错"))
 		return
 	}
 	accountModel := &models.AccountModel{
@@ -81,7 +82,7 @@ func SignupHandler(gctx *gin.Context) {
 	}
 	err = models.EnsureAccount(accountModel)
 	if err != nil || accountModel == nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "更新用户账户出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "更新用户账户出错"))
 		return
 	}
 
@@ -107,7 +108,7 @@ func SignupHandler(gctx *gin.Context) {
 	err = models.PutSession(sessionModel)
 	if err != nil {
 		logrus.Println("PutSession", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("更新会话错误"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("更新会话错误"))
 		return
 	}
 
@@ -120,14 +121,14 @@ func SignupHandler(gctx *gin.Context) {
 	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Uid, issuer)
 	if (jwtToken == "") || (err != nil) {
 		logrus.Println("GenerateJwtTokenRs256", err)
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("生成jwtToken错误"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("生成jwtToken错误"))
 		return
 	}
 
 	// 登录成功后设置cookie
 	gctx.SetCookie(business.AuthCookieName, jwtToken, 3600*72, "/", "", true, true)
 
-	result := models.CodeOk.WithData(map[string]any{
+	result := nemodels.NECodeOk.WithData(map[string]any{
 		"changes": 1,
 		"uid":     accountModel.Uid,
 	})

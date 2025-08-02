@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	nemodels "neutron/models"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,13 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"neutron/config"
 	"neutron/services/filesystem"
-	"portal/models"
 )
 
 func NoteAssetsSelectHandler(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	if uid == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("uid不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
 	parent := gctx.Query("parent")
@@ -26,7 +26,7 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 	if parent != "" {
 		decodeString, err := base64.URLEncoding.DecodeString(parent)
 		if err != nil {
-			gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "DecodeString parent出错"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "DecodeString parent出错"))
 			return
 		}
 		decodedParent = string(decodeString)
@@ -34,47 +34,47 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 
 	mtNote, err := PGGetNote(uid, "")
 	if err != nil || mtNote == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
 	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
 	if !ok || storageUrl == "" {
 		//return fmt.Errorf("STORAGE_URL 未配置2")
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("STORAGE_URL 未配置2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("STORAGE_URL 未配置2"))
 		return
 	}
 	storagePath, err := filesystem.ResolvePath(storageUrl)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "ResolvePath出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
 		return
 	}
-	if mtNote.RepoId.String == "" || mtNote.Branch.String == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("RepoId或Branch为空"))
+	if mtNote.RepoId == "" || mtNote.Branch == "" {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoId或Branch为空"))
 		return
 	}
-	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, mtNote.RepoId.String, mtNote.Branch.String,
-		strings.TrimLeft(mtNote.RepoPath.String, "/"), decodedParent)
+	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, mtNote.RepoId, mtNote.Branch,
+		strings.TrimLeft(mtNote.RepoPath, "/"), decodedParent)
 	fullAssetsPath, err := filesystem.ResolvePath(assetsPath)
 	if err != nil {
 		log.Println("ResolvePath", err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "ResolvePath出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
 		return
 	}
 	log.Println("fullAssetsPath", fullAssetsPath)
 
 	fileList, err := listFirstLevel(storagePath, fullAssetsPath)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "listFirstLevel出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "listFirstLevel出错"))
 		return
 	}
-	selectData := &models.SelectResponse{
+	selectData := &nemodels.NESelectResponse{
 		Page:  1,
 		Size:  999,
 		Count: len(fileList),
 		Range: fileList,
 	}
-	responseResult := models.CodeOk.WithData(selectData)
+	responseResult := nemodels.NECodeOk.WithData(selectData)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

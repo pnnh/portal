@@ -3,6 +3,7 @@ package account
 import (
 	"encoding/base64"
 	"net/http"
+	nemodels "neutron/models"
 	"time"
 
 	"neutron/config"
@@ -20,12 +21,12 @@ import (
 // username := gctx.PostForm("username")
 // nickname := gctx.PostForm("nickname")
 // if username == "" {
-// 	gctx.JSON(http.StatusOK, models.CodeError.WithMessage("account为空"))
+// 	gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("account为空"))
 // 	return
 // }
 // accountModel, err := models.GetAccountByUsername(username)
 // if err != nil {
-// 	gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "account不存在"))
+// 	gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "account不存在"))
 // 	return
 // }
 // if accountModel == nil {
@@ -41,7 +42,7 @@ import (
 // 		Session:     "",
 // 	}
 // 	if err := models.PutAccount(accountModel); err != nil {
-// 		gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+// 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 // 		return
 // 	}
 // } else {
@@ -60,7 +61,7 @@ import (
 // }
 
 // if err := models.PutSession(session); err != nil {
-// 	gctx.JSON(http.StatusOK, models.CodeError.WithError(err))
+// 	gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 // 	return
 // }
 
@@ -68,7 +69,7 @@ import (
 // 	"session": session.Uid,
 // }
 
-// result := models.CodeOk.WithData(sessionData)
+// result := nemodels.NECodeOk.WithData(sessionData)
 
 // gctx.JSON(http.StatusOK, result)
 //}
@@ -78,35 +79,35 @@ func PasswordSignupFinishHandler(gctx *gin.Context) {
 	password := gctx.PostForm("password")
 	source, _ := gctx.GetQuery("source")
 	if username == "" || password == "" || source == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("code或session为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("code或session为空"))
 		return
 	}
 	// sessionModel, err := models.GetSessionById(session)
 	// if err != nil {
-	// 	gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetSessionById error"))
+	// 	gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetSessionById error"))
 	// 	return
 	// }
 	// if sessionModel == nil {
-	// 	gctx.JSON(http.StatusOK, models.CodeError.WithMessage("sessionModel不存在"))
+	// 	gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("sessionModel不存在"))
 	// 	return
 	// }
 	// if sessionModel.Type != "signup_password" {
-	// 	gctx.JSON(http.StatusOK, models.CodeError.WithMessage("sessionModel类型不对"))
+	// 	gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("sessionModel类型不对"))
 	// 	return
 	// }
 	accountModel, err := models.GetAccountByUsername(username)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetAccount error"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetAccount error"))
 		return
 	}
 	if accountModel != nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("账号已存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号已存在"))
 		return
 	}
 
 	encrypted, err := helpers.HashPassword(password)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "HashPassword error"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "HashPassword error"))
 		return
 	}
 
@@ -122,23 +123,23 @@ func PasswordSignupFinishHandler(gctx *gin.Context) {
 		Session:     "",
 	}
 	if err := models.PutAccount(accountModel); err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResult(err))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
 	// if err := models.UpdateAccountPassword(username, encrypted); err != nil {
-	// 	gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "UpdateAccountPassword error"))
+	// 	gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "UpdateAccountPassword error"))
 	// 	return
 	// }
 
 	sourceData, err := base64.URLEncoding.DecodeString(source)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "source解析失败"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "source解析失败"))
 		return
 	}
 	sourceUrl := string(sourceData)
 	if len(sourceUrl) < 1 {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("sourceUrl为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("sourceUrl为空"))
 		return
 	}
 	gctx.Redirect(http.StatusFound, sourceUrl)
@@ -150,13 +151,13 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 	username := gctx.PostForm("username")
 	password := gctx.PostForm("password")
 	if username == "" || password == "" || source == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("code或session为空2"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("code或session为空2"))
 		return
 	}
 
 	captchaKey := gctx.PostForm("captcha_key")
 	if captchaKey == "" {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("captcha_key为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("captcha_key为空"))
 		return
 	}
 
@@ -164,30 +165,30 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 	if captchaModel == nil || err != nil || captchaModel.Checked != 1 ||
 		time.Now().Sub(captchaModel.CreateTime).Minutes() > 5 {
 		logrus.Errorln("验证码错误", captchaKey, err)
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "验证码错误"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "验证码错误"))
 		return
 	}
 
 	account, err := models.GetAccountByUsername(username)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetAccount error"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetAccount error"))
 		return
 	}
 	if account == nil {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("account不存在"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("account不存在"))
 		return
 	}
 
 	ok := helpers.CheckPasswordHash(password, account.Password)
 
 	if !ok {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("密码错误"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("密码错误"))
 		return
 	}
 
 	jwkModel, err := helpers.GetJwkModel()
 	if err != nil || jwkModel == nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "GetJwkModel error"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetJwkModel error"))
 		return
 	}
 
@@ -233,17 +234,17 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 
 	sourceData, err := base64.URLEncoding.DecodeString(source)
 	if err != nil {
-		gctx.JSON(http.StatusOK, models.ErrorResultMessage(err, "source解析失败"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "source解析失败"))
 		return
 	}
 	sourceUrl := string(sourceData)
 	if len(sourceUrl) < 1 {
-		gctx.JSON(http.StatusOK, models.CodeError.WithMessage("sourceUrl为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("sourceUrl为空"))
 		return
 	}
 	gctx.Redirect(http.StatusFound, sourceUrl)
 
-	// result := models.CodeOk.WithData(sessionData)
+	// result := nemodels.NECodeOk.WithData(sessionData)
 
 	// gctx.JSON(http.StatusOK, result)
 }
