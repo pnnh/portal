@@ -31,14 +31,21 @@ func NoteSelectHandler(gctx *gin.Context) {
 	if lang == "" {
 		lang = nemodels.DefaultLanguage
 	}
-	selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt, lang)
+	pagination, selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
 
-	selectResponse := nemodels.NESelectResultToResponse(selectResult)
-	responseResult := nemodels.NECodeOk.WithData(selectResponse)
+	resp := map[string]any{
+		"page":  pagination.Page,
+		"size":  pagination.Size,
+		"count": pagination.Count,
+		"range": selectResult,
+	}
+
+	//selectResponse := nemodels.NESelectResultToResponse(selectResult)
+	responseResult := nemodels.NECodeOk.WithData(resp)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
@@ -55,7 +62,7 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	model := &MTNoteModel{}
+	model := &MTNoteView{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return

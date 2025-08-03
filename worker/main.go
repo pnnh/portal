@@ -1,31 +1,35 @@
-package main
+package worker
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"portal/business/comments"
+	"portal/business/notes"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"neutron/config"
 	"neutron/services/datastore"
 	"neutron/services/redisdb"
-	"portal/models"
-	"portal/models/notes"
 )
 
-func main() {
-	err := config.InitAppConfig("config.yaml", "huable", "polaris", config.GetEnvName(), "worker")
+func WorkerMain(configFlag string) {
+
+	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "portal")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)
 	}
-	logrus.Println("日志初始化完成")
+
 	redisUrl, ok := config.GetConfigurationString("REDIS_URL")
 	if !ok || redisUrl == "" {
-		logrus.Fatalln("REDIS_URL未配置")
+		logrus.Fatalln("REDIS_URL not found in configuration")
 	}
 	redisClient, err := redisdb.ConnectRedis(context.Background(), redisUrl)
+	if err != nil {
+		logrus.Fatalln("redisdb.ConnectRedis error:", err)
+	}
 
 	logrus.Println("Redis初始化完成")
 
@@ -39,10 +43,9 @@ func main() {
 	}
 	logrus.Println("DATABASE初始化完成")
 
-	logrus.Println("开始工作")
-	// 生产者：推送一些示例任务
+	logrus.Println("Starting comment viewer worker...")
 	for {
-		contentData, err := redisdb.Consume(context.Background(), redisClient, models.CommentViewersRedisKey)
+		contentData, err := redisdb.Consume(context.Background(), redisClient, comments.CommentViewersRedisKey)
 		if err != nil {
 			logrus.Errorln("消费数据失败:", err)
 			continue

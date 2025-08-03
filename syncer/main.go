@@ -1,4 +1,4 @@
-package main
+package syncer
 
 import (
 	"time"
@@ -10,7 +10,7 @@ import (
 	"portal/syncer/articles"
 )
 
-func main() {
+func SyncerMain(configFlag string) {
 	logrus.Println("Hello, Syncer!")
 
 	err := config.InitAppConfig("config.yaml", "huable", "polaris", config.GetEnvName(), "syncer")

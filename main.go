@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"os"
+	"portal/syncer"
+	"portal/worker"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +14,13 @@ import (
 )
 
 var (
-	configFlag string
+	configFlag  string
+	svcroleFlag string
 )
 
 func init() {
 	flag.StringVar(&configFlag, "config", "config.yaml", "config file path")
+	flag.StringVar(&svcroleFlag, "svcrole", "portal", "service role, default is portal")
 }
 
 func main() {
@@ -36,6 +40,23 @@ func main() {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	switch svcroleFlag {
+	case "worker":
+		logrus.Println("portal worker mode")
+		worker.WorkerMain(configFlag)
+	case "syncer":
+		logrus.Println("portal syncer mode")
+		syncer.SyncerMain(configFlag)
+	default:
+		logrus.Println("portal main mode")
+		PortalMain()
+	}
+
+}
+
+func PortalMain() {
+
 	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "portal")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)

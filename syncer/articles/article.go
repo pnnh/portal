@@ -3,14 +3,15 @@ package articles
 import (
 	"database/sql"
 	"fmt"
+	"github.com/iancoleman/strcase"
 	"os"
 	"path/filepath"
+	"portal/business/notes"
 	"strings"
 
 	"github.com/adrg/frontmatter"
 	"github.com/sirupsen/logrus"
 	"neutron/helpers"
-	"portal/models/notes"
 	"portal/services/githelper"
 )
 
@@ -71,16 +72,16 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		if noteTitle == "" {
 			noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 		}
-		note := &notes.MTNoteModel{
-			Uid:         matter.Uid,
-			Title:       noteTitle,
-			Body:        string(rest),
-			Description: matter.Description,
-			Status:      1,
-			Cid:         matter.Uid,
-			Lang:        "zh",
-			Dc:          "hk",
-		}
+		note := &notes.MTNoteTable{}
+		note.Uid = matter.Uid
+		note.Title = noteTitle
+		note.Body = string(rest)
+		note.Description = matter.Description
+		note.Status = 1 // 已发布
+		note.Cid = matter.Uid
+		note.Lang = "zh"
+		note.Dc = "hk"
+		note.Name = strcase.ToKebab(noteTitle)
 
 		gitInfo, err := githelper.GitInfoGet(path)
 		if err != nil {
