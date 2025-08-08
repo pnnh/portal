@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"portal/business/comments"
-	"portal/business/notes"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"portal/business/comments"
+	"portal/business/viewers"
+
 	"neutron/config"
 	"neutron/services/datastore"
 	"neutron/services/redisdb"
+
+	"github.com/sirupsen/logrus"
 )
 
 func WorkerMain(configFlag string) {
@@ -51,7 +53,7 @@ func WorkerMain(configFlag string) {
 			continue
 		}
 
-		commentViewers := make([]*notes.MTViewerModel, 0)
+		commentViewers := make([]*viewers.MTViewerTable, 0)
 		if err := json.Unmarshal(contentData, &commentViewers); err != nil {
 			logrus.Errorln("commentViewers Unmarshal error:", err)
 			continue
@@ -69,15 +71,15 @@ func WorkerMain(configFlag string) {
 	}
 }
 
-func SaveToDatabase(commentViewers []*notes.MTViewerModel) error {
+func SaveToDatabase(commentViewers []*viewers.MTViewerTable) error {
 	// 模拟保存到数据库的操作
 
-	opErr, itemErrs := notes.PGInsertViewer(commentViewers...)
+	opErr, itemErrs := viewers.PGInsertViewer(commentViewers...)
 	if opErr != nil {
 		return fmt.Errorf("PGInsertViewer: %v", opErr)
 	}
 	for key, item := range itemErrs {
-		if !errors.Is(item, notes.ErrViewerLogExists) {
+		if !errors.Is(item, viewers.ErrViewerLogExists) {
 			logrus.Warnln("CommentSelectHandler", key, item)
 		}
 	}

@@ -1,17 +1,18 @@
 package notes
 
 import (
-	"errors"
 	"net/http"
-	nemodels "neutron/models"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	nemodels "neutron/models"
+
 	"neutron/helpers"
 	"portal/business"
 	"portal/business/channels"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func NoteSelectHandler(gctx *gin.Context) {
@@ -121,53 +122,13 @@ func NoteGetHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
-	selectResult, err := PGGetNote(uid, lang)
+	noteTable, err := PGGetNote(uid, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
-	responseResult := nemodels.NECodeOk.WithData(selectResult)
+	noteModel := noteTable.ToModel()
+	responseResult := nemodels.NECodeOk.WithLocalData(lang, noteModel)
 
 	gctx.JSON(http.StatusOK, responseResult)
-}
-
-type ViewerInsertRequest struct {
-	ClientIp string `json:"clientIp"`
-}
-
-func NoteViewerInsertHandler(gctx *gin.Context) {
-	uid := gctx.Param("uid")
-	if uid == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
-		return
-	}
-	request := &ViewerInsertRequest{}
-	if err := gctx.ShouldBindJSON(request); err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
-		return
-	}
-
-	model := &MTViewerModel{
-		Uid:        helpers.MustUuid(),
-		Target:     uid,
-		Address:    request.ClientIp,
-		CreateTime: time.Now(),
-		UpdateTime: time.Now(),
-		Class:      "note",
-	}
-	opErr, itemErrs := PGInsertViewer(model)
-	if opErr != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(opErr))
-		return
-	}
-	for key, item := range itemErrs {
-		if !errors.Is(item, ErrViewerLogExists) {
-			logrus.Warnln("NoteViewerInsertHandler", key, item)
-		}
-	}
-	result := nemodels.NECodeOk.WithData(map[string]any{
-		"changes": 1,
-	})
-
-	gctx.JSON(http.StatusOK, result)
 }

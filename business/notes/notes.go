@@ -3,13 +3,15 @@ package notes
 import (
 	"database/sql"
 	"fmt"
-	"neutron/services/strutil"
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"neutron/services/strutil"
+
 	"neutron/helpers"
 	"neutron/services/datastore"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type MTNoteMatter struct {
@@ -314,7 +316,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 
 // PGGetNote 获取单个笔记信息
 // obsolete 处理向后兼容逻辑。早期是通过单个uid查询，后期可以通过cid和lang查询。
-func PGGetNote(uid string, lang string) (*MTNoteModel, error) {
+func PGGetNote(uid string, lang string) (*MTNoteTable, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGGetNote uid is empty")
 	}
@@ -324,7 +326,7 @@ func PGGetNote(uid string, lang string) (*MTNoteModel, error) {
 		"uid":  uid,
 		"lang": lang,
 	}
-	var sqlResults []*MTNoteModel
+	var sqlResults []*MTNoteTable
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {

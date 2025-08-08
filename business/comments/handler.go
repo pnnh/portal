@@ -1,20 +1,21 @@
 package comments
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
-	nemodels "neutron/models"
-	"portal/business/notes"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	nemodels "neutron/models"
+	"portal/business/viewers"
+
 	"neutron/config"
 	"neutron/helpers"
 	"neutron/services/redisdb"
 	"portal/business"
 	"portal/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type CommentInsertRequest struct {
@@ -84,11 +85,11 @@ func CommentSelectHandler(gctx *gin.Context) {
 		logrus.Warnln("FindAccountFromCookie查询账号出错d", err)
 	}
 
-	addr := helpers.GetIpAddress(gctx)
+	//addr := helpers.GetIpAddress(gctx)
 	isBotRequest, userAgent := helpers.IsBotRequest(gctx)
 	if !isBotRequest && accountModel != nil && !accountModel.IsAnonymous() {
 		// 发送评论消息到消息队列
-		sendCommentViewerMQMessages(gctx, accountModel, selectResult, addr)
+		//sendCommentViewerMQMessages(gctx, accountModel, selectResult, addr)
 	} else {
 		logrus.Infoln("CommentSelectHandler isBotRequest:", userAgent, "accountModel:", accountModel)
 	}
@@ -99,29 +100,28 @@ func CommentSelectHandler(gctx *gin.Context) {
 func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.AccountModel,
 	selectResult *nemodels.NESelectResponse, addr string) {
 
-	commentViewers := make([]*notes.MTViewerModel, 0)
+	commentViewers := make([]*viewers.MTViewerModel, 0)
 	for _, item := range selectResult.Range {
 		comment := item.(*CommentModel)
 		// 跳过匿名评论或当前用户的评论
 		if comment == nil || comment.Creator == "" {
 			continue
 		}
-		model := &notes.MTViewerModel{
-			Uid:        helpers.MustUuid(),
-			Target:     comment.Uid,
-			Address:    addr,
-			CreateTime: time.Now(),
-			UpdateTime: time.Now(),
-			Class:      "comment",
+		model := &viewers.MTViewerModel{
+			MTViewerTable: viewers.MTViewerTable{
+				Uid:        helpers.MustUuid(),
+				Target:     comment.Uid,
+				Address:    addr,
+				CreateTime: time.Now(),
+				UpdateTime: time.Now(),
+				Class:      "comment",
+			},
 		}
 		if accountModel != nil && !accountModel.IsAnonymous() {
 			if comment.Creator == accountModel.Uid {
 				continue
 			}
-			model.Source = sql.NullString{
-				String: accountModel.Uid,
-				Valid:  true,
-			}
+			model.Source = accountModel.Uid
 		}
 		commentViewers = append(commentViewers, model)
 	}

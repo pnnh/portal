@@ -4,20 +4,24 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"portal/business/account"
-	"portal/business/comments"
-	"portal/business/notes"
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"portal/business/account"
+	"portal/business/comments"
+	"portal/business/notes"
+	"portal/business/viewers"
+
 	"neutron/config"
 	"neutron/services/filesystem"
 	"portal/business/channels"
 
+	"github.com/sirupsen/logrus"
+
+	"portal/handlers"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"portal/handlers"
 )
 
 type IResource interface {
@@ -132,7 +136,7 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/console/channels/:uid", channels.ConsoleChannelGetHandler)
 	s.router.PUT("/portal/console/channels/:uid", channels.ConsoleChannelUpdateHandler)
 	s.router.DELETE("/portal/console/channels/:uid", channels.ConsoleChannelDeleteHandler)
-	s.router.POST("/portal/articles/:uid/viewer", notes.NoteViewerInsertHandler)
+	s.router.POST("/portal/articles/:uid/viewer", viewers.NoteViewerInsertHandler)
 	s.router.POST("/portal/account/signup", account.SignupHandler)
 	s.router.POST("/portal/account/signin", account.SigninHandler)
 	s.router.POST("/portal/account/signout", account.SignoutHandler)

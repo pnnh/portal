@@ -1,15 +1,16 @@
-package notes
+package viewers
 
 import (
 	"database/sql"
 	"fmt"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"neutron/services/datastore"
+
+	"github.com/jmoiron/sqlx"
 )
 
-type MTViewerModel struct {
+type MTViewerTable struct {
 	Uid        string         `json:"uid"`
 	Title      string         `json:"title"`
 	Source     sql.NullString `json:"source"`
@@ -17,12 +18,24 @@ type MTViewerModel struct {
 	CreateTime time.Time      `json:"create_time" db:"create_time"`
 	UpdateTime time.Time      `json:"update_time" db:"update_time"`
 	Address    string         `json:"address"`
+	Owner      sql.NullString `json:"owner"`
 	Class      string         `json:"class"`
+	Headers    string         `json:"headers"`
+	Channel    sql.NullString `json:"channel"`
+	Direction  string         `json:"direction"`
+	City       sql.NullString `json:"city"`
+}
+
+type MTViewerModel struct {
+	MTViewerTable
+	Source  string `json:"source"`
+	Owner   string `json:"owner"`
+	Channel string `json:"channel"`
 }
 
 var ErrViewerLogExists = fmt.Errorf("viewer log exists")
 
-func PGInsertViewer(viewerModels ...*MTViewerModel) (opErr error, itemErrs map[string]error) {
+func PGInsertViewer(viewerModels ...*MTViewerTable) (opErr error, itemErrs map[string]error) {
 	sqlTx, err := datastore.NewTranscation()
 	if err != nil {
 		return fmt.Errorf("PGViewerNote: %w", err), nil
@@ -41,7 +54,7 @@ func PGInsertViewer(viewerModels ...*MTViewerModel) (opErr error, itemErrs map[s
 	for _, model := range viewerModels {
 
 		queryText := `
-	select * from viewer where class = :class and target = :target and update_time > :nowDate 
+	select * from viewers where class = :class and target = :target and update_time > :nowDate 
 	                       and (source = :source or address = :address) limit 1;
 `
 		queryParams := map[string]interface{}{
@@ -56,7 +69,7 @@ func PGInsertViewer(viewerModels ...*MTViewerModel) (opErr error, itemErrs map[s
 			itemErrs[model.Uid] = fmt.Errorf("PGViewerNote query: %w", err)
 			continue
 		}
-		var queryResults []*MTViewerModel
+		var queryResults []*MTViewerTable
 		if err = sqlx.StructScan(queryRows, &queryResults); err != nil {
 			itemErrs[model.Uid] = fmt.Errorf("StructScan: %w", err)
 			continue
@@ -74,8 +87,8 @@ func PGInsertViewer(viewerModels ...*MTViewerModel) (opErr error, itemErrs map[s
 		}
 
 		viewerText := `
-insert into viewer(uid, source, target, create_time, update_time, title, address, class)
-values(:uid, :source, :target, :create_time, :update_time, :title, :address, :class)
+insert into viewers(uid, source, target, create_time, update_time, title, address, class, headers, owner, direction)
+values(:uid, :source, :target, :create_time, :update_time, :title, :address, :class, :headers, :owner, :direction)
 on conflict (uid)
 do update set title=excluded.title, source=excluded.source, target=excluded.target, address=excluded.address, 
     update_time = now();
@@ -89,6 +102,9 @@ do update set title=excluded.title, source=excluded.source, target=excluded.targ
 			"title":       model.Title,
 			"address":     model.Address,
 			"class":       model.Class,
+			"headers":     model.Headers,
+			"owner":       model.Owner,
+			"direction":   model.Direction,
 		}
 		viewerRows, err := sqlTx.NamedQuery(viewerText, sqlParams)
 		if err != nil {
@@ -114,7 +130,7 @@ do update set title=excluded.title, source=excluded.source, target=excluded.targ
 	return err, itemErrs
 }
 
-func updateObjectDiscover(sqlTx *datastore.SqlxTransaction, model *MTViewerModel) error {
+func updateObjectDiscover(sqlTx *datastore.SqlxTransaction, model *MTViewerTable) error {
 
 	discoverSqlText := `update articles set discover = COALESCE(discover, 0) + 1 where uid = :uid;`
 	if model.Class == "comment" {

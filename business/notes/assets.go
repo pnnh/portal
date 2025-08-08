@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	nemodels "neutron/models"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	nemodels "neutron/models"
+
 	"neutron/config"
 	"neutron/services/filesystem"
+
+	"github.com/gin-gonic/gin"
 )
 
 func NoteAssetsSelectHandler(gctx *gin.Context) {
@@ -32,8 +34,8 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		decodedParent = string(decodeString)
 	}
 
-	mtNote, err := PGGetNote(uid, "")
-	if err != nil || mtNote == nil {
+	noteTable, err := PGGetNote(uid, "")
+	if err != nil || noteTable == nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
@@ -49,12 +51,13 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
 		return
 	}
-	if mtNote.RepoId == "" || mtNote.Branch == "" {
+	noteModel := noteTable.ToModel()
+	if noteModel.RepoId == "" || noteModel.Branch == "" {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoId或Branch为空"))
 		return
 	}
-	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, mtNote.RepoId, mtNote.Branch,
-		strings.TrimLeft(mtNote.RepoPath, "/"), decodedParent)
+	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoId, noteTable.Branch,
+		strings.TrimLeft(noteModel.RepoPath, "/"), decodedParent)
 	fullAssetsPath, err := filesystem.ResolvePath(assetsPath)
 	if err != nil {
 		log.Println("ResolvePath", err)
