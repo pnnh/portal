@@ -56,7 +56,7 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoId或Branch为空"))
 		return
 	}
-	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoId, noteTable.Branch,
+	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoId.String, noteTable.Branch.String,
 		strings.TrimLeft(noteModel.RepoPath, "/"), decodedParent)
 	fullAssetsPath, err := filesystem.ResolvePath(assetsPath)
 	if err != nil {
