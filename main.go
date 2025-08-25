@@ -3,14 +3,16 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
+
 	"portal/syncer"
 	"portal/worker"
-	"strings"
+
+	"neutron/config"
+	"neutron/services/datastore"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"neutron/config"
-	"neutron/services/datastore"
 )
 
 var (
@@ -19,7 +21,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFlag, "config", "config.yaml", "config file path")
+	flag.StringVar(&configFlag, "config", "file://config.yaml", "config file path")
 	flag.StringVar(&svcroleFlag, "svcrole", "portal", "service role, default is portal")
 }
 

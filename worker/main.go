@@ -19,7 +19,7 @@ import (
 
 func WorkerMain(configFlag string) {
 
-	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "portal")
+	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "worker")
 	if err != nil {
 		logrus.Fatalln("初始化配置失败", err)
 	}
