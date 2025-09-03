@@ -31,7 +31,7 @@ type MTNoteTable struct {
 	Status      int            `json:"status"`
 	Cover       sql.NullString `json:"-"`
 	Owner       string         `json:"-"`
-	Channel     string         `json:"channel"`
+	Channel     sql.NullString `json:"channel"`
 	Discover    int            `json:"discover"`
 	Partition   sql.NullString `json:"-"`
 	CreateTime  time.Time      `json:"create_time" db:"create_time"`
@@ -63,6 +63,7 @@ func (t *MTNoteTable) ToModel() *MTNoteModel {
 		CommitTime:  t.CommitTime.Time,
 		RepoPath:    t.RepoPath.String,
 		RepoId:      t.RepoId.String,
+		Channel:     t.Channel.String,
 	}
 }
 
@@ -84,31 +85,31 @@ func (t *MTNoteTable) ToTableMap() (*datastore.TableMap, error) {
 	tableMap.Set("lang", t.Lang)
 
 	if t.Partition.Valid {
-		tableMap.Set("partition", t.Partition)
+		tableMap.Set("partition", t.Partition.String)
 	}
 	if t.Version.Valid {
-		tableMap.Set("version", t.Version)
+		tableMap.Set("version", t.Version.String)
 	}
 	if t.Build.Valid {
-		tableMap.Set("build", t.Build)
+		tableMap.Set("build", t.Build.String)
 	}
 	if t.Url.Valid {
-		tableMap.Set("url", t.Url)
+		tableMap.Set("url", t.Url.String)
 	}
 	if t.Branch.Valid {
-		tableMap.Set("branch", t.Branch)
+		tableMap.Set("branch", t.Branch.String)
 	}
 	if t.Commit.Valid {
-		tableMap.Set("commit", t.Commit)
+		tableMap.Set("commit", t.Commit.String)
 	}
 	if !t.CommitTime.Valid {
-		tableMap.Set("commit_time", t.CommitTime)
+		tableMap.Set("commit_time", t.CommitTime.Time)
 	}
 	if t.RepoPath.Valid {
-		tableMap.Set("repo_path", t.RepoPath)
+		tableMap.Set("repo_path", t.RepoPath.String)
 	}
 	if t.RepoId.Valid {
-		tableMap.Set("repo_id", t.RepoId)
+		tableMap.Set("repo_id", t.RepoId.String)
 	}
 
 	return tableMap, nil
@@ -126,6 +127,7 @@ type MTNoteModel struct {
 	CommitTime time.Time `json:"-" db:"commit_time"`
 	RepoPath   string    `json:"-" db:"repo_path"`
 	RepoId     string    `json:"-" db:"repo_id"`
+	Channel    string    `json:"-" db:"channel"`
 }
 
 func (m *MTNoteModel) ToViewModel() interface{} {
@@ -154,7 +156,6 @@ func (m *MTNoteModel) ToTableMap() (*datastore.TableMap, error) {
 	tableMap.Set("keywords", m.Keywords)
 	tableMap.Set("status", m.Status)
 	tableMap.Set("owner", m.Owner)
-	tableMap.Set("channel", m.Channel)
 	tableMap.Set("discover", m.Discover)
 	tableMap.Set("create_time", m.CreateTime)
 	tableMap.Set("update_time", m.UpdateTime)
@@ -187,6 +188,9 @@ func (m *MTNoteModel) ToTableMap() (*datastore.TableMap, error) {
 	}
 	if m.RepoId != "" {
 		tableMap.Set("repo_id", m.RepoId)
+	}
+	if m.Channel != "" {
+		tableMap.Set("channel", m.Channel)
 	}
 
 	return tableMap, nil
@@ -226,6 +230,9 @@ func PGConsoleInsertNote(tableMapConverter datastore.IConvertTableMap) error {
 	//}
 
 	colNames := tableMap.Keys()
+	if len(colNames) == 0 {
+		return fmt.Errorf("PGConsoleInsertNote: no columns to insert")
+	}
 	colText := strings.Join(colNames, ", ")
 	colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
 		return fmt.Sprintf(":%s, ", s)
@@ -238,7 +245,9 @@ values(%s)
 on conflict (uid)
 do nothing;`, colText, colPlaceholders)
 
-	_, err = datastore.NamedExec(sqlText, tableMap)
+	paramsMap := tableMap.MapData()
+
+	_, err = datastore.NamedExec(sqlText, paramsMap)
 	if err != nil {
 		return fmt.Errorf("PGConsoleInsertNote: %w", err)
 	}

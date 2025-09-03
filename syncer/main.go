@@ -53,16 +53,16 @@ func SyncerMain(configFlag string) {
 	//}
 	//go imagesWorker.StartWork()
 
-	sourceUrl, ok := config.GetConfiguration("SOURCE_URL")
-	if !ok || sourceUrl == nil {
-		logrus.Fatalln("SOURCE_URL 未配置")
-	}
-	sourceDir, err := filesystem.ResolvePath(sourceUrl.(string))
-	if err != nil {
-		logrus.Fatalln("解析路径失败", err)
-		return
-	}
-	go SyncDirectoryForever(repoWorker, sourceDir)
+	//sourceUrl, ok := config.GetConfiguration("SOURCE_URL")
+	//if !ok || sourceUrl == nil {
+	//	logrus.Fatalln("SOURCE_URL 未配置")
+	//}
+	//sourceDir, err := filesystem.ResolvePath(sourceUrl.(string))
+	//if err != nil {
+	//	logrus.Fatalln("解析路径失败", err)
+	//	return
+	//}
+	//go SyncDirectoryForever(repoWorker, sourceDir)
 	go SyncDirectoryForever(repoWorker, blogDir)
 
 	<-make(chan struct{})

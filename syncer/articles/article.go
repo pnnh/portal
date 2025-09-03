@@ -3,17 +3,23 @@ package articles
 import (
 	"database/sql"
 	"fmt"
-	"github.com/iancoleman/strcase"
 	"os"
 	"path/filepath"
-	"portal/business/notes"
 	"strings"
+
+	"portal/business/notes"
+
+	"github.com/iancoleman/strcase"
+
+	"neutron/helpers"
+	"portal/services/githelper"
 
 	"github.com/adrg/frontmatter"
 	"github.com/sirupsen/logrus"
-	"neutron/helpers"
-	"portal/services/githelper"
 )
+
+// 一个固定的用户ID，通过Syncer服务同步的文章属于这个用户
+const SyncerArticleOwner = "01990e6a-2689-731b-a5a2-b46117e22040"
 
 type ArticleWorker struct {
 	repoWorker *RepoWorker
@@ -72,6 +78,13 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		if noteTitle == "" {
 			noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 		}
+		// 旧的兼容格式处理
+		if noteTitle == "index" {
+			parentDir := filepath.Base(filepath.Dir(path))
+			if strings.HasSuffix(parentDir, ".note") {
+				noteTitle = strings.TrimSuffix(parentDir, ".note")
+			}
+		}
 		note := &notes.MTNoteTable{}
 		note.Uid = matter.Uid
 		note.Title = noteTitle
@@ -79,9 +92,11 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		note.Description = matter.Description
 		note.Status = 1 // 已发布
 		note.Cid = matter.Uid
+		note.Header = "MTNote"
 		note.Lang = "zh"
 		note.Dc = "hk"
 		note.Name = strcase.ToKebab(noteTitle)
+		note.Owner = SyncerArticleOwner
 
 		gitInfo, err := githelper.GitInfoGet(path)
 		if err != nil {
@@ -102,6 +117,8 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		if err != nil {
 			fmt.Printf("插入文章失败: %v", err)
 		}
+	} else {
+		logrus.Infoln("跳过非MTNote文章", path)
 	}
 
 	return nil
