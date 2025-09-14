@@ -91,10 +91,8 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		note.Body = string(rest)
 		note.Description = matter.Description
 		note.Status = 1 // 已发布
-		note.Cid = matter.Uid
 		note.Header = "MTNote"
 		note.Lang = "zh"
-		note.Dc = "hk"
 		note.Name = strcase.ToKebab(noteTitle)
 		note.Owner = SyncerArticleOwner
 

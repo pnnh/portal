@@ -86,7 +86,6 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
 	model.Status = 0 // 待审核
-	model.Dc = business.CurrentDC
 	if model.Name == "" {
 		model.Name = model.Uid
 	}

@@ -14,14 +14,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type MTNoteMatter struct {
-	Cls         string `json:"cls"`
-	Uid         string `json:"uid"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
-type MTNoteTable struct {
+type MTNotetransTable struct {
 	Uid         string         `json:"uid"`
 	Title       string         `json:"title"`
 	Header      string         `json:"header"`
@@ -48,23 +41,23 @@ type MTNoteTable struct {
 	Name        string         `json:"name" db:"name"`
 }
 
-func (t *MTNoteTable) ToModel() *MTNoteModel {
-	return &MTNoteModel{
-		MTNoteTable: *t,
-		Partition:   t.Partition.String,
-		Version:     t.Version.String,
-		Build:       t.Build.String,
-		Url:         t.Url.String,
-		Branch:      t.Branch.String,
-		Commit:      t.Commit.String,
-		CommitTime:  t.CommitTime.Time,
-		RepoPath:    t.RepoPath.String,
-		RepoId:      t.RepoId.String,
-		Channel:     t.Channel.String,
+func (t *MTNotetransTable) ToModel() *MTNotetransModel {
+	return &MTNotetransModel{
+		MTNotetransTable: *t,
+		Partition:        t.Partition.String,
+		Version:          t.Version.String,
+		Build:            t.Build.String,
+		Url:              t.Url.String,
+		Branch:           t.Branch.String,
+		Commit:           t.Commit.String,
+		CommitTime:       t.CommitTime.Time,
+		RepoPath:         t.RepoPath.String,
+		RepoId:           t.RepoId.String,
+		Channel:          t.Channel.String,
 	}
 }
 
-func (t *MTNoteTable) ToTableMap() (*datastore.TableMap, error) {
+func (t *MTNotetransTable) ToTableMap() (*datastore.TableMap, error) {
 	tableMap := datastore.NewTableMap()
 	tableMap.Set("uid", t.Uid)
 	tableMap.Set("title", t.Title)
@@ -112,8 +105,8 @@ func (t *MTNoteTable) ToTableMap() (*datastore.TableMap, error) {
 
 }
 
-type MTNoteModel struct {
-	MTNoteTable
+type MTNotetransModel struct {
+	MTNotetransTable
 	Partition  string    `json:"-"`
 	Version    string    `json:"-"`
 	Build      string    `json:"-"`
@@ -126,9 +119,9 @@ type MTNoteModel struct {
 	Channel    string    `json:"-" db:"channel"`
 }
 
-func (m *MTNoteModel) ToViewModel() interface{} {
-	view := &MTNoteView{
-		MTNoteModel: *m,
+func (m *MTNotetransModel) ToViewModel() interface{} {
+	view := &MTNotetransView{
+		MTNotetransModel: *m,
 	}
 	//if m.Lang.Valid {
 	//	view.Lang = m.Lang.String
@@ -138,7 +131,7 @@ func (m *MTNoteModel) ToViewModel() interface{} {
 
 }
 
-func (m *MTNoteModel) ToTableMap() (*datastore.TableMap, error) {
+func (m *MTNotetransModel) ToTableMap() (*datastore.TableMap, error) {
 	tableMap := datastore.NewTableMap()
 	tableMap.Set("uid", m.Uid)
 	tableMap.Set("title", m.Title)
@@ -188,40 +181,40 @@ func (m *MTNoteModel) ToTableMap() (*datastore.TableMap, error) {
 
 }
 
-type MTNoteView struct {
-	MTNoteModel
+type MTNotetransView struct {
+	MTNotetransModel
 	Lang string `json:"lang" db:"lang"`
 }
 
-func (v *MTNoteView) ToModel() *MTNoteModel {
-	return &MTNoteModel{
-		MTNoteTable: v.MTNoteModel.MTNoteTable,
-		Partition:   v.Partition,
-		Version:     v.Version,
-		Build:       v.Build,
-		Url:         v.Url,
-		Branch:      v.Branch,
-		Commit:      v.Commit,
-		CommitTime:  v.CommitTime,
-		RepoPath:    v.RepoPath,
-		RepoId:      v.RepoId,
+func (v *MTNotetransView) ToModel() *MTNotetransModel {
+	return &MTNotetransModel{
+		MTNotetransTable: v.MTNotetransModel.MTNotetransTable,
+		Partition:        v.Partition,
+		Version:          v.Version,
+		Build:            v.Build,
+		Url:              v.Url,
+		Branch:           v.Branch,
+		Commit:           v.Commit,
+		CommitTime:       v.CommitTime,
+		RepoPath:         v.RepoPath,
+		RepoId:           v.RepoId,
 	}
 }
 
-func PGConsoleInsertNote(tableMapConverter datastore.IConvertTableMap) error {
+func PGConsoleInsertNotetrans(tableMapConverter datastore.IConvertTableMap) error {
 	tableMap, err := tableMapConverter.ToTableMap()
 	if err != nil {
-		return fmt.Errorf("PGConsoleInsertNote ToTableMap: %w", err)
+		return fmt.Errorf("PGConsoleInsertNotetrans ToTableMap: %w", err)
 	}
 
-	//columnMap, err := datastore.ReflectColumns(&model.MTNoteTable)
+	//columnMap, err := datastore.ReflectColumns(&model.MTNotetransTable)
 	//if err != nil {
-	//	return fmt.Errorf("PGConsoleInsertNote ReflectColumns: %w", err)
+	//	return fmt.Errorf("PGConsoleInsertNotetrans ReflectColumns: %w", err)
 	//}
 
 	colNames := tableMap.Keys()
 	if len(colNames) == 0 {
-		return fmt.Errorf("PGConsoleInsertNote: no columns to insert")
+		return fmt.Errorf("PGConsoleInsertNotetrans: no columns to insert")
 	}
 	colText := strings.Join(colNames, ", ")
 	colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
@@ -239,12 +232,12 @@ do nothing;`, colText, colPlaceholders)
 
 	_, err = datastore.NamedExec(sqlText, paramsMap)
 	if err != nil {
-		return fmt.Errorf("PGConsoleInsertNote: %w", err)
+		return fmt.Errorf("PGConsoleInsertNotetrans: %w", err)
 	}
 	return nil
 }
 
-func SelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination, []*MTNoteTable, error) {
+func SelectNotetranss(channel, keyword string, page int, size int, lang string) (*helpers.Pagination, []*MTNotetransTable, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -271,7 +264,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTNoteTable
+	var sqlResults []*MTNotetransTable
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
@@ -302,9 +295,8 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 	if len(countSqlResults) == 0 {
 		return nil, nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
-	pagination.Count = countSqlResults[0].Count
 
-	//selectData := &nemodels.NESelectResult[*MTNoteModel]{
+	//selectData := &nemodels.NESelectResult[*MTNotetransModel]{
 	//	Page:  pagination.Page,
 	//	Size:  pagination.Size,
 	//	Count: countSqlResults[0].Count,
@@ -314,38 +306,29 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 	return pagination, sqlResults, nil
 }
 
-// PGGetNote 获取单个笔记信息
-func PGGetNote(uid string, lang string) (*MTNoteTable, error) {
-	if uid == "" {
-		return nil, fmt.Errorf("PGGetNote uid is empty")
-	}
-	pageSqlText := ` select * from articles where status = 1 and uid = :uid; `
-
-	pageSqlParams := map[string]interface{}{
-		"uid":  uid,
-		"lang": lang,
-	}
-	var sqlResults []*MTNoteTable
-
-	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
-	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
-	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
-
-	for _, item := range sqlResults {
-		return item, nil
-	}
-	return nil, nil
-}
-
-type MTNoteFileModel struct {
-	Title       string `json:"title"`
-	Path        string `json:"path"`
-	IsDir       bool   `json:"is_dir"`
-	IsText      bool   `json:"is_text"`
-	IsImage     bool   `json:"is_image"`
-	StoragePath string `json:"storage_path"`
-}
+// PGGetNotetrans 获取单个笔记信息
+//func PGGetNotetrans(uid string, lang string) (*MTNotetransTable, error) {
+//	if uid == "" {
+//		return nil, fmt.Errorf("PGGetNotetrans uid is empty")
+//	}
+//	pageSqlText := ` select * from articles where status = 1 and (uid = :uid or (cid = :uid and lang = :lang)); `
+//
+//	pageSqlParams := map[string]interface{}{
+//		"uid":  uid,
+//		"lang": lang,
+//	}
+//	var sqlResults []*MTNotetransTable
+//
+//	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+//	if err != nil {
+//		return nil, fmt.Errorf("NamedQuery: %w", err)
+//	}
+//	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+//		return nil, fmt.Errorf("StructScan: %w", err)
+//	}
+//
+//	for _, item := range sqlResults {
+//		return item, nil
+//	}
+//	return nil, nil
+//}

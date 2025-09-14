@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"neutron/helpers"
 	"neutron/services/datastore"
 	"portal/business"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 func ConsoleChannelGetHandler(gctx *gin.Context) {
@@ -47,7 +48,7 @@ func ConsoleChannelGetHandler(gctx *gin.Context) {
 }
 
 func PGConsoleGetChannel(owner, uid, lang string) (*MTChannelModel, error) {
-	pageSqlText := ` select * from channels where (owner = :owner and (uid = :uid) or (cid = :uid and lang = :lang)); `
+	pageSqlText := ` select * from channels where (owner = :owner and uid = :uid); `
 	pageSqlParams := map[string]interface{}{
 		"uid":   uid,
 		"lang":  lang,
@@ -100,7 +101,6 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 	model.CreateTime = time.Now().UTC()
 	model.UpdateTime = time.Now().UTC()
 	model.Status = 0 // 待审核
-	model.Cid = model.Uid
 
 	err = PGConsoleInsertChannel(model)
 	if err != nil {
@@ -351,7 +351,7 @@ func PGConsoleDeleteChannel(owner, uid string, lang string) error {
 	if uid == "" {
 		return fmt.Errorf("PGConsoleDeleteChannel uid is empty")
 	}
-	pageSqlText := ` delete from channels where (owner = :owner and (uid = :uid or (cid = :uid and lang = :lang))); `
+	pageSqlText := ` delete from channels where (owner = :owner and uid = :uid); `
 
 	pageSqlParams := map[string]interface{}{
 		"uid":   uid,

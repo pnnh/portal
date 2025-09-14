@@ -132,7 +132,7 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler)
 	s.router.GET("/portal/channels/:uid", channels.ChannelGetByUidHandler)
 	s.router.GET("/portal/:lang/channels/uid/:uid", channels.ChannelGetByUidHandler)
-	s.router.GET("/portal/:lang/channels/cid/:cid/:wantLang", channels.ChannelGetByCidHandler)
+	//s.router.GET("/portal/:lang/channels/cid/:cid/:wantLang", channels.ChannelGetByCidHandler)
 	s.router.GET("/portal/console/channels/:uid", channels.ConsoleChannelGetHandler)
 	s.router.PUT("/portal/console/channels/:uid", channels.ConsoleChannelUpdateHandler)
 	s.router.DELETE("/portal/console/channels/:uid", channels.ConsoleChannelDeleteHandler)

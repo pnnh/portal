@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"neutron/helpers"
 	"neutron/services/datastore"
 	"portal/business"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 func ConsoleNotesSelectHandler(gctx *gin.Context) {
@@ -59,7 +60,6 @@ func ConsoleNotesSelectHandler(gctx *gin.Context) {
 
 type MTConsoleNoteTable struct {
 	MTNoteTable
-	Cid         string `json:"cid" db:"cid"`
 	Lang        string `json:"lang" db:"lang"`
 	ChannelName string `json:"channel_name" db:"channel_name"`
 }
