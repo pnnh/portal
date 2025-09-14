@@ -122,7 +122,7 @@ func NoteGetHandler(gctx *gin.Context) {
 		return
 	}
 	noteTable, err := PGGetNote(uid, lang)
-	if err != nil {
+	if err != nil || noteTable == nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
