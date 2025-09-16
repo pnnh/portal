@@ -1,18 +1,22 @@
 package articles
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"neutron/config"
 	"neutron/helpers"
+	"neutron/services/checksum"
 	"neutron/services/filesystem"
 	"portal/models/repo"
 	"portal/services/githelper"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SyncJob struct {
@@ -20,9 +24,10 @@ type SyncJob struct {
 	GitInfo      *githelper.GitInfo
 	filePorter   *filesystem.FilePorter
 	ignoreHelper *githelper.GitIgnoreHelper
+	syncno       string
 }
 
-func NewSyncJob(repoPath string, filePorter *filesystem.FilePorter) (*SyncJob, error) {
+func NewSyncJob(repoPath string, filePorter *filesystem.FilePorter, syncno string) (*SyncJob, error) {
 	gitInfo, err := githelper.GitInfoGet(repoPath)
 	if err != nil {
 		logrus.Println("获取git信息失败: ", repoPath, err)
@@ -34,16 +39,22 @@ func NewSyncJob(repoPath string, filePorter *filesystem.FilePorter) (*SyncJob, e
 		GitInfo:      gitInfo,
 		ignoreHelper: ignoreHelper,
 		filePorter:   filePorter,
+		syncno:       syncno,
 	}, nil
 }
 
-func (j *SyncJob) Sync() {
+func (j *SyncJob) Sync(wg *sync.WaitGroup) {
+	defer func() {
+		logrus.Infoln("同步完成: ", j.RepoRootPath)
+		wg.Done()
+	}()
+	logrus.Infoln("开始同步仓库: ", j.RepoRootPath)
 	// 如果当前commit不是clean状态，则不需要同步
-	if !j.GitInfo.IsClean {
-		logrus.Println("工作区不干净跳过同步: ", j.RepoRootPath)
-		return
-	}
-	repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.RepoId, j.GitInfo.Branch)
+	//if !j.GitInfo.IsClean {
+	//	logrus.Println("工作区不干净跳过同步: ", j.RepoRootPath)
+	//	return
+	//}
+	repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.FirstCommitId, j.GitInfo.Branch)
 	if err != nil {
 		logrus.Fatalln("获取repo sync info失败: ", j.RepoRootPath, err)
 		return
@@ -69,7 +80,8 @@ func (j *SyncJob) Sync() {
 		Uid:          helpers.MustUuid(),
 		LastCommitId: j.GitInfo.CommitId,
 		Branch:       j.GitInfo.Branch,
-		RepoId:       j.GitInfo.RepoId,
+		//RepoId:       j.GitInfo.RepoId,
+		FirstCommitId: j.GitInfo.FirstCommitId,
 	}
 	err = repo.PGInsertOrUpdateRepoSyncInfo(repoSyncInfo)
 	if err != nil {
@@ -84,9 +96,10 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 	}
 
 	if info.IsDir() {
-
+		if IsIgnoredPath(path) {
+			return filepath.SkipDir
+		}
 		tryIgnorePath := filepath.Join(path, ".gitignore")
-
 		if _, err := os.Stat(tryIgnorePath); err == nil {
 			err = j.ignoreHelper.AppendGitIgnoreFile(tryIgnorePath)
 			if err != nil {
@@ -117,22 +130,48 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 
 	logrus.Println("matchResult: ", matchResult)
 	targetPath := strings.TrimPrefix(path, j.GitInfo.RootPath)
-	targetPath = fmt.Sprintf("%s/%s%s", j.GitInfo.RepoId, j.GitInfo.Branch, targetPath)
+	targetPath = fmt.Sprintf("%s/%s%s", j.GitInfo.FirstCommitId, j.GitInfo.Branch, targetPath)
 	fullTargetPath, err := j.filePorter.CopyFile(path, targetPath)
 	if err != nil {
 		logrus.Println("CopyFile: ", err)
 		return fmt.Errorf("CopyFile: %w", err)
 	}
 
+	mimeType := helpers.GetMimeType(fullTargetPath)
+	checksumValue, err := checksum.CalcSha256(path)
+	if err != nil {
+		logrus.Println("CalcSha256: ", err)
+		return fmt.Errorf("CalcSha256: %w", err)
+	}
 	repoFile := &repo.MtRepoFileModel{
 		Uid:        helpers.MustUuid(),
 		Branch:     j.GitInfo.Branch,
 		CommitId:   j.GitInfo.CommitId,
 		SrcPath:    path,
 		TargetPath: fullTargetPath,
-		Mime:       "",
+		Mime:       mimeType,
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
+		Checksum: sql.NullString{
+			String: checksumValue,
+			Valid:  true,
+		},
+		Syncno: sql.NullString{
+			String: j.syncno,
+			Valid:  true,
+		},
+		RepoId: sql.NullString{
+			String: "", //j.GitInfo.RepoId,
+			Valid:  false,
+		},
+		RepoFirstCommit: sql.NullString{
+			String: j.GitInfo.FirstCommitId,
+			Valid:  true,
+		},
+		RelativePath: sql.NullString{
+			String: strings.TrimPrefix(path, j.GitInfo.RootPath),
+			Valid:  true,
+		},
 	}
 
 	err = repo.PGInsertOrUpdateRepoFile(repoFile)
@@ -148,7 +187,7 @@ func (j *SyncJob) CopyFiles() (int, error) {
 
 	err := filepath.Walk(j.RepoRootPath, j.visitFile)
 	if err != nil {
-		fmt.Printf("CopyFiles walking the path %v: %v\n", j.RepoRootPath, err)
+		logrus.Printf("CopyFiles walking the path %v: %v\n", j.RepoRootPath, err)
 		return 1, fmt.Errorf("CopyFiles walking the path %v: %v\n", j.RepoRootPath, err)
 	}
 
@@ -159,9 +198,11 @@ type RepoWorker struct {
 	repoChan   chan string
 	repoJobMap map[string]*SyncJob
 	filePorter *filesystem.FilePorter
+	wg         *sync.WaitGroup
+	syncno     string
 }
 
-func NewRepoWorker() (*RepoWorker, error) {
+func NewRepoWorker(wg *sync.WaitGroup, syncno string) (*RepoWorker, error) {
 	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
 	if !ok || storageUrl == "" {
 		logrus.Fatalln("STORAGE_URL 未配置")
@@ -176,13 +217,15 @@ func NewRepoWorker() (*RepoWorker, error) {
 		repoJobMap: make(map[string]*SyncJob),
 		repoChan:   make(chan string, 2),
 		filePorter: filePorter,
+		wg:         wg,
+		syncno:     syncno,
 	}, nil
 }
 
 func (w *RepoWorker) AddJob(repoPath string) error {
 	repoRoot, err := githelper.GitGetRepoRoot(repoPath)
 	if err != nil {
-		return fmt.Errorf("GitGetRepoRoot: %w", err)
+		return fmt.Errorf("GitGetRepoRoot error: %s, %w", repoPath, err)
 	}
 	if repoRoot == "" {
 		return fmt.Errorf("repoPath不能为空")
@@ -192,19 +235,24 @@ func (w *RepoWorker) AddJob(repoPath string) error {
 }
 
 func (w *RepoWorker) StartWork() {
+	defer func() {
+		logrus.Infoln("RepoWorker 退出")
+		w.wg.Done()
+	}()
 	for {
 		select {
 		case repoPath := <-w.repoChan:
 			if _, ok := w.repoJobMap[repoPath]; ok {
 				continue
 			}
-			job, err := NewSyncJob(repoPath, w.filePorter)
+			job, err := NewSyncJob(repoPath, w.filePorter, w.syncno)
 			if err != nil {
 				logrus.Fatalln("NewSyncJob: %w", err)
 				return
 			}
 			w.repoJobMap[repoPath] = job
-			go job.Sync()
+			w.wg.Add(1)
+			go job.Sync(w.wg)
 		}
 	}
 }

@@ -3,7 +3,6 @@ package notes
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	"neutron/services/filesystem"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func NoteAssetsSelectHandler(gctx *gin.Context) {
@@ -52,19 +52,20 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		return
 	}
 	noteModel := noteTable.ToModel()
-	if noteModel.RepoId == "" || noteModel.Branch == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoId或Branch为空"))
+	if noteModel.RepoFirstCommit == "" || noteModel.Branch == "" {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoFirstCommit或Branch为空"))
 		return
 	}
-	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoId.String, noteTable.Branch.String,
-		strings.TrimLeft(noteModel.RepoPath, "/"), decodedParent)
+	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoFirstCommit.String, noteTable.Branch.String,
+		strings.TrimLeft(filepath.Dir(noteModel.RelativePath), "/"), decodedParent)
+	assetsPath = strings.TrimRight(assetsPath, "/")
 	fullAssetsPath, err := filesystem.ResolvePath(assetsPath)
 	if err != nil {
-		log.Println("ResolvePath", err)
+		logrus.Println("ResolvePath", err)
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
 		return
 	}
-	log.Println("fullAssetsPath", fullAssetsPath)
+	logrus.Println("fullAssetsPath", fullAssetsPath)
 
 	fileList, err := listFirstLevel(storagePath, fullAssetsPath)
 	if err != nil {

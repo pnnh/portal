@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"neutron/helpers"
 )
 
 type GitInfo struct {
@@ -18,7 +16,6 @@ type GitInfo struct {
 	IsClean       bool
 	RootPath      string
 	FirstCommitId string
-	RepoId        string
 }
 
 // 获取指定目录的git信息
@@ -74,12 +71,6 @@ func GitInfoGet(dirPath string) (*GitInfo, error) {
 		return nil, fmt.Errorf("GitInfoGet: %w", err)
 	}
 	gitInfo.FirstCommitId = firstCommitId
-
-	repoId, err := helpers.StringToMD5UUID(gitInfo.FirstCommitId)
-	if err != nil {
-		return nil, fmt.Errorf("repoId StringToMD5UUID: %v", err)
-	}
-	gitInfo.RepoId = repoId
 
 	return gitInfo, nil
 }

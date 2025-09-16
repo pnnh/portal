@@ -5,14 +5,15 @@ import (
 	// "errors"
 	// "log"
 
-	"log"
 	"net/http"
 	"net/url"
+
 	nemodels "neutron/models"
 
 	"portal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	// "github.com/ory/fosite/handler/openid"
 	// "portal/server/models"
 )
@@ -68,7 +69,7 @@ func IntrospectionEndpoint(gctx *gin.Context) {
 
 	ir, err := oauth2.NewIntrospectionRequest(ctx, gctx.Request, oauth2Session)
 	if err != nil {
-		log.Printf("Error occurred in NewIntrospectionRequest: %+v", err)
+		logrus.Printf("Error occurred in NewIntrospectionRequest: %+v", err)
 		oauth2.WriteIntrospectionError(ctx, gctx.Writer, err)
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"neutron/services/checksum"
 	"portal/business/notes"
 
 	"github.com/iancoleman/strcase"
@@ -24,17 +25,18 @@ const SyncerArticleOwner = "01990e6a-2689-731b-a5a2-b46117e22040"
 type ArticleWorker struct {
 	repoWorker *RepoWorker
 	rootPath   string
+	syncno     string
 }
 
-func NewArticleWorker(repoWorker *RepoWorker, rootPath string) (*ArticleWorker, error) {
+func NewArticleWorker(repoWorker *RepoWorker, rootPath string, syncno string) (*ArticleWorker, error) {
 	return &ArticleWorker{
 		repoWorker: repoWorker,
 		rootPath:   rootPath,
+		syncno:     syncno,
 	}, nil
 }
 
 func (w *ArticleWorker) StartWork() {
-
 	err := filepath.Walk(w.rootPath, w.visitFile)
 	if err != nil {
 		logrus.Fatalln("error walking the path", w.rootPath, err)
@@ -42,21 +44,21 @@ func (w *ArticleWorker) StartWork() {
 }
 
 func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) error {
-	logrus.Infoln("====", path)
 	if err != nil {
-		return err
+		return fmt.Errorf("error walking the path %s, %w", path, err)
 	}
 
 	fileNmae := strings.ToLower(filepath.Base(path))
 	if info.IsDir() && strings.HasPrefix(fileNmae, ".") {
 		return filepath.SkipDir
 	}
+	if IsIgnoredPath(path) {
+		return filepath.SkipDir
+	}
+	logrus.Infoln("====", path)
 	if info.IsDir() || !strings.HasSuffix(fileNmae, ".md") {
 		return nil
 	}
-
-	logrus.Infoln("++++", path)
-
 	noteText, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("读取文件失败: %w", err)
@@ -67,20 +69,34 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		return fmt.Errorf("解析文章元数据失败: %w", err)
 	}
 	if matter.Cls == "MTNote" && helpers.IsUuid(matter.Uid) {
-		fmt.Printf("%+v", matter)
-		fmt.Println("这是一个MTNote")
+		logrus.Infoln("这是一个MTNote: ", matter)
 
-		//err = w.repoWorker.AddJob(path)
-		//if err != nil {
-		//	logrus.Warningln("添加任务失败: %w", err)
-		//}
+		sumValue, err := checksum.CalcSha256(path)
+		if err != nil {
+			return fmt.Errorf("计算文件校验和失败: %w", err)
+		}
+		dbNote, err := notes.PGGetNoteByChecksum(sumValue)
+		if err != nil {
+			return fmt.Errorf("查询文章失败: %w", err)
+		}
+		if dbNote != nil {
+			logrus.Infoln("文章已存在，跳过: ", path)
+			return nil
+		}
+		logrus.Infoln("开始同步文章: ", path)
+
+		baseDir := filepath.Dir(path)
+		err = w.repoWorker.AddJob(baseDir)
+		if err != nil {
+			logrus.Warningln("添加任务失败: %w", err)
+		}
 		noteTitle := strings.Trim(matter.Title, " \n\r\t ")
 		if noteTitle == "" {
 			noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 		}
 		// 旧的兼容格式处理
 		if noteTitle == "index" {
-			parentDir := filepath.Base(filepath.Dir(path))
+			parentDir := filepath.Base(baseDir)
 			if strings.HasSuffix(parentDir, ".note") {
 				noteTitle = strings.TrimSuffix(parentDir, ".note")
 			}
@@ -95,8 +111,10 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		note.Lang = "zh"
 		note.Name = strcase.ToKebab(noteTitle)
 		note.Owner = SyncerArticleOwner
+		note.Checksum = sql.NullString{String: sumValue, Valid: true}
+		note.Syncno = sql.NullString{String: w.syncno, Valid: true}
 
-		gitInfo, err := githelper.GitInfoGet(path)
+		gitInfo, err := githelper.GitInfoGet(baseDir)
 		if err != nil {
 			logrus.Warningln("获取git信息失败: %w", err)
 		}
@@ -107,13 +125,14 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 			note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
 			note.Commit = sql.NullString{String: gitInfo.CommitId, Valid: true}
 			note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
-			repoPath := strings.TrimPrefix(path, gitInfo.RootPath)
-			note.RepoPath = sql.NullString{String: repoPath, Valid: true}
-			note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
+			relativePath := strings.TrimPrefix(path, gitInfo.RootPath)
+			note.RelativePath = sql.NullString{String: relativePath, Valid: true}
+			//note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
+			note.RepoFirstCommit = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
 		}
 		err = notes.PGConsoleInsertNote(note)
 		if err != nil {
-			fmt.Printf("插入文章失败: %v", err)
+			logrus.Errorf("插入文章失败: %v", err)
 		}
 	} else {
 		logrus.Infoln("跳过非MTNote文章", path)

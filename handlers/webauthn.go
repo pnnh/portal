@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	nemodels "neutron/models"
 	"strings"
 	"time"
+
+	nemodels "neutron/models"
 
 	"portal/handlers/auth/authorizationserver"
 
@@ -249,7 +250,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 	// 	models.ResponseMessageError(gctx, "参数有误315", err)
 	// 	return
 	// }
-	fmt.Println("verifyData: \n", verifyData)
+	logrus.Println("verifyData: \n", verifyData)
 	assertionData, err := protocol.ParseCredentialRequestResponseBody(strings.NewReader(verifyData))
 	if err != nil {
 		models.ResponseMessageError(gctx, "参数有误317", err)

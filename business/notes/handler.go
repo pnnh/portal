@@ -100,7 +100,12 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	err = PGConsoleInsertNote(model)
+	noteTable, err := model.ToTableMap()
+	if err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "转换笔记出错"))
+		return
+	}
+	err = PGConsoleInsertNote(noteTable)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
 		return
