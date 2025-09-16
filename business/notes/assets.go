@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"neutron/helpers"
 	nemodels "neutron/models"
 
 	"neutron/config"
@@ -96,13 +97,14 @@ func listFirstLevel(storagePath, currentDir string) ([]any, error) {
 		}
 		relativePath := entry.Name()
 		extName := strings.Trim(strings.ToLower(filepath.Ext(relativePath)), " ")
+		filePath := strings.TrimPrefix(currentDir, storagePath) + "/" + relativePath
 		model := MTNoteFileModel{
 			Title:       relativePath,
 			Path:        relativePath,
 			IsDir:       entry.IsDir(),
-			IsText:      filesystem.IsTextFile(extName),
-			IsImage:     filesystem.IsImageFile(extName),
-			StoragePath: strings.TrimPrefix(currentDir, storagePath) + relativePath,
+			IsText:      helpers.IsTextFile(extName),
+			IsImage:     helpers.IsImageFile(extName),
+			StoragePath: filePath,
 		}
 		fileList = append(fileList, model)
 	}

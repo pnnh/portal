@@ -3,16 +3,18 @@ package account
 import (
 	"fmt"
 	"net/http"
-	nemodels "neutron/models"
 	"path/filepath"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	nemodels "neutron/models"
+
 	"neutron/config"
 	"neutron/helpers"
 	"neutron/services/filesystem"
 	"portal/business"
 	"portal/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // 获取当前登录用户的信息，需要当前登录用户的cookie
@@ -62,7 +64,7 @@ func UserinfoEditHandler(gctx *gin.Context) {
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("文件大小超过限制"))
 			return
 		}
-		if !filesystem.IsImageFile(file.Filename) {
+		if !helpers.IsImageFile(file.Filename) {
 			logrus.Warningln("上传的文件不是图片", file.Filename)
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("上传的文件不是图片"))
 			return
