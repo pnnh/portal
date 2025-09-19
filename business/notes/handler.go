@@ -132,7 +132,8 @@ func NoteGetHandler(gctx *gin.Context) {
 		return
 	}
 	noteModel := noteTable.ToModel()
-	responseResult := nemodels.NECodeOk.WithLocalData(lang, noteModel)
+	viewModel := noteModel.ToViewModel()
+	responseResult := nemodels.NECodeOk.WithLocalData(lang, viewModel)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

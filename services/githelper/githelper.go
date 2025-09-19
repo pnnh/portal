@@ -126,8 +126,9 @@ func GitGetFirstCommitId(dirPath string) (string, error) {
 // 将git ssh地址转换为https地址
 func GitSshUrlToHttps(url string) string {
 	if strings.HasPrefix(url, "git@") {
-		url = strings.Replace(url, "git@", "https://", 1)
 		url = strings.Replace(url, ":", "/", 1)
+		url = strings.Replace(url, "git@", "https://", 1)
+		url = strings.TrimSuffix(url, ".git")
 	}
 	return url
 }

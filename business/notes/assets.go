@@ -10,6 +10,7 @@ import (
 
 	"neutron/helpers"
 	nemodels "neutron/models"
+	"portal/services/githelper"
 
 	"neutron/config"
 	"neutron/services/filesystem"
@@ -73,19 +74,26 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "listFirstLevel出错"))
 		return
 	}
+	repoUrl := githelper.GitSshUrlToHttps(noteModel.Url)
+	resultList := make([]any, 0)
+	for _, file := range fileList {
+		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s/%s", repoUrl, noteModel.Branch, filepath.Dir(noteModel.RelativePath), file.Path)
+		file.FullRepoPath = fullRepoUrl
+		resultList = append(resultList, file)
+	}
 	selectData := &nemodels.NESelectResponse{
 		Page:  1,
 		Size:  999,
 		Count: len(fileList),
-		Range: fileList,
+		Range: resultList,
 	}
 	responseResult := nemodels.NECodeOk.WithData(selectData)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func listFirstLevel(storagePath, currentDir string) ([]any, error) {
-	fileList := make([]any, 0)
+func listFirstLevel(storagePath, currentDir string) ([]*MTNoteFileModel, error) {
+	fileList := make([]*MTNoteFileModel, 0)
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
 		return nil, fmt.Errorf("os.ReadDir: %v", err)
@@ -98,7 +106,7 @@ func listFirstLevel(storagePath, currentDir string) ([]any, error) {
 		relativePath := entry.Name()
 		extName := strings.Trim(strings.ToLower(filepath.Ext(relativePath)), " ")
 		filePath := strings.TrimPrefix(currentDir, storagePath) + "/" + relativePath
-		model := MTNoteFileModel{
+		model := &MTNoteFileModel{
 			Title:       relativePath,
 			Path:        relativePath,
 			IsDir:       entry.IsDir(),

@@ -3,10 +3,12 @@ package notes
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
+	"portal/services/githelper"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -144,61 +146,14 @@ func (m *MTNoteModel) ToViewModel() interface{} {
 	view := &MTNoteView{
 		MTNoteModel: *m,
 	}
-	//if m.Lang.Valid {
-	//	view.Lang = m.Lang.String
-	//}
 	view.Lang = m.Lang
+	view.RepoUrl = githelper.GitSshUrlToHttps(m.Url)
+	view.FullRepoUrl = fmt.Sprintf("%s/blob/%s%s", view.RepoUrl, view.Branch, view.RelativePath)
+	view.FullRepoPath = fmt.Sprintf("%s/tree/%s%s", view.RepoUrl, view.Branch, filepath.Dir(m.RelativePath))
 	return view
-
 }
 
 func (m *MTNoteModel) ToTableMap() (*MTNoteTable, error) {
-	//tableMap := datastore.NewTableMap()
-	//tableMap.Set("uid", m.Uid)
-	//tableMap.Set("title", m.Title)
-	//tableMap.Set("header", m.Header)
-	//tableMap.Set("body", m.Body)
-	//tableMap.Set("description", m.Description)
-	//tableMap.Set("keywords", m.Keywords)
-	//tableMap.Set("status", m.Status)
-	//tableMap.Set("owner", m.Owner)
-	//tableMap.Set("discover", m.Discover)
-	//tableMap.Set("create_time", m.CreateTime)
-	//tableMap.Set("update_time", m.UpdateTime)
-	//tableMap.Set("lang", m.Lang)
-	//
-	//if m.Partition != "" {
-	//	tableMap.Set("partition", m.Partition)
-	//}
-	//if m.Version != "" {
-	//	tableMap.Set("version", m.Version)
-	//}
-	//if m.Build != "" {
-	//	tableMap.Set("build", m.Build)
-	//}
-	//if m.Url != "" {
-	//	tableMap.Set("url", m.Url)
-	//}
-	//if m.Branch != "" {
-	//	tableMap.Set("branch", m.Branch)
-	//}
-	//if m.Commit != "" {
-	//	tableMap.Set("commit", m.Commit)
-	//}
-	//if !m.CommitTime.IsZero() {
-	//	tableMap.Set("commit_time", m.CommitTime)
-	//}
-	//if m.RelativePath != "" {
-	//	tableMap.Set("repo_path", m.RelativePath)
-	//}
-	//if m.RepoId != "" {
-	//	tableMap.Set("repo_id", m.RepoId)
-	//}
-	//if m.Channel != "" {
-	//	tableMap.Set("channel", m.Channel)
-	//}
-	//
-	//return tableMap, nil
 	table := &MTNoteTable{
 		Uid:          m.Uid,
 		Title:        m.Title,
@@ -232,7 +187,10 @@ func (m *MTNoteModel) ToTableMap() (*MTNoteTable, error) {
 
 type MTNoteView struct {
 	MTNoteModel
-	Lang string `json:"lang" db:"lang"`
+	Lang         string `json:"lang"`
+	RepoUrl      string `json:"repo_url"`
+	FullRepoUrl  string `json:"full_repo_url"`
+	FullRepoPath string `json:"full_repo_path"`
 }
 
 func (v *MTNoteView) ToModel() *MTNoteModel {
@@ -464,10 +422,11 @@ func PGGetNote(uid string, lang string) (*MTNoteTable, error) {
 }
 
 type MTNoteFileModel struct {
-	Title       string `json:"title"`
-	Path        string `json:"path"`
-	IsDir       bool   `json:"is_dir"`
-	IsText      bool   `json:"is_text"`
-	IsImage     bool   `json:"is_image"`
-	StoragePath string `json:"storage_path"`
+	Title        string `json:"title"`
+	Path         string `json:"path"`
+	IsDir        bool   `json:"is_dir"`
+	IsText       bool   `json:"is_text"`
+	IsImage      bool   `json:"is_image"`
+	StoragePath  string `json:"storage_path"`
+	FullRepoPath string `json:"full_repo_path"` // 完整的仓库路径
 }
