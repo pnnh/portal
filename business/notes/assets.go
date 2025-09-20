@@ -4,19 +4,18 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"neutron/helpers"
+	"neutron/services/datastore"
 	"os"
 	"path/filepath"
+	"portal/models/repo"
 	"strings"
 
-	"neutron/helpers"
 	nemodels "neutron/models"
 	"portal/services/githelper"
 
-	"neutron/config"
-	"neutron/services/filesystem"
-
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
+	"github.com/jmoiron/sqlx"
 )
 
 func NoteAssetsSelectHandler(gctx *gin.Context) {
@@ -36,40 +35,21 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		decodedParent = string(decodeString)
 	}
 
-	noteTable, err := PGGetNote(uid, "")
+	noteTable, err := PGGetNote(uid, "en")
 	if err != nil || noteTable == nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
 
-	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
-	if !ok || storageUrl == "" {
-		//return fmt.Errorf("STORAGE_URL 未配置2")
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("STORAGE_URL 未配置2"))
-		return
-	}
-	storagePath, err := filesystem.ResolvePath(storageUrl)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
-		return
-	}
 	noteModel := noteTable.ToModel()
 	if noteModel.RepoFirstCommit == "" || noteModel.Branch == "" {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoFirstCommit或Branch为空"))
 		return
 	}
-	assetsPath := fmt.Sprintf("%s/%s/%s/%s/%s", storageUrl, noteTable.RepoFirstCommit.String, noteTable.Branch.String,
-		strings.TrimLeft(filepath.Dir(noteModel.RelativePath), "/"), decodedParent)
-	assetsPath = strings.TrimRight(assetsPath, "/")
-	fullAssetsPath, err := filesystem.ResolvePath(assetsPath)
-	if err != nil {
-		logrus.Println("ResolvePath", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "ResolvePath出错"))
-		return
-	}
-	logrus.Println("fullAssetsPath", fullAssetsPath)
+	noteDir := strings.ReplaceAll(filepath.Dir(noteModel.RelativePath), string(os.PathSeparator), "/")
 
-	fileList, err := listFirstLevel(storagePath, fullAssetsPath)
+	parentDir := noteDir + decodedParent
+	fileList, err := listFirstLevelDB(noteModel.RepoFirstCommit, noteModel.Branch, parentDir)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "listFirstLevel出错"))
 		return
@@ -77,9 +57,19 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 	repoUrl := githelper.GitSshUrlToHttps(noteModel.Url)
 	resultList := make([]any, 0)
 	for _, file := range fileList {
-		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s/%s", repoUrl, noteModel.Branch, filepath.Dir(noteModel.RelativePath), file.Path)
-		file.FullRepoPath = fullRepoUrl
-		resultList = append(resultList, file)
+		extName := filepath.Ext(file.SrcPath)
+		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s", repoUrl, noteModel.Branch,
+			file.RelativePath.String)
+		fileView := &MTNoteFileModel{
+			Title:        file.Uid,
+			Path:         file.Uid,
+			IsDir:        false,
+			IsText:       helpers.IsTextFile(extName),
+			IsImage:      helpers.IsImageFile(extName),
+			StoragePath:  file.RelativePath.String,
+			FullRepoPath: fullRepoUrl,
+		}
+		resultList = append(resultList, fileView)
 	}
 	selectData := &nemodels.NESelectResponse{
 		Page:  1,
@@ -92,29 +82,31 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func listFirstLevel(storagePath, currentDir string) ([]*MTNoteFileModel, error) {
-	fileList := make([]*MTNoteFileModel, 0)
-	entries, err := os.ReadDir(currentDir)
+func listFirstLevelDB(repoFirstCommit, repoBranch, currentDir string) ([]*repo.MtRepoFileModel, error) {
+	baseSqlText := ` select * from repo_files `
+	baseSqlParams := map[string]interface{}{}
+
+	whereText := ` where repo_first_commit = :repo_first_commit and branch = :branch  
+		and relative_path like :parent_path
+        and relative_path not like :parent_path2
+`
+	baseSqlParams["repo_first_commit"] = repoFirstCommit
+	baseSqlParams["branch"] = repoBranch
+	baseSqlParams["parent_path"] = currentDir + "%"
+	baseSqlParams["parent_path2"] = currentDir + "%/%"
+
+	pageSqlText := fmt.Sprintf("%s %s %s", baseSqlText, whereText, ` limit 256; `)
+
+	var sqlResults []*repo.MtRepoFileModel
+
+	rows, err := datastore.NamedQuery(pageSqlText, baseSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("os.ReadDir: %v", err)
+		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
 
-	for _, entry := range entries {
-		if filesystem.IsExcludedFile(entry.Name()) {
-			continue
-		}
-		relativePath := entry.Name()
-		extName := strings.Trim(strings.ToLower(filepath.Ext(relativePath)), " ")
-		filePath := strings.TrimPrefix(currentDir, storagePath) + "/" + relativePath
-		model := &MTNoteFileModel{
-			Title:       relativePath,
-			Path:        relativePath,
-			IsDir:       entry.IsDir(),
-			IsText:      helpers.IsTextFile(extName),
-			IsImage:     helpers.IsImageFile(extName),
-			StoragePath: filePath,
-		}
-		fileList = append(fileList, model)
+	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
+		return nil, fmt.Errorf("StructScan: %w", err)
 	}
-	return fileList, nil
+
+	return sqlResults, nil
 }

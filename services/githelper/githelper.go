@@ -3,6 +3,7 @@ package githelper
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -47,10 +48,9 @@ func GitInfoGet(dirPath string) (*GitInfo, error) {
 	gitInfo.Tracking = trackingBranch
 
 	err = GitCheckWorkspaceClean(dirPath)
-	if err != nil {
-		return nil, fmt.Errorf("GitInfoGet: %w", err)
+	if err == nil {
+		gitInfo.IsClean = true
 	}
-	gitInfo.IsClean = true
 
 	commitTime, err := GitGetCommitTime(dirPath, commitId)
 	if err != nil {
@@ -145,8 +145,14 @@ func GitGetRepoRoot(dirPath string) (string, error) {
 	if repoRoot == "" {
 		return "", fmt.Errorf("GitGetRepoRoot empty: %w", err)
 	}
+	sysType := runtime.GOOS
+	if sysType == "windows" {
+		repoRoot = strings.ReplaceAll(repoRoot, "/", "\\")
+	}
 	return repoRoot, nil
 }
+
+var ErrGitWorkspaceNotClean = fmt.Errorf("workspace not clean")
 
 func GitCheckWorkspaceClean(dirPath string) error {
 	cmd := exec.Command("git", "status", "--porcelain")
@@ -157,7 +163,7 @@ func GitCheckWorkspaceClean(dirPath string) error {
 		return fmt.Errorf("GitCheckWorkspaceClean exec: %w", err)
 	}
 	if len(out) > 0 {
-		return fmt.Errorf("GitCheckWorkspaceClean not clean: %w", err)
+		return ErrGitWorkspaceNotClean
 	}
 	return nil
 }

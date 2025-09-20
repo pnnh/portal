@@ -85,18 +85,18 @@ type MtRepoFileModel struct {
 	RepoId          sql.NullString `json:"repo_id" db:"repo_id"`
 	RepoFirstCommit sql.NullString `json:"repo_first_commit" db:"repo_first_commit"`
 	RelativePath    sql.NullString `json:"relative_path" db:"relative_path"`
+	IsDir           sql.NullBool   `json:"is_dir" db:"is_dir"`
 }
 
 func PGInsertOrUpdateRepoFile(model *MtRepoFileModel) error {
 	sqlText := `insert into repo_files(uid, branch, commit_id, src_path, target_path, mime, create_time, update_time,
-checksum, syncno, repo_id, repo_first_commit, relative_path)
+checksum, syncno, repo_id, repo_first_commit, relative_path, is_dir)
 values(:uid, :branch, :commit_id, :src_path, :target_path, :mime, now(), now(), :checksum, :syncno, :repo_id, 
-	:repo_first_commit, :relative_path)
-on conflict (uid)
-do update set branch=excluded.branch, commit_id=excluded.commit_id, src_path=excluded.src_path,
+	:repo_first_commit, :relative_path, :is_dir)
+on conflict (repo_first_commit, branch, relative_path)
+do update set commit_id=excluded.commit_id, src_path=excluded.src_path,
 		target_path=excluded.target_path, mime=excluded.mime, update_time = now(), checksum=excluded.checksum,
-	syncno=excluded.syncno, repo_id=excluded.repo_id, repo_first_commit=excluded.repo_first_commit,
-	relative_path=excluded.relative_path; `
+	syncno=excluded.syncno; `
 
 	sqlParams := map[string]interface{}{
 		"uid":               model.Uid,
@@ -110,6 +110,7 @@ do update set branch=excluded.branch, commit_id=excluded.commit_id, src_path=exc
 		"repo_id":           model.RepoId,
 		"repo_first_commit": model.RepoFirstCommit,
 		"relative_path":     model.RelativePath,
+		"is_dir":            model.IsDir,
 	}
 
 	_, err := datastore.NamedExec(sqlText, sqlParams)

@@ -49,11 +49,11 @@ func SyncerMain(configFlag string) {
 	if !ok || blogUrl == "" {
 		logrus.Fatalln("BLOG_URL 未配置")
 	}
-	blogDir, err := filesystem.ResolvePath(blogUrl)
-	if err != nil {
-		logrus.Fatalln("解析路径失败", err)
-		return
-	}
+	//blogDir, err := filesystem.ResolvePath(blogUrl)
+	//if err != nil {
+	//	logrus.Fatalln("解析路径失败", err)
+	//	return
+	//}
 	sourceUrl, ok := config.GetConfiguration("SOURCE_URL")
 	if !ok || sourceUrl == nil {
 		logrus.Fatalln("SOURCE_URL 未配置")
@@ -67,7 +67,7 @@ func SyncerMain(configFlag string) {
 
 	wg.Add(2)
 	go SyncDirectoryForever(repoWorker, sourceDir, wg, syncno)
-	go SyncDirectoryForever(repoWorker, blogDir, wg, syncno)
+	//go SyncDirectoryForever(repoWorker, blogDir, wg, syncno)
 
 	wg.Wait()
 }

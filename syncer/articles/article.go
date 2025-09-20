@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"neutron/services/checksum"
 	"portal/business/notes"
@@ -55,7 +56,9 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 	if IsIgnoredPath(path) {
 		return filepath.SkipDir
 	}
-	logrus.Infoln("====", path)
+	if info.IsDir() {
+		logrus.Infoln("===visitDir===", path)
+	}
 	if info.IsDir() || !strings.HasSuffix(fileNmae, ".md") {
 		return nil
 	}
@@ -69,20 +72,20 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		return fmt.Errorf("解析文章元数据失败: %w", err)
 	}
 	if matter.Cls == "MTNote" && helpers.IsUuid(matter.Uid) {
-		logrus.Infoln("这是一个MTNote: ", matter)
+		//logrus.Infoln("这是一个MTNote: ", matter)
 
 		sumValue, err := checksum.CalcSha256(path)
 		if err != nil {
 			return fmt.Errorf("计算文件校验和失败: %w", err)
 		}
-		dbNote, err := notes.PGGetNoteByChecksum(sumValue)
-		if err != nil {
-			return fmt.Errorf("查询文章失败: %w", err)
-		}
-		if dbNote != nil {
-			logrus.Infoln("文章已存在，跳过: ", path)
-			return nil
-		}
+		//dbNote, err := notes.PGGetNoteByChecksum(sumValue)
+		//if err != nil {
+		//	return fmt.Errorf("查询文章失败: %w", err)
+		//}
+		//if dbNote != nil && dbNote.UpdateTime.After(time.Now().Add(-8*time.Hour)) {
+		//	//logrus.Infoln("文章已存在，跳过: ", path)
+		//	return nil
+		//}
 		logrus.Infoln("开始同步文章: ", path)
 
 		baseDir := filepath.Dir(path)
@@ -106,6 +109,9 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		note.Title = noteTitle
 		note.Body = string(rest)
 		note.Description = matter.Description
+		note.Keywords = matter.Keywords
+		note.Channel = sql.NullString{String: matter.Chan, Valid: matter.Chan != ""}
+		note.UpdateTime = time.Now()
 		note.Status = 1 // 已发布
 		note.Header = "MTNote"
 		note.Lang = "zh"
@@ -134,8 +140,6 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		if err != nil {
 			logrus.Errorf("插入文章失败: %v", err)
 		}
-	} else {
-		logrus.Infoln("跳过非MTNote文章", path)
 	}
 
 	return nil

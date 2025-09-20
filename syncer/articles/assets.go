@@ -54,45 +54,45 @@ func (j *SyncJob) Sync(wg *sync.WaitGroup) {
 	//	logrus.Println("工作区不干净跳过同步: ", j.RepoRootPath)
 	//	return
 	//}
-	repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.FirstCommitId, j.GitInfo.Branch)
-	if err != nil {
-		logrus.Fatalln("获取repo sync info失败: ", j.RepoRootPath, err)
-		return
-	}
-	if repoSyncInfo != nil && repoSyncInfo.LastCommitId != "" {
-		isAncestor, err := githelper.GitCommitIsAncestor(j.RepoRootPath, repoSyncInfo.LastCommitId, j.GitInfo.CommitId)
-		if err != nil {
-			logrus.Println("比较commit失败: ", j.RepoRootPath, err)
-			return
-		}
-		// 如果当前commit在上次commit之前，则不需要同步
-		if !isAncestor {
-			logrus.Println("状态已最新无需同步: ", j.RepoRootPath)
-			return
-		}
-	}
-	_, err = j.CopyFiles()
+	//repoSyncInfo, err := repo.PGGetRepoSyncInfo(j.GitInfo.FirstCommitId, j.GitInfo.Branch)
+	//if err != nil {
+	//	logrus.Fatalln("获取repo sync info失败: ", j.RepoRootPath, err)
+	//	return
+	//}
+	//if repoSyncInfo != nil && repoSyncInfo.LastCommitId != "" {
+	//	isAncestor, err := githelper.GitCommitIsAncestor(j.RepoRootPath, repoSyncInfo.LastCommitId, j.GitInfo.CommitId)
+	//	if err != nil {
+	//		logrus.Println("比较commit失败: ", j.RepoRootPath, err)
+	//		return
+	//	}
+	//	// 如果当前commit在上次commit之前，则不需要同步
+	//	if !isAncestor {
+	//		logrus.Println("状态已最新无需同步: ", j.RepoRootPath)
+	//		return
+	//	}
+	//}
+	_, err := j.CopyFiles()
 	if err != nil {
 		logrus.Fatalln("CopyFiles: ", err)
 		return
 	}
-	repoSyncInfo = &repo.MTRepoSyncModel{
-		Uid:          helpers.MustUuid(),
-		LastCommitId: j.GitInfo.CommitId,
-		Branch:       j.GitInfo.Branch,
-		//RepoId:       j.GitInfo.RepoId,
-		FirstCommitId: j.GitInfo.FirstCommitId,
-	}
-	err = repo.PGInsertOrUpdateRepoSyncInfo(repoSyncInfo)
-	if err != nil {
-		logrus.Fatalln("PGInsertOrUpdateRepoSyncInfo: ", err)
-		return
-	}
+	//repoSyncInfo := &repo.MTRepoSyncModel{
+	//	Uid:          helpers.MustUuid(),
+	//	LastCommitId: j.GitInfo.CommitId,
+	//	Branch:       j.GitInfo.Branch,
+	//	//RepoId:       j.GitInfo.RepoId,
+	//	FirstCommitId: j.GitInfo.FirstCommitId,
+	//}
+	//err = repo.PGInsertOrUpdateRepoSyncInfo(repoSyncInfo)
+	//if err != nil {
+	//	logrus.Fatalln("PGInsertOrUpdateRepoSyncInfo: ", err)
+	//	return
+	//}
 }
 
 func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 	if err != nil {
-		return err
+		return fmt.Errorf("error walking the path %s, %w", path, err)
 	}
 
 	if info.IsDir() {
@@ -114,8 +114,6 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 			logrus.Println("ignore dir: ", path)
 			return filepath.SkipDir
 		}
-
-		return nil
 	}
 	logrus.Println("visitFile: ", path)
 
@@ -129,26 +127,32 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 	}
 
 	logrus.Println("matchResult: ", matchResult)
-	targetPath := strings.TrimPrefix(path, j.GitInfo.RootPath)
-	targetPath = fmt.Sprintf("%s/%s%s", j.GitInfo.FirstCommitId, j.GitInfo.Branch, targetPath)
-	fullTargetPath, err := j.filePorter.CopyFile(path, targetPath)
-	if err != nil {
-		logrus.Println("CopyFile: ", err)
-		return fmt.Errorf("CopyFile: %w", err)
-	}
 
-	mimeType := helpers.GetMimeType(fullTargetPath)
-	checksumValue, err := checksum.CalcSha256(path)
-	if err != nil {
-		logrus.Println("CalcSha256: ", err)
-		return fmt.Errorf("CalcSha256: %w", err)
+	var mimeType string
+	var checksumValue string
+	if !info.IsDir() {
+		targetPath := strings.TrimPrefix(path, j.GitInfo.RootPath)
+		targetPathWithRepo := fmt.Sprintf("%s%s%s%s", j.GitInfo.FirstCommitId, string(os.PathSeparator),
+			j.GitInfo.Branch, targetPath)
+		fullTargetPath, err := j.filePorter.CopyFile(path, targetPathWithRepo)
+		if err != nil {
+			logrus.Println("CopyFile: ", err)
+			return fmt.Errorf("CopyFile: %w", err)
+		}
+		mimeType = helpers.GetMimeType(fullTargetPath)
+		calcValue, err := checksum.CalcSha256(path)
+		if err != nil {
+			logrus.Println("CalcSha256: ", err)
+			return fmt.Errorf("CalcSha256: %w", err)
+		}
+		checksumValue = calcValue
 	}
 	repoFile := &repo.MtRepoFileModel{
 		Uid:        helpers.MustUuid(),
 		Branch:     j.GitInfo.Branch,
 		CommitId:   j.GitInfo.CommitId,
 		SrcPath:    path,
-		TargetPath: fullTargetPath,
+		TargetPath: "fullTargetPath",
 		Mime:       mimeType,
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
@@ -169,8 +173,12 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 			Valid:  true,
 		},
 		RelativePath: sql.NullString{
-			String: strings.TrimPrefix(path, j.GitInfo.RootPath),
+			String: strings.ReplaceAll(strings.TrimPrefix(path, j.GitInfo.RootPath), string(os.PathSeparator), "/"),
 			Valid:  true,
+		},
+		IsDir: sql.NullBool{
+			Bool:  info.IsDir(),
+			Valid: true,
 		},
 	}
 

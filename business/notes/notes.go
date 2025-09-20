@@ -18,6 +18,9 @@ type MTNoteMatter struct {
 	Uid         string `json:"uid"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	Keywords    string `json:"keywords"`
+	Cover       string `json:"cover"`
+	Chan        string `json:"chan"`
 }
 
 type MTNoteTable struct {
@@ -209,27 +212,6 @@ func (v *MTNoteView) ToModel() *MTNoteModel {
 }
 
 func PGConsoleInsertNote(noteTable *MTNoteTable) error {
-	//tableMap, err := tableMapConverter.ToTableMap()
-	//if err != nil {
-	//	return fmt.Errorf("PGConsoleInsertNote ToTableMap: %w", err)
-	//}
-
-	//columnMap, err := datastore.ReflectColumns(&model.MTNoteTable)
-	//if err != nil {
-	//	return fmt.Errorf("PGConsoleInsertNote ReflectColumns: %w", err)
-	//}
-
-	//colNames := tableMap.Keys()
-	//if len(colNames) == 0 {
-	//	return fmt.Errorf("PGConsoleInsertNote: no columns to insert")
-	//}
-	//colText := strings.Join(colNames, ", ")
-	//colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
-	//	return fmt.Sprintf(":%s, ", s)
-	//}, func(s string) string {
-	//	return strings.TrimRight(s, ", ")
-	//})
-
 	sqlText := `insert into articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, channel, discover, partition, version, build, url, branch, commit, commit_time, relative_path, repo_id, 
 	lang, name, checksum, syncno, repo_first_commit)
