@@ -93,7 +93,7 @@ func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTConsoleNoteTable
+	var sqlResults = make([]*MTConsoleNoteTable, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {

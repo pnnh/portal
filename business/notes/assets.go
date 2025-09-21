@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"neutron/helpers"
+	nemodels "neutron/models"
 	"neutron/services/datastore"
 	"os"
 	"path/filepath"
 	"portal/models/repo"
-	"strings"
-
-	nemodels "neutron/models"
 	"portal/services/githelper"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -57,16 +56,18 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 	repoUrl := githelper.GitSshUrlToHttps(noteModel.Url)
 	resultList := make([]any, 0)
 	for _, file := range fileList {
-		extName := filepath.Ext(file.SrcPath)
+		extName := filepath.Ext(file.RelativePath.String)
+		baseName := filepath.Base(file.RelativePath.String)
 		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s", repoUrl, noteModel.Branch,
 			file.RelativePath.String)
+		fileStoragePath := fmt.Sprintf("/%s/%s%s", noteModel.RepoFirstCommit, noteModel.Branch, file.RelativePath.String)
 		fileView := &MTNoteFileModel{
-			Title:        file.Uid,
-			Path:         file.Uid,
-			IsDir:        false,
+			Title:        baseName,
+			Path:         strings.TrimPrefix(file.RelativePath.String, noteDir),
+			IsDir:        file.IsDir.Bool,
 			IsText:       helpers.IsTextFile(extName),
 			IsImage:      helpers.IsImageFile(extName),
-			StoragePath:  file.RelativePath.String,
+			StoragePath:  fileStoragePath,
 			FullRepoPath: fullRepoUrl,
 		}
 		resultList = append(resultList, fileView)
@@ -92,8 +93,8 @@ func listFirstLevelDB(repoFirstCommit, repoBranch, currentDir string) ([]*repo.M
 `
 	baseSqlParams["repo_first_commit"] = repoFirstCommit
 	baseSqlParams["branch"] = repoBranch
-	baseSqlParams["parent_path"] = currentDir + "%"
-	baseSqlParams["parent_path2"] = currentDir + "%/%"
+	baseSqlParams["parent_path"] = currentDir + "/%"
+	baseSqlParams["parent_path2"] = currentDir + "/%/%"
 
 	pageSqlText := fmt.Sprintf("%s %s %s", baseSqlText, whereText, ` limit 256; `)
 
