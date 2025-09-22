@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	nemodels "neutron/models"
 	"strconv"
 	"strings"
 	"time"
+
+	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -30,7 +31,7 @@ type MTChantransTable struct {
 	Owner       string         `json:"owner" db:"owner"`
 }
 
-func (m *MTChantransTable) FromMap(tableMap *datastore.TableMap) *MTChantransTable {
+func (m *MTChantransTable) FromMap(tableMap *datastore.DataRow) *MTChantransTable {
 	if tableMap == nil {
 		m.Error = fmt.Errorf("tableMap cannot be nil")
 		return m

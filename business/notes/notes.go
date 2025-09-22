@@ -73,7 +73,7 @@ func (t *MTNoteTable) ToModel() *MTNoteModel {
 }
 
 //
-//func (t *MTNoteTable) ToTableMap() (*datastore.TableMap, error) {
+//func (t *MTNoteTable) ToTableMap() (*datastore.DataRow, error) {
 //	tableMap := datastore.NewTableMap()
 //	tableMap.Set("uid", t.Uid)
 //	tableMap.Set("title", t.Title)

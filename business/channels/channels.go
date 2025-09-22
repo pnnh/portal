@@ -3,9 +3,10 @@ package channels
 import (
 	"database/sql"
 	"fmt"
-	nemodels "neutron/models"
 	"strings"
 	"time"
+
+	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -27,7 +28,7 @@ type MTChannelTable struct {
 	Owner       string         `json:"owner" db:"owner"`
 }
 
-func (m *MTChannelTable) FromMap(tableMap *datastore.TableMap) *MTChannelTable {
+func (m *MTChannelTable) FromMap(tableMap *datastore.DataRow) *MTChannelTable {
 	if tableMap == nil {
 		m.Error = fmt.Errorf("tableMap cannot be nil")
 		return m

@@ -54,8 +54,8 @@ func (t *MTNotetransTable) ToModel() *MTNotetransModel {
 	}
 }
 
-func (t *MTNotetransTable) ToTableMap() (*datastore.TableMap, error) {
-	tableMap := datastore.NewTableMap()
+func (t *MTNotetransTable) ToTableMap() (*datastore.DataRow, error) {
+	tableMap := datastore.NewDataRow()
 	tableMap.Set("uid", t.Uid)
 	tableMap.Set("title", t.Title)
 	tableMap.Set("header", t.Header)
@@ -128,8 +128,8 @@ func (m *MTNotetransModel) ToViewModel() interface{} {
 
 }
 
-func (m *MTNotetransModel) ToTableMap() (*datastore.TableMap, error) {
-	tableMap := datastore.NewTableMap()
+func (m *MTNotetransModel) ToTableMap() (*datastore.DataRow, error) {
+	tableMap := datastore.NewDataRow()
 	tableMap.Set("uid", m.Uid)
 	tableMap.Set("title", m.Title)
 	tableMap.Set("header", m.Header)
@@ -198,41 +198,41 @@ func (v *MTNotetransView) ToModel() *MTNotetransModel {
 	}
 }
 
-func PGConsoleInsertNotetrans(tableMapConverter datastore.IConvertTableMap) error {
-	//tableMap, err := tableMapConverter.ToTableMap()
-	//if err != nil {
-	//	return fmt.Errorf("PGConsoleInsertNotetrans ToTableMap: %w", err)
-	//}
+//func PGConsoleInsertNotetrans(tableMapConverter datastore.IConvertTableMap) error {
+//tableMap, err := tableMapConverter.ToTableMap()
+//if err != nil {
+//	return fmt.Errorf("PGConsoleInsertNotetrans ToTableMap: %w", err)
+//}
 
-	//columnMap, err := datastore.ReflectColumns(&model.MTNotetransTable)
-	//if err != nil {
-	//	return fmt.Errorf("PGConsoleInsertNotetrans ReflectColumns: %w", err)
-	//}
+//columnMap, err := datastore.ReflectColumns(&model.MTNotetransTable)
+//if err != nil {
+//	return fmt.Errorf("PGConsoleInsertNotetrans ReflectColumns: %w", err)
+//}
 
-	//	colNames := tableMap.Keys()
-	//	if len(colNames) == 0 {
-	//		return fmt.Errorf("PGConsoleInsertNotetrans: no columns to insert")
-	//	}
-	//	colText := strings.Join(colNames, ", ")
-	//	colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
-	//		return fmt.Sprintf(":%s, ", s)
-	//	}, func(s string) string {
-	//		return strings.TrimRight(s, ", ")
-	//	})
-	//
-	//	sqlText := fmt.Sprintf(`insert into articles(%s)
-	//values(%s)
-	//on conflict (uid)
-	//do nothing;`, colText, colPlaceholders)
-	//
-	//	paramsMap := tableMap.MapData()
-	//
-	//	_, err = datastore.NamedExec(sqlText, paramsMap)
-	//	if err != nil {
-	//		return fmt.Errorf("PGConsoleInsertNotetrans: %w", err)
-	//	}
-	return nil
-}
+//	colNames := tableMap.Keys()
+//	if len(colNames) == 0 {
+//		return fmt.Errorf("PGConsoleInsertNotetrans: no columns to insert")
+//	}
+//	colText := strings.Join(colNames, ", ")
+//	colPlaceholders := strutil.JoinStringsFunc(colNames, func(s string) string {
+//		return fmt.Sprintf(":%s, ", s)
+//	}, func(s string) string {
+//		return strings.TrimRight(s, ", ")
+//	})
+//
+//	sqlText := fmt.Sprintf(`insert into articles(%s)
+//values(%s)
+//on conflict (uid)
+//do nothing;`, colText, colPlaceholders)
+//
+//	paramsMap := tableMap.MapData()
+//
+//	_, err = datastore.NamedExec(sqlText, paramsMap)
+//	if err != nil {
+//		return fmt.Errorf("PGConsoleInsertNotetrans: %w", err)
+//	}
+//	return nil
+//}
 
 func SelectNotetranss(channel, keyword string, page int, size int, lang string) (*helpers.Pagination, []*MTNotetransTable, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
