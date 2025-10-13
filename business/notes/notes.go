@@ -288,7 +288,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 
 	whereText := ` where status = 1 `
 	if keyword != "" {
-		whereText += ` and (title like :keyword or description like :keyword) `
+		whereText += ` and (title ilike :keyword or description ilike :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
 	}
 	if channel != "" {
