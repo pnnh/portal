@@ -72,61 +72,6 @@ func (t *MTNoteTable) ToModel() *MTNoteModel {
 	}
 }
 
-//
-//func (t *MTNoteTable) ToTableMap() (*datastore.DataRow, error) {
-//	tableMap := datastore.NewTableMap()
-//	tableMap.Set("uid", t.Uid)
-//	tableMap.Set("title", t.Title)
-//	tableMap.Set("header", t.Header)
-//	tableMap.Set("body", t.Body)
-//	tableMap.Set("description", t.Description)
-//	tableMap.Set("keywords", t.Keywords)
-//	tableMap.Set("status", t.Status)
-//	tableMap.Set("owner", t.Owner)
-//	tableMap.Set("channel", t.Channel)
-//	tableMap.Set("discover", t.Discover)
-//	tableMap.Set("create_time", t.CreateTime)
-//	tableMap.Set("update_time", t.UpdateTime)
-//	tableMap.Set("lang", t.Lang)
-//
-//	if t.Partition.Valid {
-//		tableMap.Set("partition", t.Partition.String)
-//	}
-//	if t.Version.Valid {
-//		tableMap.Set("version", t.Version.String)
-//	}
-//	if t.Build.Valid {
-//		tableMap.Set("build", t.Build.String)
-//	}
-//	if t.Url.Valid {
-//		tableMap.Set("url", t.Url.String)
-//	}
-//	if t.Branch.Valid {
-//		tableMap.Set("branch", t.Branch.String)
-//	}
-//	if t.Commit.Valid {
-//		tableMap.Set("commit", t.Commit.String)
-//	}
-//	if !t.CommitTime.Valid {
-//		tableMap.Set("commit_time", t.CommitTime.Time)
-//	}
-//	if t.RelativePath.Valid {
-//		tableMap.Set("repo_path", t.RelativePath.String)
-//	}
-//	if t.RepoId.Valid {
-//		tableMap.Set("repo_id", t.RepoId.String)
-//	}
-//	if t.Checksum.Valid {
-//		tableMap.Set("checksum", t.Checksum.String)
-//	}
-//	if t.Syncno.Valid {
-//		tableMap.Set("syncno", t.Syncno.String)
-//	}
-//
-//	return tableMap, nil
-//
-//}
-
 type MTNoteModel struct {
 	MTNoteTable
 	Partition       string    `json:"partition"`
@@ -340,13 +285,6 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 		return nil, nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 	pagination.Count = countSqlResults[0].Count
-
-	//selectData := &nemodels.NESelectResult[*MTNoteModel]{
-	//	Page:  pagination.Page,
-	//	Size:  pagination.Size,
-	//	Count: countSqlResults[0].Count,
-	//	Range: resultRange,
-	//}
 
 	return pagination, sqlResults, nil
 }

@@ -3,9 +3,11 @@ package notes
 import (
 	"fmt"
 	"net/http"
-	nemodels "neutron/models"
 	"strconv"
 	"time"
+
+	nemodels "neutron/models"
+	"neutron/services/datetime"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -45,12 +47,21 @@ func ConsoleNotesSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
+	respView := make([]map[string]interface{}, 0)
+	for _, v := range selectResult {
+		outView, err := consoleNoteGetOutView(v)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+			return
+		}
+		respView = append(respView, outView)
+	}
 
 	resp := map[string]any{
 		"page":  pagination.Page,
 		"size":  pagination.Size,
 		"count": pagination.Count,
-		"range": selectResult,
+		"range": respView,
 	}
 
 	responseResult := nemodels.NECodeOk.WithData(resp)
@@ -58,16 +69,10 @@ func ConsoleNotesSelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-type MTConsoleNoteTable struct {
-	MTNoteTable
-	Lang        string `json:"lang" db:"lang"`
-	ChannelName string `json:"channel_name" db:"channel_name"`
-}
-
 func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
-	[]*MTConsoleNoteTable, error) {
+	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select a.*, c.name channel_name from articles as a join channels as c on a.channel = c.uid `
+	baseSqlText := ` select a.*, c.name channel_name from articles as a left join channels as c on a.channel = c.uid `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where a.owner = :owner `
@@ -93,20 +98,29 @@ func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults = make([]*MTConsoleNoteTable, 0)
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
-		return nil, sqlResults, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NewSelectQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, sqlResults, fmt.Errorf("StructScan: %w", err)
-	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %w", closeErr)
+		}
+	}()
 
-	//resultRange := make([]MTConsoleNoteTable, 0)
-	//for _, item := range sqlResults {
-	//	resultRange = append(resultRange, item)
-	//}
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("rows error: %w", err)
+	}
 
 	countSqlText := `select count(1) as count from (` +
 		fmt.Sprintf("%s %s", baseSqlText, whereText) + `) as temp;`
@@ -135,6 +149,40 @@ func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang
 	}
 
 	return pagination, sqlResults, nil
+}
+
+func consoleNoteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+	outView := make(map[string]interface{})
+	outView["uid"] = dataRow.GetString("uid")
+	outView["title"] = dataRow.GetString("title")
+	outView["header"] = dataRow.GetString("header")
+	outView["body"] = dataRow.GetString("body")
+	outView["description"] = dataRow.GetString("description")
+	outView["keywords"] = dataRow.GetString("keywords")
+	outView["status"] = dataRow.GetInt("status")
+	outView["cover"] = dataRow.GetStringOrDefault("cover", "")
+	outView["owner"] = dataRow.GetString("owner")
+	outView["channel"] = dataRow.GetStringOrDefault("channel", "")
+	outView["discover"] = dataRow.GetInt("discover")
+	outView["partition"] = dataRow.GetStringOrDefault("partition", "")
+	outView["create_time"] = dataRow.GetTime("create_time")
+	outView["update_time"] = dataRow.GetTime("update_time")
+	outView["version"] = dataRow.GetStringOrDefault("version", "")
+	outView["build"] = dataRow.GetStringOrDefault("build", "")
+	outView["url"] = dataRow.GetStringOrDefault("url", "")
+	outView["branch"] = dataRow.GetStringOrDefault("branch", "")
+	outView["commit"] = dataRow.GetStringOrDefault("commit", "")
+	outView["commit_time"] = dataRow.GetTimeOrDefault("commit_time", datetime.UtcMinTime)
+	outView["relative_path"] = dataRow.GetStringOrDefault("relative_path", "")
+	outView["repo_id"] = dataRow.GetStringOrDefault("repo_id", "")
+	outView["lang"] = dataRow.GetStringOrDefault("lang", "")
+	outView["name"] = dataRow.GetStringOrDefault("name", "")
+	outView["checksum"] = dataRow.GetStringOrDefault("checksum", "")
+	outView["syncno"] = dataRow.GetStringOrDefault("syncno", "")
+	outView["repo_first_commit"] = dataRow.GetStringOrDefault("repo_first_commit", "")
+	outView["channel_name"] = dataRow.GetStringOrDefault("channel_name", "")
+
+	return outView, nil
 }
 
 func ConsoleNoteGetHandler(gctx *gin.Context) {
