@@ -156,7 +156,7 @@ func (v *MTNoteView) ToModel() *MTNoteModel {
 	}
 }
 
-func PGConsoleInsertNote(noteTable *MTNoteTable) error {
+func PGConsoleInsertNote(dataRow *datastore.DataRow) error {
 	sqlText := `insert into articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, channel, discover, partition, version, build, url, branch, commit, commit_time, relative_path, repo_id, 
 	lang, name, checksum, syncno, repo_first_commit)
@@ -188,36 +188,8 @@ do update set title = excluded.title,
               checksum = excluded.checksum,
               syncno = excluded.syncno,
 			  repo_first_commit=excluded.repo_first_commit;`
-
-	paramsMap := map[string]interface{}{
-		"uid":               noteTable.Uid,
-		"title":             noteTable.Title,
-		"header":            noteTable.Header,
-		"body":              noteTable.Body,
-		"create_time":       noteTable.CreateTime,
-		"update_time":       noteTable.UpdateTime,
-		"keywords":          noteTable.Keywords,
-		"description":       noteTable.Description,
-		"status":            noteTable.Status,
-		"cover":             noteTable.Cover,
-		"owner":             noteTable.Owner,
-		"channel":           noteTable.Channel,
-		"discover":          noteTable.Discover,
-		"partition":         noteTable.Partition,
-		"version":           noteTable.Version,
-		"build":             noteTable.Build,
-		"url":               noteTable.Url,
-		"branch":            noteTable.Branch,
-		"commit":            noteTable.Commit,
-		"commit_time":       noteTable.CommitTime,
-		"relative_path":     noteTable.RelativePath,
-		"repo_id":           noteTable.RepoId,
-		"lang":              noteTable.Lang,
-		"name":              noteTable.Name,
-		"checksum":          noteTable.Checksum,
-		"syncno":            noteTable.Syncno,
-		"repo_first_commit": noteTable.RepoFirstCommit,
-	}
+ 
+	paramsMap := dataRow.InnerMap()
 
 	_, err := datastore.NamedExec(sqlText, paramsMap)
 	if err != nil {

@@ -3,9 +3,10 @@ package channels
 import (
 	"fmt"
 	"net/http"
-	nemodels "neutron/models"
 	"strconv"
 	"time"
+
+	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -88,7 +89,7 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 		return
 	}
 	if model.Name == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空1"))
 		return
 	}
 	if model.Lang == "" || (model.Lang != nemodels.LangZh && model.Lang != nemodels.LangEn) {

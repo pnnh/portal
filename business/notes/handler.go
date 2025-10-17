@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"time"
 
+	"neutron/helpers/jsonmap"
 	nemodels "neutron/models"
+	"neutron/services/datastore"
+	"neutron/services/datetime"
 
 	"neutron/helpers"
 	"portal/business"
-	"portal/business/channels"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -63,49 +65,49 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	model := &MTNoteView{}
-	if err := gctx.ShouldBindJSON(model); err != nil {
+	jsonMap := jsonmap.NewJsonMap()
+
+	if err := gctx.ShouldBind(jsonMap.InnerMapPtr()); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
-	if model.Title == "" || model.Body == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空"))
+	inTitle := jsonMap.WillGetString("title")
+	inBody := jsonMap.WillGetString("body")
+	inLang := jsonMap.WillGetString("lang")
+	if inTitle == "" || inBody == "" || inLang == "" || jsonMap.Err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空3"))
 		return
 	}
-	if model.Lang == "" || (model.Lang != nemodels.LangZh && model.Lang != nemodels.LangEn) {
+
+	if !nemodels.IsValidLanguage(inLang) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
 		return
 	}
-	if model.Channel == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Channel参数不能为空"))
+	modelUid := helpers.MustUuid()
+	nowTime := time.Now()
+	dataRow := datastore.NewDataRow()
+	dataRow.SetString("uid", modelUid)
+
+	dataRow = dataRow.SetStringChainFrom("title", jsonMap).
+		SetStringChainFrom("header", jsonMap).SetStringChainFrom("body", jsonMap).
+		SetNullStringChainFrom("description", jsonMap).SetNullStringChainFrom("keywords", jsonMap).
+		SetIntChain("status", 0).SetStringChainFrom("cover", jsonMap).
+		SetNullUuidStringChain("owner", accountModel.Uid).SetNullUuidStringChainFrom("channel", jsonMap).
+		SetIntChain("discover", 0).SetNullUuidStringChainFrom("partition", jsonMap).
+		SetNullTimeChain("create_time", nowTime).SetNullTimeChain("update_time", nowTime).
+		SetNullStringChainFrom("version", jsonMap).SetNullStringChainFrom("build", jsonMap).
+		SetNullStringChainFrom("url", jsonMap).SetNullStringChainFrom("branch", jsonMap).
+		SetNullStringChainFrom("commit", jsonMap).SetNullTimeChain("commit_time", datetime.NullTime).
+		SetNullStringChainFrom("relative_path", jsonMap).SetNullUuidStringChainFrom("repo_id", jsonMap).
+		SetStringChainFrom("lang", jsonMap).SetNullStringChainFrom("name", jsonMap).
+		SetNullStringChainFrom("checksum", jsonMap).SetNullStringChainFrom("syncno", jsonMap).
+		SetNullStringChainFrom("repo_first_commit", jsonMap)
+	if dataRow.Err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(dataRow.Err, "参数错误2"))
 		return
 	}
 
-	model.Uid = helpers.MustUuid()
-	model.Owner = accountModel.Uid
-	model.CreateTime = time.Now().UTC()
-	model.UpdateTime = time.Now().UTC()
-	model.Status = 0 // 待审核
-	if model.Name == "" {
-		model.Name = model.Uid
-	}
-
-	channelModel, err := channels.PGConsoleGetChannelByUid(model.Channel)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
-		return
-	}
-	if channelModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("频道不存在2"))
-		return
-	}
-
-	noteTable, err := model.ToTableMap()
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "转换笔记出错"))
-		return
-	}
-	err = PGConsoleInsertNote(noteTable)
+	err = PGConsoleInsertNote(dataRow)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
 		return
@@ -113,7 +115,7 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 
 	result := nemodels.NECodeOk.WithData(map[string]any{
 		"changes": 1,
-		"uid":     model.Uid,
+		"uid":     modelUid,
 	})
 
 	gctx.JSON(http.StatusOK, result)

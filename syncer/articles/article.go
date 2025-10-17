@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"neutron/services/checksum"
+	"neutron/services/datastore"
 	"portal/business/notes"
 
 	"github.com/iancoleman/strcase"
@@ -136,7 +137,37 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 			//note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
 			note.RepoFirstCommit = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
 		}
-		err = notes.PGConsoleInsertNote(note)
+
+		dataRow := datastore.NewDataRow()
+		dataRow.SetString("uid", note.Uid)
+		dataRow.SetString("title", note.Title)
+		dataRow.SetString("header", note.Header)
+		dataRow.SetString("body", note.Body)
+		dataRow.SetString("description", note.Description)
+		dataRow.SetString("keywords", note.Keywords)
+		dataRow.SetInt("status", note.Status)
+		dataRow.SetNullStringValue("cover", note.Cover)
+		dataRow.SetString("owner", note.Owner)
+		//dataRow.SetNullStringValue("channel", sql.NullString{Valid: helpers.IsUuid(note.Channel), String: note.Channel})
+		dataRow.SetNullStringValue("channel", note.Channel)
+		dataRow.SetInt("discover", note.Discover)
+		dataRow.SetNullStringValue("partition", note.Partition)
+		dataRow.SetTime("create_time", note.CreateTime)
+		dataRow.SetTime("update_time", note.UpdateTime)
+		dataRow.SetNullStringValue("version", note.Version)
+		dataRow.SetNullStringValue("build", note.Build)
+		dataRow.SetNullStringValue("url", note.Url)
+		dataRow.SetNullStringValue("branch", note.Branch)
+		dataRow.SetNullStringValue("commit", note.Commit)
+		dataRow.SetNullTimeValue("commit_time", note.CommitTime)
+		dataRow.SetNullStringValue("relative_path", note.RelativePath)
+		dataRow.SetNullStringValue("repo_id", note.RepoId)
+		dataRow.SetString("lang", note.Lang)
+		dataRow.SetNullString("name", note.Name)
+		dataRow.SetNullStringValue("checksum", note.Checksum)
+		dataRow.SetNullStringValue("syncno", note.Syncno)
+
+		err = notes.PGConsoleInsertNote(dataRow)
 		if err != nil {
 			logrus.Errorf("插入文章失败: %v", err)
 		}

@@ -157,8 +157,8 @@ func consoleNoteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, 
 	outView["title"] = dataRow.GetString("title")
 	outView["header"] = dataRow.GetString("header")
 	outView["body"] = dataRow.GetString("body")
-	outView["description"] = dataRow.GetString("description")
-	outView["keywords"] = dataRow.GetString("keywords")
+	outView["description"] = dataRow.GetStringOrEmpty("description")
+	outView["keywords"] = dataRow.GetStringOrDefault("keywords", "")
 	outView["status"] = dataRow.GetInt("status")
 	outView["cover"] = dataRow.GetStringOrDefault("cover", "")
 	outView["owner"] = dataRow.GetString("owner")
@@ -321,7 +321,7 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 		return
 	}
 	if model.Title == "" || model.Body == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空2"))
 		return
 	}
 	oldModel, err := PGConsoleGetNote(accountModel.Uid, uid, "")

@@ -54,53 +54,53 @@ func (t *MTNotetransTable) ToModel() *MTNotetransModel {
 	}
 }
 
-func (t *MTNotetransTable) ToTableMap() (*datastore.DataRow, error) {
-	tableMap := datastore.NewDataRow()
-	tableMap.Set("uid", t.Uid)
-	tableMap.Set("title", t.Title)
-	tableMap.Set("header", t.Header)
-	tableMap.Set("body", t.Body)
-	tableMap.Set("description", t.Description)
-	tableMap.Set("keywords", t.Keywords)
-	tableMap.Set("status", t.Status)
-	tableMap.Set("owner", t.Owner)
-	tableMap.Set("channel", t.Channel)
-	tableMap.Set("discover", t.Discover)
-	tableMap.Set("create_time", t.CreateTime)
-	tableMap.Set("update_time", t.UpdateTime)
-	tableMap.Set("lang", t.Lang)
-
-	if t.Partition.Valid {
-		tableMap.Set("partition", t.Partition.String)
-	}
-	if t.Version.Valid {
-		tableMap.Set("version", t.Version.String)
-	}
-	if t.Build.Valid {
-		tableMap.Set("build", t.Build.String)
-	}
-	if t.Url.Valid {
-		tableMap.Set("url", t.Url.String)
-	}
-	if t.Branch.Valid {
-		tableMap.Set("branch", t.Branch.String)
-	}
-	if t.Commit.Valid {
-		tableMap.Set("commit", t.Commit.String)
-	}
-	if !t.CommitTime.Valid {
-		tableMap.Set("commit_time", t.CommitTime.Time)
-	}
-	if t.RepoPath.Valid {
-		tableMap.Set("repo_path", t.RepoPath.String)
-	}
-	if t.RepoId.Valid {
-		tableMap.Set("repo_id", t.RepoId.String)
-	}
-
-	return tableMap, nil
-
-}
+//func (t *MTNotetransTable) ToTableMap() (*datastore.DataRow, error) {
+//	tableMap := datastore.NewDataRow()
+//	tableMap.Set("uid", t.Uid)
+//	tableMap.Set("title", t.Title)
+//	tableMap.Set("header", t.Header)
+//	tableMap.Set("body", t.Body)
+//	tableMap.Set("description", t.Description)
+//	tableMap.Set("keywords", t.Keywords)
+//	tableMap.Set("status", t.Status)
+//	tableMap.Set("owner", t.Owner)
+//	tableMap.Set("channel", t.Channel)
+//	tableMap.Set("discover", t.Discover)
+//	tableMap.Set("create_time", t.CreateTime)
+//	tableMap.Set("update_time", t.UpdateTime)
+//	tableMap.Set("lang", t.Lang)
+//
+//	if t.Partition.Valid {
+//		tableMap.Set("partition", t.Partition.String)
+//	}
+//	if t.Version.Valid {
+//		tableMap.Set("version", t.Version.String)
+//	}
+//	if t.Build.Valid {
+//		tableMap.Set("build", t.Build.String)
+//	}
+//	if t.Url.Valid {
+//		tableMap.Set("url", t.Url.String)
+//	}
+//	if t.Branch.Valid {
+//		tableMap.Set("branch", t.Branch.String)
+//	}
+//	if t.Commit.Valid {
+//		tableMap.Set("commit", t.Commit.String)
+//	}
+//	if !t.CommitTime.Valid {
+//		tableMap.Set("commit_time", t.CommitTime.Time)
+//	}
+//	if t.RepoPath.Valid {
+//		tableMap.Set("repo_path", t.RepoPath.String)
+//	}
+//	if t.RepoId.Valid {
+//		tableMap.Set("repo_id", t.RepoId.String)
+//	}
+//
+//	return tableMap, nil
+//
+//}
 
 type MTNotetransModel struct {
 	MTNotetransTable
@@ -128,55 +128,55 @@ func (m *MTNotetransModel) ToViewModel() interface{} {
 
 }
 
-func (m *MTNotetransModel) ToTableMap() (*datastore.DataRow, error) {
-	tableMap := datastore.NewDataRow()
-	tableMap.Set("uid", m.Uid)
-	tableMap.Set("title", m.Title)
-	tableMap.Set("header", m.Header)
-	tableMap.Set("body", m.Body)
-	tableMap.Set("description", m.Description)
-	tableMap.Set("keywords", m.Keywords)
-	tableMap.Set("status", m.Status)
-	tableMap.Set("owner", m.Owner)
-	tableMap.Set("discover", m.Discover)
-	tableMap.Set("create_time", m.CreateTime)
-	tableMap.Set("update_time", m.UpdateTime)
-	tableMap.Set("lang", m.Lang)
-
-	if m.Partition != "" {
-		tableMap.Set("partition", m.Partition)
-	}
-	if m.Version != "" {
-		tableMap.Set("version", m.Version)
-	}
-	if m.Build != "" {
-		tableMap.Set("build", m.Build)
-	}
-	if m.Url != "" {
-		tableMap.Set("url", m.Url)
-	}
-	if m.Branch != "" {
-		tableMap.Set("branch", m.Branch)
-	}
-	if m.Commit != "" {
-		tableMap.Set("commit", m.Commit)
-	}
-	if !m.CommitTime.IsZero() {
-		tableMap.Set("commit_time", m.CommitTime)
-	}
-	if m.RepoPath != "" {
-		tableMap.Set("repo_path", m.RepoPath)
-	}
-	if m.RepoId != "" {
-		tableMap.Set("repo_id", m.RepoId)
-	}
-	if m.Channel != "" {
-		tableMap.Set("channel", m.Channel)
-	}
-
-	return tableMap, nil
-
-}
+//func (m *MTNotetransModel) ToTableMap() (*datastore.DataRow, error) {
+//	tableMap := datastore.NewDataRow()
+//	tableMap.Set("uid", m.Uid)
+//	tableMap.Set("title", m.Title)
+//	tableMap.Set("header", m.Header)
+//	tableMap.Set("body", m.Body)
+//	tableMap.Set("description", m.Description)
+//	tableMap.Set("keywords", m.Keywords)
+//	tableMap.Set("status", m.Status)
+//	tableMap.Set("owner", m.Owner)
+//	tableMap.Set("discover", m.Discover)
+//	tableMap.Set("create_time", m.CreateTime)
+//	tableMap.Set("update_time", m.UpdateTime)
+//	tableMap.Set("lang", m.Lang)
+//
+//	if m.Partition != "" {
+//		tableMap.Set("partition", m.Partition)
+//	}
+//	if m.Version != "" {
+//		tableMap.Set("version", m.Version)
+//	}
+//	if m.Build != "" {
+//		tableMap.Set("build", m.Build)
+//	}
+//	if m.Url != "" {
+//		tableMap.Set("url", m.Url)
+//	}
+//	if m.Branch != "" {
+//		tableMap.Set("branch", m.Branch)
+//	}
+//	if m.Commit != "" {
+//		tableMap.Set("commit", m.Commit)
+//	}
+//	if !m.CommitTime.IsZero() {
+//		tableMap.Set("commit_time", m.CommitTime)
+//	}
+//	if m.RepoPath != "" {
+//		tableMap.Set("repo_path", m.RepoPath)
+//	}
+//	if m.RepoId != "" {
+//		tableMap.Set("repo_id", m.RepoId)
+//	}
+//	if m.Channel != "" {
+//		tableMap.Set("channel", m.Channel)
+//	}
+//
+//	return tableMap, nil
+//
+//}
 
 type MTNotetransView struct {
 	MTNotetransModel
