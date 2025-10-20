@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"neutron/helpers"
+	"neutron/models"
 	"neutron/services/datastore"
 	"portal/services/githelper"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 type MTNoteMatter struct {
@@ -188,7 +190,7 @@ do update set title = excluded.title,
               checksum = excluded.checksum,
               syncno = excluded.syncno,
 			  repo_first_commit=excluded.repo_first_commit;`
- 
+
 	paramsMap := dataRow.InnerMap()
 
 	_, err := datastore.NamedExec(sqlText, paramsMap)
@@ -198,7 +200,8 @@ do update set title = excluded.title,
 	return nil
 }
 
-func SelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination, []*MTNoteTable, error) {
+func SelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
+	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from articles `
 	baseSqlParams := map[string]interface{}{}
@@ -212,10 +215,6 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 		whereText += ` and channel = :channel `
 		baseSqlParams["channel"] = channel
 	}
-	//if lang != "" {
-	//	whereText += ` and lang = :lang `
-	//	baseSqlParams["lang"] = lang
-	//}
 	orderText := ` order by create_time desc `
 
 	pageSqlText := fmt.Sprintf("%s %s %s %s", baseSqlText, whereText, orderText, ` offset :offset limit :limit; `)
@@ -225,14 +224,29 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTNoteTable
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
 		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, nil, fmt.Errorf("StructScan: %w", err)
+
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %w", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	countSqlText := `select count(1) as count from (` +
@@ -287,7 +301,7 @@ func PGGetNoteByChecksum(checksum string) (*MTNoteTable, error) {
 }
 
 // PGGetNote 获取单个笔记信息
-func PGGetNote(uid string, lang string) (*MTNoteTable, error) {
+func PGGetNote(uid string, lang string) (*datastore.DataRow, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGGetNote uid is empty")
 	}
@@ -297,20 +311,33 @@ func PGGetNote(uid string, lang string) (*MTNoteTable, error) {
 		"uid":  uid,
 		"lang": lang,
 	}
-	var sqlResults []*MTNoteTable
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
 
-	for _, item := range sqlResults {
-		return item, nil
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %w", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		if tableMap.Err != nil {
+			return nil, fmt.Errorf("MapScan2: %w", tableMap.Err)
+		}
+		return tableMap, nil
 	}
-	return nil, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+	return nil, models.ErrNilValue
 }
 
 type MTNoteFileModel struct {

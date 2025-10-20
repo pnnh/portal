@@ -3,19 +3,46 @@ package notes
 import (
 	"net/http"
 	"strconv"
-	"time"
 
-	"neutron/helpers/jsonmap"
 	nemodels "neutron/models"
 	"neutron/services/datastore"
 	"neutron/services/datetime"
 
-	"neutron/helpers"
-	"portal/business"
-
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
+
+func noteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+	outView := make(map[string]interface{})
+	outView["uid"] = dataRow.GetString("uid")
+	outView["title"] = dataRow.GetString("title")
+	outView["header"] = dataRow.GetString("header")
+	outView["body"] = dataRow.GetString("body")
+	outView["description"] = dataRow.GetStringOrEmpty("description")
+	outView["keywords"] = dataRow.GetStringOrDefault("keywords", "")
+	outView["status"] = dataRow.GetInt("status")
+	outView["cover"] = dataRow.GetStringOrDefault("cover", "")
+	outView["owner"] = dataRow.GetNullString("owner")
+	outView["channel"] = dataRow.GetStringOrDefault("channel", "")
+	outView["discover"] = dataRow.GetInt("discover")
+	outView["partition"] = dataRow.GetStringOrDefault("partition", "")
+	outView["create_time"] = dataRow.GetTime("create_time")
+	outView["update_time"] = dataRow.GetTime("update_time")
+	outView["version"] = dataRow.GetStringOrDefault("version", "")
+	outView["build"] = dataRow.GetStringOrDefault("build", "")
+	outView["url"] = dataRow.GetStringOrDefault("url", "")
+	outView["branch"] = dataRow.GetStringOrDefault("branch", "")
+	outView["commit"] = dataRow.GetStringOrDefault("commit", "")
+	outView["commit_time"] = dataRow.GetTimeOrDefault("commit_time", datetime.UtcMinTime)
+	outView["relative_path"] = dataRow.GetStringOrDefault("relative_path", "")
+	outView["repo_id"] = dataRow.GetStringOrDefault("repo_id", "")
+	outView["lang"] = dataRow.GetStringOrDefault("lang", "")
+	outView["name"] = dataRow.GetStringOrDefault("name", "")
+	outView["checksum"] = dataRow.GetStringOrDefault("checksum", "")
+	outView["syncno"] = dataRow.GetStringOrDefault("syncno", "")
+	outView["repo_first_commit"] = dataRow.GetStringOrDefault("repo_first_commit", "")
+
+	return outView, nil
+}
 
 func NoteSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
@@ -40,85 +67,25 @@ func NoteSelectHandler(gctx *gin.Context) {
 		return
 	}
 
+	respView := make([]map[string]interface{}, 0)
+	for _, v := range selectResult {
+		outView, err := noteGetOutView(v)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+			return
+		}
+		respView = append(respView, outView)
+	}
 	resp := map[string]any{
 		"page":  pagination.Page,
 		"size":  pagination.Size,
 		"count": pagination.Count,
-		"range": selectResult,
+		"range": respView,
 	}
 
-	//selectResponse := nemodels.NESelectResultToResponse(selectResult)
 	responseResult := nemodels.NECodeOk.WithData(resp)
 
 	gctx.JSON(http.StatusOK, responseResult)
-}
-
-func NoteConsoleInsertHandler(gctx *gin.Context) {
-	accountModel, err := business.FindAccountFromCookie(gctx)
-	if err != nil {
-		logrus.Warnln("NoteConsoleInsertHandler", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
-		return
-	}
-	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
-		return
-	}
-
-	jsonMap := jsonmap.NewJsonMap()
-
-	if err := gctx.ShouldBind(jsonMap.InnerMapPtr()); err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
-		return
-	}
-	inTitle := jsonMap.WillGetString("title")
-	inBody := jsonMap.WillGetString("body")
-	inLang := jsonMap.WillGetString("lang")
-	if inTitle == "" || inBody == "" || inLang == "" || jsonMap.Err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空3"))
-		return
-	}
-
-	if !nemodels.IsValidLanguage(inLang) {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
-		return
-	}
-	modelUid := helpers.MustUuid()
-	nowTime := time.Now()
-	dataRow := datastore.NewDataRow()
-	dataRow.SetString("uid", modelUid)
-
-	dataRow = dataRow.SetStringChainFrom("title", jsonMap).
-		SetStringChainFrom("header", jsonMap).SetStringChainFrom("body", jsonMap).
-		SetNullStringChainFrom("description", jsonMap).SetNullStringChainFrom("keywords", jsonMap).
-		SetIntChain("status", 0).SetStringChainFrom("cover", jsonMap).
-		SetNullUuidStringChain("owner", accountModel.Uid).SetNullUuidStringChainFrom("channel", jsonMap).
-		SetIntChain("discover", 0).SetNullUuidStringChainFrom("partition", jsonMap).
-		SetNullTimeChain("create_time", nowTime).SetNullTimeChain("update_time", nowTime).
-		SetNullStringChainFrom("version", jsonMap).SetNullStringChainFrom("build", jsonMap).
-		SetNullStringChainFrom("url", jsonMap).SetNullStringChainFrom("branch", jsonMap).
-		SetNullStringChainFrom("commit", jsonMap).SetNullTimeChain("commit_time", datetime.NullTime).
-		SetNullStringChainFrom("relative_path", jsonMap).SetNullUuidStringChainFrom("repo_id", jsonMap).
-		SetStringChainFrom("lang", jsonMap).SetNullStringChainFrom("name", jsonMap).
-		SetNullStringChainFrom("checksum", jsonMap).SetNullStringChainFrom("syncno", jsonMap).
-		SetNullStringChainFrom("repo_first_commit", jsonMap)
-	if dataRow.Err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(dataRow.Err, "参数错误2"))
-		return
-	}
-
-	err = PGConsoleInsertNote(dataRow)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
-		return
-	}
-
-	result := nemodels.NECodeOk.WithData(map[string]any{
-		"changes": 1,
-		"uid":     modelUid,
-	})
-
-	gctx.JSON(http.StatusOK, result)
 }
 
 func NoteGetHandler(gctx *gin.Context) {
@@ -128,14 +95,18 @@ func NoteGetHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
-	noteTable, err := PGGetNote(uid, lang)
-	if err != nil || noteTable == nil {
+	noteRow, err := PGGetNote(uid, lang)
+	if err != nil || noteRow == nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
-	noteModel := noteTable.ToModel()
-	viewModel := noteModel.ToViewModel()
-	responseResult := nemodels.NECodeOk.WithLocalData(lang, viewModel)
+
+	outView, err := noteGetOutView(noteRow)
+	if err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+		return
+	}
+	responseResult := nemodels.NECodeOk.WithLocalData(lang, outView)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

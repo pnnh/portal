@@ -4,14 +4,15 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"neutron/helpers"
 	nemodels "neutron/models"
 	"neutron/services/datastore"
-	"os"
-	"path/filepath"
 	"portal/models/repo"
 	"portal/services/githelper"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -40,27 +41,30 @@ func NoteAssetsSelectHandler(gctx *gin.Context) {
 		return
 	}
 
-	noteModel := noteTable.ToModel()
-	if noteModel.RepoFirstCommit == "" || noteModel.Branch == "" {
+	repoFirstCommit := noteTable.GetStringOrEmpty("repo_first_commit")
+	branch := noteTable.GetStringOrEmpty("branch")
+	url := noteTable.GetStringOrEmpty("url")
+	relativePath := noteTable.GetStringOrEmpty("relative_path")
+	if repoFirstCommit == "" || branch == "" {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("RepoFirstCommit或Branch为空"))
 		return
 	}
-	noteDir := strings.ReplaceAll(filepath.Dir(noteModel.RelativePath), string(os.PathSeparator), "/")
+	noteDir := strings.ReplaceAll(filepath.Dir(relativePath), string(os.PathSeparator), "/")
 
 	parentDir := noteDir + decodedParent
-	fileList, err := listFirstLevelDB(noteModel.RepoFirstCommit, noteModel.Branch, parentDir)
+	fileList, err := listFirstLevelDB(repoFirstCommit, branch, parentDir)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "listFirstLevel出错"))
 		return
 	}
-	repoUrl := githelper.GitSshUrlToHttps(noteModel.Url)
+	repoUrl := githelper.GitSshUrlToHttps(url)
 	resultList := make([]any, 0)
 	for _, file := range fileList {
 		extName := filepath.Ext(file.RelativePath.String)
 		baseName := filepath.Base(file.RelativePath.String)
-		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s", repoUrl, noteModel.Branch,
+		fullRepoUrl := fmt.Sprintf("%s/blob/%s%s", repoUrl, branch,
 			file.RelativePath.String)
-		fileStoragePath := fmt.Sprintf("/%s/%s%s", noteModel.RepoFirstCommit, noteModel.Branch, file.RelativePath.String)
+		fileStoragePath := fmt.Sprintf("/%s/%s%s", repoFirstCommit, branch, file.RelativePath.String)
 		fileView := &MTNoteFileModel{
 			Title:        baseName,
 			Path:         strings.TrimPrefix(file.RelativePath.String, noteDir),
