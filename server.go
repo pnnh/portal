@@ -16,6 +16,8 @@ import (
 	"neutron/services/filesystem"
 	"portal/business/channels"
 
+	"github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/sirupsen/logrus"
 
 	"portal/handlers"
@@ -102,6 +104,18 @@ func (s *WebServer) Init() error {
 
 	//s.router.GET("/api/go_captcha_data", captcha.GetCaptchaData)
 	//s.router.POST("/api/go_captcha_check_data", captcha.CheckCaptcha)
+
+	// To initialize Sentry's handler, you need to initialize Sentry itself beforehand
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn: "https://423e4bf764007692f722394088b6351b@o4510225733910528.ingest.de.sentry.io/4510225919246416",
+	}); err != nil {
+		fmt.Printf("Sentry initialization failed: %v\n", err)
+	}
+
+	// Once it's done, you can attach the handler as one of your middleware
+	s.router.Use(sentrygin.New(sentrygin.Options{
+		Repanic: true,
+	}))
 
 	s.router.Use(gin.Recovery())
 	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
