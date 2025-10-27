@@ -1,3 +1,6 @@
 [submodule "neutron"]
 	path = neutron
 	url = git@github.com:pnnh/neutron.git
+[submodule "particle"]
+	path = particle
+	url = git@github.com:pnnh/particle.git
