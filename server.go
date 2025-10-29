@@ -9,6 +9,7 @@ import (
 
 	"portal/business/account"
 	"portal/business/comments"
+	"portal/business/images"
 	"portal/business/notes"
 	"portal/business/viewers"
 
@@ -160,6 +161,8 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/account/session", account.SessionQueryHandler)
 	s.router.GET("/portal/account/auth/app", account.AppQueryHandler)
 	s.router.POST("/portal/account/auth/permit", account.PermitAppLoginHandler)
+	s.router.GET("/portal/images", images.ImageSelectHandler)
+	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
