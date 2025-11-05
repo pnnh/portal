@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"neutron/helpers"
-	nemodels "neutron/models"
 	"neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
@@ -83,7 +82,8 @@ do nothing;`
 	return nil
 }
 
-func SelectImages(keyword string, page int, size int) (*nemodels.NESelectResult[MTImageModel], error) {
+func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
+	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from images `
 	baseSqlParams := map[string]interface{}{}
@@ -102,21 +102,24 @@ func SelectImages(keyword string, page int, size int) (*nemodels.NESelectResult[
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTImageModel
+
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
 	}
-
-	resultRange := make([]MTImageModel, 0)
-	for _, item := range sqlResults {
-		resultRange = append(resultRange, *item)
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
-
 	countSqlText := `select count(1) as count from (` +
 		fmt.Sprintf("%s %s", baseSqlText, whereText) + `) as temp;`
 
@@ -130,23 +133,17 @@ func SelectImages(keyword string, page int, size int) (*nemodels.NESelectResult[
 
 	rows, err = datastore.NamedQuery(countSqlText, countSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
 	if err = sqlx.StructScan(rows, &countSqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
+		return nil, nil, fmt.Errorf("StructScan: %w", err)
 	}
 	if len(countSqlResults) == 0 {
-		return nil, fmt.Errorf("查询图片总数有误，数据为空")
+		return nil, nil, fmt.Errorf("查询图片总数有误，数据为空")
 	}
 
-	selectData := &nemodels.NESelectResult[MTImageModel]{
-		Page:  pagination.Page,
-		Size:  pagination.Size,
-		Count: countSqlResults[0].Count,
-		Range: resultRange,
-	}
-
-	return selectData, nil
+	pagination.Count = countSqlResults[0].Count
+	return pagination, sqlResults, nil
 }
 
 func PGGetImage(uid string) (*MTImageModel, error) {

@@ -12,6 +12,7 @@ import (
 	"neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 type MTChannelTable struct {
@@ -153,6 +154,11 @@ func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %w", closeErr)
+		}
+	}()
 	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
 		return nil, fmt.Errorf("StructScan: %w", err)
 	}

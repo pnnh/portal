@@ -5,9 +5,27 @@ import (
 	"strconv"
 
 	nemodels "neutron/models"
+	"neutron/services/datastore"
 
 	"github.com/gin-gonic/gin"
 )
+
+func imageGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+	outView := make(map[string]interface{})
+	outView["uid"] = dataRow.GetString("uid")
+	outView["title"] = dataRow.GetStringOrEmpty("title")
+	outView["create_time"] = dataRow.GetTime("create_time")
+	outView["update_time"] = dataRow.GetTime("update_time")
+	outView["keywords"] = dataRow.GetStringOrEmpty("keywords")
+	outView["description"] = dataRow.GetStringOrEmpty("description")
+	outView["status"] = dataRow.GetInt("status")
+	outView["owner"] = dataRow.GetStringOrEmpty("owner")
+	outView["channel"] = dataRow.GetStringOrDefault("channel", "")
+	outView["file_path"] = dataRow.GetStringOrDefault("file_path", "")
+	outView["ext_name"] = dataRow.GetStringOrDefault("ext_name", "")
+	outView["file_url"] = dataRow.GetStringOrDefault("file_url", "")
+	return outView, nil
+}
 
 func ImageSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
@@ -21,14 +39,29 @@ func ImageSelectHandler(gctx *gin.Context) {
 	if err != nil {
 		sizeInt = 20
 	}
-	selectResult, err := SelectImages(keyword, pageInt, sizeInt)
+	pagination, selectResult, err := SelectImages(keyword, pageInt, sizeInt)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询图片出错"))
 		return
 	}
 
-	selectResponse := nemodels.NESelectResultToResponse(selectResult)
-	responseResult := nemodels.NECodeOk.WithData(selectResponse)
+	respView := make([]map[string]interface{}, 0)
+	for _, v := range selectResult {
+		outView, err := imageGetOutView(v)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+			return
+		}
+		respView = append(respView, outView)
+	}
+	resp := map[string]any{
+		"page":  pagination.Page,
+		"size":  pagination.Size,
+		"count": pagination.Count,
+		"range": respView,
+	}
+
+	responseResult := nemodels.NECodeOk.WithData(resp)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

@@ -1,4 +1,4 @@
-package libraries
+package imgcon
 
 import (
 	"fmt"
@@ -8,46 +8,51 @@ import (
 	"neutron/helpers"
 	nemodels "neutron/models"
 	"neutron/services/datastore"
-	"portal/business"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
-func ConsoleLibrarySelectHandler(gctx *gin.Context) {
+func imageGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+	outView := make(map[string]interface{})
+	outView["uid"] = dataRow.GetString("uid")
+	outView["title"] = dataRow.GetStringOrEmpty("title")
+	outView["create_time"] = dataRow.GetTime("create_time")
+	outView["update_time"] = dataRow.GetTime("update_time")
+	outView["keywords"] = dataRow.GetStringOrEmpty("keywords")
+	outView["description"] = dataRow.GetStringOrEmpty("description")
+	outView["status"] = dataRow.GetInt("status")
+	outView["owner"] = dataRow.GetStringOrEmpty("owner")
+	outView["file_path"] = dataRow.GetStringOrDefault("file_path", "")
+	outView["ext_name"] = dataRow.GetStringOrDefault("ext_name", "")
+	outView["file_url"] = dataRow.GetStringOrDefault("file_url", "")
+	outView["library"] = dataRow.GetStringOrDefault("library", "")
+	return outView, nil
+}
+
+func ConsoleImageSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
 	page := gctx.Query("page")
 	size := gctx.Query("size")
-	lang := gctx.Query("lang")
+	lib := gctx.Query("lib")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		pageInt = 1
 	}
 	sizeInt, err := strconv.Atoi(size)
 	if err != nil {
-		sizeInt = 100
+		sizeInt = 20
 	}
-
-	accountModel, err := business.FindAccountFromCookie(gctx)
+	pagination, selectResult, err := SelectImages(keyword, pageInt, sizeInt, lib)
 	if err != nil {
-		logrus.Warnln("ConsoleChannelsSelectHandler", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
-		return
-	}
-	if accountModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
-		return
-	}
-	pagination, selectResult, err := ConsoleSelectChannels(accountModel.Uid, keyword, pageInt, sizeInt, lang)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询图片出错"))
 		return
 	}
 
 	respView := make([]map[string]interface{}, 0)
 	for _, v := range selectResult {
-		outView, err := libraryGetOutView(v)
+		outView, err := imageGetOutView(v)
 		if err != nil {
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
@@ -66,36 +71,20 @@ func ConsoleLibrarySelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func libraryGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
-	outView := make(map[string]interface{})
-	outView["uid"] = dataRow.GetString("uid")
-	outView["name"] = dataRow.GetString("name")
-	outView["description"] = dataRow.GetStringOrEmpty("description")
-	outView["image"] = dataRow.GetStringOrDefault("image", "")
-	outView["status"] = dataRow.GetInt("status")
-	outView["create_time"] = dataRow.GetTime("create_time")
-	outView["update_time"] = dataRow.GetTime("update_time")
-	outView["lang"] = dataRow.GetStringOrDefault("lang", "")
-	outView["owner"] = dataRow.GetStringOrEmpty("owner")
-	outView["title"] = dataRow.GetStringOrEmpty("title")
-	outView["header"] = dataRow.GetStringOrDefault("header", "")
-	return outView, nil
-}
-func ConsoleSelectChannels(owner, keyword string, page int, size int, lang string) (*helpers.Pagination,
+func SelectImages(keyword string, page int, size int, libUid string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from personal.libraries `
+	baseSqlText := ` select * from personal.images `
 	baseSqlParams := map[string]interface{}{}
 
-	whereText := ` where owner = :owner `
-	baseSqlParams["owner"] = owner
+	whereText := ` where 1=1 `
 	if keyword != "" {
-		whereText += ` and (name like :keyword or description like :keyword) `
+		whereText += ` and (title like :keyword or description like :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
 	}
-	if lang != "" {
-		whereText += ` and lang = :lang `
-		baseSqlParams["lang"] = lang
+	if libUid != "" {
+		whereText += ` and library = :libUid `
+		baseSqlParams["libUid"] = libUid
 	}
 	orderText := ` order by create_time desc `
 
@@ -106,6 +95,7 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
+
 	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
@@ -128,7 +118,6 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
-
 	countSqlText := `select count(1) as count from (` +
 		fmt.Sprintf("%s %s", baseSqlText, whereText) + `) as temp;`
 
@@ -148,7 +137,7 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 		return nil, nil, fmt.Errorf("StructScan: %w", err)
 	}
 	if len(countSqlResults) == 0 {
-		return nil, nil, fmt.Errorf("查询频道总数有误，数据为空")
+		return nil, nil, fmt.Errorf("查询图片总数有误，数据为空")
 	}
 
 	pagination.Count = countSqlResults[0].Count
