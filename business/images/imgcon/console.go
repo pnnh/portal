@@ -28,6 +28,7 @@ func imageGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error)
 	outView["ext_name"] = dataRow.GetStringOrDefault("ext_name", "")
 	outView["file_url"] = dataRow.GetStringOrDefault("file_url", "")
 	outView["library"] = dataRow.GetStringOrDefault("library", "")
+	outView["file_url"] = dataRow.GetStringOrDefault("file_url", "")
 	return outView, nil
 }
 

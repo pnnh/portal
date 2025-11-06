@@ -264,7 +264,12 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 	}
 	logrus.Debugln("credential: ", credential)
 
-	jwkModel, err := helpers.GetJwkModel()
+	jwkString, ok := config.GetConfigurationString("OAUTH2_JWK")
+	if !ok {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("OAUTH2_JWK is not set"))
+		return
+	}
+	jwkModel, err := helpers.GetJwkModel(jwkString)
 	if err != nil || jwkModel == nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetJwkModel error"))
 		return

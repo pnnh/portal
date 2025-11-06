@@ -3,8 +3,9 @@ package account
 import (
 	"encoding/base64"
 	"net/http"
-	nemodels "neutron/models"
 	"time"
+
+	nemodels "neutron/models"
 
 	"neutron/config"
 	"portal/handlers/auth/authorizationserver"
@@ -13,8 +14,9 @@ import (
 
 	"portal/models"
 
-	"github.com/gin-gonic/gin"
 	"neutron/helpers"
+
+	"github.com/gin-gonic/gin"
 )
 
 //func PasswordSignupBeginHandler(gctx *gin.Context) {
@@ -186,7 +188,12 @@ func PasswordSigninFinishHandler(gctx *gin.Context) {
 		return
 	}
 
-	jwkModel, err := helpers.GetJwkModel()
+	jwkString, ok := config.GetConfigurationString("OAUTH2_JWK")
+	if !ok {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("OAUTH2_JWK is not set"))
+		return
+	}
+	jwkModel, err := helpers.GetJwkModel(jwkString)
 	if err != nil || jwkModel == nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "GetJwkModel error"))
 		return
