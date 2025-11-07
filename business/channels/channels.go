@@ -156,7 +156,7 @@ func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 	if err = sqlx.StructScan(rows, &sqlResults); err != nil {

@@ -114,7 +114,7 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 	for rows.Next() {

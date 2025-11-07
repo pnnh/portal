@@ -107,7 +107,7 @@ func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 

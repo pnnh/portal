@@ -105,7 +105,7 @@ func SelectImages(keyword string, page int, size int, libUid string) (*helpers.P
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 	for rows.Next() {
