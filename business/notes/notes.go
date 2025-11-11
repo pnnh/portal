@@ -191,7 +191,7 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 
@@ -277,7 +277,7 @@ func PGGetNote(uid string, lang string) (*datastore.DataRow, error) {
 
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 

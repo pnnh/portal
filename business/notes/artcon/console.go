@@ -121,7 +121,7 @@ func (h *ConsoleNotesHandler) PGSelectNotes(owner, channel, keyword string, page
 	}
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
-			logrus.Warnf("rows.Close: %w", closeErr)
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
 
