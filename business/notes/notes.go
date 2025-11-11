@@ -158,48 +158,6 @@ func (v *MTNoteView) ToModel() *MTNoteModel {
 	}
 }
 
-func PGConsoleInsertNote(dataRow *datastore.DataRow) error {
-	sqlText := `insert into articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
-	cover, owner, channel, discover, partition, version, build, url, branch, commit, commit_time, relative_path, repo_id, 
-	lang, name, checksum, syncno, repo_first_commit)
-values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
-	:channel, :discover, :partition, :version, :build, :url, :branch, :commit, :commit_time, :relative_path, :repo_id, 
-	:lang, :name, :checksum, :syncno, :repo_first_commit)
-on conflict (uid)
-do update set title = excluded.title,
-              header = excluded.header,
-              body = excluded.body,
-              update_time = excluded.update_time,
-              keywords = excluded.keywords,
-              description = excluded.description,
-              status = excluded.status,
-              cover = excluded.cover,
-              owner = excluded.owner,
-              channel = excluded.channel,
-              partition = excluded.partition,
-              version = excluded.version,
-              build = excluded.build,
-              url = excluded.url,
-              branch = excluded.branch,
-              commit = excluded.commit,
-              commit_time = excluded.commit_time,
-              relative_path = excluded.relative_path,
-              repo_id = excluded.repo_id,
-              lang = excluded.lang,
-              name = excluded.name,
-              checksum = excluded.checksum,
-              syncno = excluded.syncno,
-			  repo_first_commit=excluded.repo_first_commit;`
-
-	paramsMap := dataRow.InnerMap()
-
-	_, err := datastore.NamedExec(sqlText, paramsMap)
-	if err != nil {
-		return fmt.Errorf("PGConsoleInsertNote: %w", err)
-	}
-	return nil
-}
-
 func SelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)

@@ -1,4 +1,4 @@
-package notes
+package artcon
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"neutron/helpers/jsonmap"
 	nemodels "neutron/models"
 	"neutron/services/datetime"
+	"portal/business/notes"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -19,7 +20,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ConsoleNotesSelectHandler(gctx *gin.Context) {
+type ConsoleNotesHandler struct {
+}
+
+func (h *ConsoleNotesHandler) RegisterRouter(router *gin.Engine) {
+	router.GET("/portal/console/articles", h.HandleSelect)
+	router.GET("/portal/:lang/console/articles", h.HandleSelect)
+	router.POST("/portal/console/articles", h.HandleInsert)
+	router.GET("/portal/console/articles/:uid", h.HandleGet)
+	router.GET("/portal/:lang/console/articles/:uid", h.HandleGet)
+	router.PUT("/portal/console/articles/:uid", h.HandleUpdate)
+	router.DELETE("/portal/console/articles/:uid", h.HandleDelete)
+}
+
+func (h *ConsoleNotesHandler) HandleSelect(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
 	page := gctx.Query("page")
 	size := gctx.Query("size")
@@ -43,14 +57,14 @@ func ConsoleNotesSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
-	pagination, selectResult, err := ConsoleSelectNotes(accountModel.Uid, channel, keyword, pageInt, sizeInt, lang)
+	pagination, selectResult, err := h.PGSelectNotes(accountModel.Uid, channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
 	respView := make([]map[string]interface{}, 0)
 	for _, v := range selectResult {
-		outView, err := consoleNoteGetOutView(v)
+		outView, err := h.consoleNoteGetOutView(v)
 		if err != nil {
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
@@ -70,7 +84,7 @@ func ConsoleNotesSelectHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
+func (h *ConsoleNotesHandler) PGSelectNotes(owner, channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select a.*, c.name channel_name from articles as a left join channels as c on a.channel = c.uid `
@@ -152,10 +166,10 @@ func ConsoleSelectNotes(owner, channel, keyword string, page int, size int, lang
 	return pagination, sqlResults, nil
 }
 
-func NoteConsoleInsertHandler(gctx *gin.Context) {
+func (h *ConsoleNotesHandler) HandleInsert(gctx *gin.Context) {
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Warnln("NoteConsoleInsertHandler", err)
+		logrus.Warnln("HandleInsert", err)
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
@@ -206,7 +220,7 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	err = PGConsoleInsertNote(dataRow)
+	err = h.PGConsoleInsertNote(dataRow)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
 		return
@@ -220,7 +234,49 @@ func NoteConsoleInsertHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, result)
 }
 
-func consoleNoteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+func (h *ConsoleNotesHandler) PGConsoleInsertNote(dataRow *datastore.DataRow) error {
+	sqlText := `insert into articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
+	cover, owner, channel, discover, partition, version, build, url, branch, commit, commit_time, relative_path, repo_id, 
+	lang, name, checksum, syncno, repo_first_commit)
+values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
+	:channel, :discover, :partition, :version, :build, :url, :branch, :commit, :commit_time, :relative_path, :repo_id, 
+	:lang, :name, :checksum, :syncno, :repo_first_commit)
+on conflict (uid)
+do update set title = excluded.title,
+              header = excluded.header,
+              body = excluded.body,
+              update_time = excluded.update_time,
+              keywords = excluded.keywords,
+              description = excluded.description,
+              status = excluded.status,
+              cover = excluded.cover,
+              owner = excluded.owner,
+              channel = excluded.channel,
+              partition = excluded.partition,
+              version = excluded.version,
+              build = excluded.build,
+              url = excluded.url,
+              branch = excluded.branch,
+              commit = excluded.commit,
+              commit_time = excluded.commit_time,
+              relative_path = excluded.relative_path,
+              repo_id = excluded.repo_id,
+              lang = excluded.lang,
+              name = excluded.name,
+              checksum = excluded.checksum,
+              syncno = excluded.syncno,
+			  repo_first_commit=excluded.repo_first_commit;`
+
+	paramsMap := dataRow.InnerMap()
+
+	_, err := datastore.NamedExec(sqlText, paramsMap)
+	if err != nil {
+		return fmt.Errorf("PGConsoleInsertNote: %w", err)
+	}
+	return nil
+}
+
+func (h *ConsoleNotesHandler) consoleNoteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
 	outView := make(map[string]interface{})
 	outView["uid"] = dataRow.GetString("uid")
 	outView["title"] = dataRow.GetString("title")
@@ -254,7 +310,7 @@ func consoleNoteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, 
 	return outView, nil
 }
 
-func ConsoleNoteGetHandler(gctx *gin.Context) {
+func (h *ConsoleNotesHandler) HandleGet(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	wantLang := gctx.Query("wantLang")
 	if uid == "" {
@@ -271,22 +327,23 @@ func ConsoleNoteGetHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
-	selectResult, err := PGConsoleGetNote(accountModel.Uid, uid, wantLang)
+	noteRow, err := h.PGConsoleGetNote(accountModel.Uid, uid, wantLang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
 	}
-	if selectResult == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeNotFound)
+
+	outView, err := h.consoleNoteGetOutView(noteRow)
+	if err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
-	model := selectResult.ToModel()
-	responseResult := nemodels.NECodeOk.WithData(model)
+	responseResult := nemodels.NECodeOk.WithLocalData(nemodels.LangEn, outView)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func ConsoleNoteDeleteHandler(gctx *gin.Context) {
+func (h *ConsoleNotesHandler) HandleDelete(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	lang := gctx.Query("lang")
 	if uid == "" {
@@ -303,7 +360,7 @@ func ConsoleNoteDeleteHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
-	err = PGConsoleDeleteNote(accountModel.Uid, uid, lang)
+	err = h.PGConsoleDeleteNote(accountModel.Uid, uid, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
@@ -313,7 +370,7 @@ func ConsoleNoteDeleteHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func PGConsoleGetNote(owner, uid string, wantLang string) (*MTNoteTable, error) {
+func (h *ConsoleNotesHandler) PGConsoleGetNote(owner, uid string, wantLang string) (*datastore.DataRow, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGConsoleGetNote uid is empty")
 	}
@@ -331,23 +388,35 @@ func PGConsoleGetNote(owner, uid string, wantLang string) (*MTNoteTable, error) 
 		pageSqlParams["uid"] = uid
 	}
 
-	var sqlResults []*MTNoteTable
-
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
 
-	for _, item := range sqlResults {
-		return item, nil
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %w", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		if tableMap.Err != nil {
+			return nil, fmt.Errorf("MapScan2: %w", tableMap.Err)
+		}
+		return tableMap, nil
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 	return nil, nil
 }
 
-func PGConsoleDeleteNote(owner, uid string, lang string) error {
+func (h *ConsoleNotesHandler) PGConsoleDeleteNote(owner, uid string, lang string) error {
 	if uid == "" {
 		return fmt.Errorf("PGConsoleGetNote uid is empty")
 	}
@@ -367,7 +436,7 @@ func PGConsoleDeleteNote(owner, uid string, lang string) error {
 	return nil
 }
 
-func ConsoleNoteUpdateHandler(gctx *gin.Context) {
+func (h *ConsoleNotesHandler) HandleUpdate(gctx *gin.Context) {
 	uid := gctx.Param("uid")
 	if uid == "" {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
@@ -384,7 +453,7 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 		return
 	}
 
-	model := &MTNoteModel{}
+	model := &notes.MTNoteModel{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
@@ -393,7 +462,7 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空2"))
 		return
 	}
-	oldModel, err := PGConsoleGetNote(accountModel.Uid, uid, "")
+	oldModel, err := h.PGConsoleGetNote(accountModel.Uid, uid, "")
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
@@ -402,7 +471,8 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("笔记不存在"))
 		return
 	}
-	if oldModel.Owner != accountModel.Uid {
+	owner := oldModel.GetStringOrEmpty("owner")
+	if owner != accountModel.Uid {
 		gctx.JSON(http.StatusOK, nemodels.NECodeUnauthorized.WithMessage("没有权限修改该笔记"))
 		return
 	}
@@ -410,7 +480,7 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 	model.Uid = uid
 	model.UpdateTime = time.Now().UTC()
 
-	err = PGConsoleUpdateNote(model)
+	err = h.PGConsoleUpdateNote(model)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "更新笔记出错"))
 		return
@@ -421,7 +491,7 @@ func ConsoleNoteUpdateHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, result)
 }
 
-func PGConsoleUpdateNote(model *MTNoteModel) error {
+func (h *ConsoleNotesHandler) PGConsoleUpdateNote(model *notes.MTNoteModel) error {
 	sqlText := `update articles set title = :title,  body = :body, description = :description, 
 	update_time = now() where uid = :uid;`
 

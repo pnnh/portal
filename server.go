@@ -13,6 +13,7 @@ import (
 	"portal/business/images/imgcon"
 	"portal/business/libraries"
 	"portal/business/notes"
+	"portal/business/notes/artcon"
 	"portal/business/viewers"
 
 	"neutron/config"
@@ -120,14 +121,9 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
-	s.router.GET("/portal/console/articles", notes.ConsoleNotesSelectHandler)
-	s.router.GET("/portal/:lang/console/articles", notes.ConsoleNotesSelectHandler)
-	s.router.POST("/portal/console/articles", notes.NoteConsoleInsertHandler)
+	notesConsoleHandler := &artcon.ConsoleNotesHandler{}
+	notesConsoleHandler.RegisterRouter(s.router)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
-	s.router.GET("/portal/console/articles/:uid", notes.ConsoleNoteGetHandler)
-	s.router.GET("/portal/:lang/console/articles/:uid", notes.ConsoleNoteGetHandler)
-	s.router.PUT("/portal/console/articles/:uid", notes.ConsoleNoteUpdateHandler)
-	s.router.DELETE("/portal/console/articles/:uid", notes.ConsoleNoteDeleteHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
 	s.router.GET("/portal/console/channels", channels.ConsoleChannelSelectHandler)

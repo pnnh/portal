@@ -43,7 +43,7 @@ func NoteViewerInsertHandler(gctx *gin.Context) {
 	}
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Warnln("NoteConsoleInsertHandler", err)
+		logrus.Warnln("HandleInsert", err)
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
