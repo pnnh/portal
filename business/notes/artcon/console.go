@@ -420,7 +420,7 @@ func (h *ConsoleNotesHandler) PGConsoleDeleteNote(owner, uid string, lang string
 	if uid == "" {
 		return fmt.Errorf("PGConsoleGetNote uid is empty")
 	}
-	pageSqlText := ` delete from articles where (owner = :owner and (uid = :uid or (cid = :uid and lang = :lang))); `
+	pageSqlText := ` delete from public.articles where owner = :owner and uid = :uid; `
 
 	pageSqlParams := map[string]interface{}{
 		"uid":   uid,
