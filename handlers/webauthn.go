@@ -10,8 +10,6 @@ import (
 
 	nemodels "neutron/models"
 
-	"portal/handlers/auth/authorizationserver"
-
 	"portal/models"
 
 	"neutron/config"
@@ -299,7 +297,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 	}
 	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(username,
-		authorizationserver.PrivateKeyString,
+		"authorizationserver.PrivateKeyString",
 		session.JwtId, issuer)
 	if (jwtToken == "") || (err != nil) {
 		models.ResponseMessageError(gctx, "参数有误319", err)

@@ -5,7 +5,6 @@ import (
 	nemodels "neutron/models"
 	"time"
 
-	"portal/handlers/auth/authorizationserver"
 	"portal/models"
 
 	"github.com/gin-gonic/gin"
@@ -173,54 +172,6 @@ func MailSigninBeginHandler(gctx *gin.Context) {
 
 	sessionData := map[string]interface{}{
 		"session": session.Uid,
-	}
-
-	result := nemodels.NECodeOk.WithData(sessionData)
-
-	gctx.JSON(http.StatusOK, result)
-}
-
-func MailSigninFinishHandler(gctx *gin.Context) {
-	session := gctx.PostForm("session")
-	code := gctx.PostForm("code")
-	if session == "" || code == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("code或session为空"))
-		return
-	}
-	sessionModel, err := models.GetSessionById(session)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithLocalError(nemodels.LangZh, err,
-			"查询sessionModel出错", "query sessionModel error"))
-		return
-	}
-	if sessionModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("sessionModel不存在"))
-		return
-	}
-
-	if sessionModel.Code != code {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("验证码错误"))
-		return
-	}
-
-	user, err := models.GetAccount(sessionModel.Username)
-
-	if err != nil || user == nil {
-		models.ResponseMessageError(gctx, "获取用户信息出错", err)
-		return
-	}
-
-	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
-	jwtToken, err := helpers.GenerateJwtTokenRs256(user.Username,
-		authorizationserver.PrivateKeyString,
-		sessionModel.JwtId, issuer)
-	if (jwtToken == "") || (err != nil) {
-		models.ResponseMessageError(gctx, "参数有误316", err)
-		return
-	}
-
-	sessionData := map[string]interface{}{
-		"authorization": jwtToken,
 	}
 
 	result := nemodels.NECodeOk.WithData(sessionData)

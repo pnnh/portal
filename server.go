@@ -77,35 +77,6 @@ func (s *WebServer) Init() error {
 	//s.router.POST("/account/signup/webauthn/finish/:username", authHandler.FinishRegistration)
 	//s.router.POST("/account/signin/webauthn/begin/:username", authHandler.BeginLogin)
 	//s.router.POST("/account/signin/webauthn/finish/:username", authHandler.FinishLogin)
-	//
-	//s.router.POST("/account/signup/password/finish", account.PasswordSignupFinishHandler)
-	//s.router.POST("/account/signin/password/finish", account.PasswordSigninFinishHandler)
-
-	//s.router.GET("/public/applications", public.PublicApplicationSelectHandler)
-	//
-	//s.router.GET("/oauth2/auth", func(gctx *gin.Context) {
-	//	authorizationserver.AuthEndpointHtml(gctx)
-	//})
-	//s.router.POST("/oauth2/auth", func(gctx *gin.Context) {
-	//	authorizationserver.AuthEndpointJson(gctx)
-	//})
-	//
-	//s.router.POST("/oauth2/token", authorizationserver.TokenEndpoint)
-	//s.router.POST("/oauth2/revoke", func(gctx *gin.Context) {
-	//	authorizationserver.RevokeEndpoint(gctx)
-	//})
-	//s.router.POST("/oauth2/introspect", func(gctx *gin.Context) {
-	//	authorizationserver.IntrospectionEndpoint(gctx)
-	//})
-	//s.router.GET("/oauth2/jwks", func(gctx *gin.Context) {
-	//	authorizationserver.JwksEndpoint(gctx)
-	//})
-	//s.router.POST("/oauth2/user", func(gctx *gin.Context) {
-	//	authorizationserver.UserEndpoint(gctx)
-	//})
-
-	//s.router.GET("/api/go_captcha_data", captcha.GetCaptchaData)
-	//s.router.POST("/api/go_captcha_check_data", captcha.CheckCaptcha)
 
 	s.router.Use(gin.Recovery())
 	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
