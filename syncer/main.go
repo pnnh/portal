@@ -23,7 +23,7 @@ func SyncerMain(configFlag string) {
 		logrus.Fatalln("初始化配置失败2", err)
 	}
 
-	accountDSN, ok := config.GetConfiguration("app.DATABASE")
+	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
 		logrus.Errorln("DATABASE未配置2")
 	}

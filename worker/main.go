@@ -35,7 +35,7 @@ func WorkerMain(configFlag string) {
 
 	logrus.Println("Redis初始化完成")
 
-	accountDSN, ok := config.GetConfiguration("app.DATABASE")
+	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
 		logrus.Errorln("DATABASE未配置3")
 	}

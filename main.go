@@ -64,9 +64,10 @@ func PortalMain() {
 		logrus.Fatalln("初始化配置失败1", err)
 	}
 
-	accountDSN, ok := config.GetConfiguration("app.DATABASE")
+	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
 		logrus.Errorln("DATABASE未配置")
+		return
 	}
 
 	if err := datastore.Init(accountDSN.(string)); err != nil {
