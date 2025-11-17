@@ -61,7 +61,7 @@ func PortalMain() {
 
 	err := config.InitAppConfig(configFlag, "huable", "polaris", config.GetEnvName(), "portal")
 	if err != nil {
-		logrus.Fatalln("初始化配置失败", err)
+		logrus.Fatalln("初始化配置失败1", err)
 	}
 
 	accountDSN, ok := config.GetConfiguration("app.DATABASE")
