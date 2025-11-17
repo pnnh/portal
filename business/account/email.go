@@ -2,15 +2,17 @@ package account
 
 import (
 	"net/http"
-	nemodels "neutron/models"
 	"time"
+
+	nemodels "neutron/models"
 
 	"portal/models"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"neutron/config"
 	"neutron/helpers"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func MailSignupBeginHandler(gctx *gin.Context) {
