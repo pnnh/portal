@@ -67,6 +67,23 @@ func NewWebServer() (*WebServer, error) {
 
 	return server, nil
 }
+func devHandler(c *gin.Context) {
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	fullURL := scheme + "://" + c.Request.Host + c.Request.URL.String()
+	//fmt.Println("Full URL:", fullURL) // e.g., "http://localhost:8080/api/users?id=123"
+	// Your logic here...
+	userAgent := c.Request.Header.Get("User-Agent")
+	//fmt.Println("User-Agent:", userAgent)
+	// 要求在nodejs环境下只能够实用内部地址请求当前服务，因为CDN侧做了防护，生产环境无法请求
+	if strings.Contains(userAgent, "node") && strings.Contains(fullURL, "huable.local") {
+		logrus.Warnln("阻止可疑请求: ", fullURL, " ", userAgent)
+		c.Abort()
+	}
+	c.Next()
+}
 
 func (s *WebServer) Init() error {
 	indexHandler := handlers.NewIndexHandler()
@@ -77,6 +94,10 @@ func (s *WebServer) Init() error {
 	//s.router.POST("/account/signup/webauthn/finish/:username", authHandler.FinishRegistration)
 	//s.router.POST("/account/signin/webauthn/begin/:username", authHandler.BeginLogin)
 	//s.router.POST("/account/signin/webauthn/finish/:username", authHandler.FinishLogin)
+
+	if config.Debug() {
+		s.router.Use(devHandler)
+	}
 
 	s.router.Use(gin.Recovery())
 	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
