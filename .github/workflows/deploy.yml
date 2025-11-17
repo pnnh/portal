@@ -10,9 +10,32 @@ permissions:
   pull-requests: read  # Required for label-based overrides
 
 jobs:
-  build-and-push:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive  # This enables recursive submodule checkout
+          fetch-depth: 0  # Fetch all history for accurate versioning
+          
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x' 
 
+      - name: Install dependencies
+        run: go mod tidy 
+
+      - name: Test all packages
+        run: go test -v ./...  
+
+      - name: Test neutron
+        run: go test neutron/...
+      
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

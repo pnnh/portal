@@ -16,10 +16,6 @@ COPY . .
 
 # Build Portal
 RUN go build -o ./portal
-# Self Unit Tests
-RUN go test ./...
-# Neutron Unit Tests
-RUN go test neutron/...
 
 FROM base AS runner
 WORKDIR /app
