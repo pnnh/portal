@@ -13,7 +13,7 @@ import (
 	"portal/business/images/imgcon"
 	"portal/business/libraries"
 	"portal/business/notes"
-	"portal/business/notes/artcon"
+	"portal/business/notes/community"
 	"portal/business/viewers"
 
 	"neutron/config"
@@ -79,7 +79,10 @@ func devHandler(c *gin.Context) {
 	//fmt.Println("User-Agent:", userAgent)
 	// 要求在nodejs环境下只能够实用内部地址请求当前服务，因为CDN侧做了防护，生产环境无法请求
 	if strings.Contains(userAgent, "node") && strings.Contains(fullURL, "huable.local") {
-		logrus.Warnln("阻止可疑请求: ", fullURL, " ", userAgent)
+		logrus.Warnln("阻止通过服务器请求外部地址: ", fullURL, " ", userAgent)
+		c.Abort()
+	} else if !strings.Contains(userAgent, "node") && !strings.Contains(fullURL, "huable.local") {
+		logrus.Warnln("阻止通过浏览器请求内部地址: ", fullURL, " ", userAgent)
 		c.Abort()
 	}
 	c.Next()
@@ -113,7 +116,7 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
-	notesConsoleHandler := &artcon.ConsoleNotesHandler{}
+	notesConsoleHandler := &community.ConsoleNotesHandler{}
 	notesConsoleHandler.RegisterRouter(s.router)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)

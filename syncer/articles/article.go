@@ -11,7 +11,7 @@ import (
 	"neutron/services/checksum"
 	"neutron/services/datastore"
 	"portal/business/notes"
-	"portal/business/notes/artcon"
+	"portal/business/notes/community"
 
 	"github.com/iancoleman/strcase"
 
@@ -168,7 +168,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		dataRow.SetNullStringValue("checksum", note.Checksum)
 		dataRow.SetNullStringValue("syncno", note.Syncno)
 
-		nodeConsoleHandler := &artcon.ConsoleNotesHandler{}
+		nodeConsoleHandler := &community.ConsoleNotesHandler{}
 		err = nodeConsoleHandler.PGConsoleInsertNote(dataRow)
 		if err != nil {
 			logrus.Errorf("插入文章失败: %v", err)

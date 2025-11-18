@@ -1,4 +1,4 @@
-package artcon
+package community
 
 import (
 	"fmt"
@@ -24,13 +24,13 @@ type ConsoleNotesHandler struct {
 }
 
 func (h *ConsoleNotesHandler) RegisterRouter(router *gin.Engine) {
-	router.GET("/portal/console/articles", h.HandleSelect)
-	router.GET("/portal/:lang/console/articles", h.HandleSelect)
-	router.POST("/portal/console/articles", h.HandleInsert)
-	router.GET("/portal/console/articles/:uid", h.HandleGet)
-	router.GET("/portal/:lang/console/articles/:uid", h.HandleGet)
-	router.PUT("/portal/console/articles/:uid", h.HandleUpdate)
-	router.DELETE("/portal/console/articles/:uid", h.HandleDelete)
+	router.GET("/portal/console/community/articles", h.HandleSelect)
+	//router.GET("/portal/:lang/console/articles", h.HandleSelect)
+	//router.POST("/portal/console/community/articles", h.HandleInsert)
+	//router.GET("/portal/console/community/articles/:uid", h.HandleGet)
+	//router.GET("/portal/:lang/console/articles/:uid", h.HandleGet)
+	router.POST("/portal/console/community/articles/:uid", h.HandleUpdate)
+	//router.DELETE("/portal/console/community/articles/:uid", h.HandleDelete)
 }
 
 func (h *ConsoleNotesHandler) HandleSelect(gctx *gin.Context) {
@@ -40,6 +40,7 @@ func (h *ConsoleNotesHandler) HandleSelect(gctx *gin.Context) {
 	channel := gctx.Query("channel")
 	lang := gctx.Query("lang")
 	pageInt, err := strconv.Atoi(page)
+	action := gctx.Query("action")
 	if err != nil {
 		pageInt = 1
 	}
@@ -57,6 +58,33 @@ func (h *ConsoleNotesHandler) HandleSelect(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
+
+	if action == "get" {
+		noteRow, err := h.PGConsoleGetNote(accountModel.Uid, keyword)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
+			return
+		}
+
+		outView, err := h.consoleNoteGetOutView(noteRow)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+			return
+		}
+
+		resp := map[string]any{
+			"page":  1,
+			"size":  1,
+			"count": 1,
+			"range": []any{outView},
+		}
+
+		responseResult := nemodels.NECodeOk.WithData(resp)
+
+		gctx.JSON(http.StatusOK, responseResult)
+		return
+	}
+
 	pagination, selectResult, err := h.PGSelectNotes(accountModel.Uid, channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
@@ -166,74 +194,6 @@ func (h *ConsoleNotesHandler) PGSelectNotes(owner, channel, keyword string, page
 	return pagination, sqlResults, nil
 }
 
-func (h *ConsoleNotesHandler) HandleInsert(gctx *gin.Context) {
-	accountModel, err := business.FindAccountFromCookie(gctx)
-	if err != nil {
-		logrus.Warnln("HandleInsert", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
-		return
-	}
-	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
-		return
-	}
-
-	jsonMap := jsonmap.NewJsonMap()
-
-	if err := gctx.ShouldBind(jsonMap.InnerMapPtr()); err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
-		return
-	}
-	inTitle := jsonMap.WillGetString("title")
-	inBody := jsonMap.WillGetString("body")
-	inLang := jsonMap.WillGetString("lang")
-	if inTitle == "" || inBody == "" || inLang == "" || jsonMap.Err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空3"))
-		return
-	}
-
-	if !nemodels.IsValidLanguage(inLang) {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
-		return
-	}
-	modelUid := helpers.MustUuid()
-	nowTime := time.Now()
-	dataRow := datastore.NewDataRow()
-	dataRow.SetString("uid", modelUid)
-
-	dataRow = dataRow.SetStringChainFrom("title", jsonMap).
-		SetStringChainFrom("header", jsonMap).SetStringChainFrom("body", jsonMap).
-		SetNullStringChainFrom("description", jsonMap).SetNullStringChainFrom("keywords", jsonMap).
-		SetIntChain("status", 0).SetStringChainFrom("cover", jsonMap).
-		SetNullUuidStringChain("owner", accountModel.Uid).SetNullUuidStringChainFrom("channel", jsonMap).
-		SetIntChain("discover", 0).SetNullUuidStringChainFrom("partition", jsonMap).
-		SetNullTimeChain("create_time", nowTime).SetNullTimeChain("update_time", nowTime).
-		SetNullStringChainFrom("version", jsonMap).SetNullStringChainFrom("build", jsonMap).
-		SetNullStringChainFrom("url", jsonMap).SetNullStringChainFrom("branch", jsonMap).
-		SetNullStringChainFrom("commit", jsonMap).SetNullTimeChain("commit_time", datetime.NullTime).
-		SetNullStringChainFrom("relative_path", jsonMap).SetNullUuidStringChainFrom("repo_id", jsonMap).
-		SetStringChainFrom("lang", jsonMap).SetNullStringChainFrom("name", jsonMap).
-		SetNullStringChainFrom("checksum", jsonMap).SetNullStringChainFrom("syncno", jsonMap).
-		SetNullStringChainFrom("repo_first_commit", jsonMap)
-	if dataRow.Err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(dataRow.Err, "参数错误2"))
-		return
-	}
-
-	err = h.PGConsoleInsertNote(dataRow)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
-		return
-	}
-
-	result := nemodels.NECodeOk.WithData(map[string]any{
-		"changes": 1,
-		"uid":     modelUid,
-	})
-
-	gctx.JSON(http.StatusOK, result)
-}
-
 func (h *ConsoleNotesHandler) PGConsoleInsertNote(dataRow *datastore.DataRow) error {
 	sqlText := `insert into articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, channel, discover, partition, version, build, url, branch, commit, commit_time, relative_path, repo_id, 
@@ -265,7 +225,8 @@ do update set title = excluded.title,
               name = excluded.name,
               checksum = excluded.checksum,
               syncno = excluded.syncno,
-			  repo_first_commit=excluded.repo_first_commit;`
+			  repo_first_commit=excluded.repo_first_commit
+where articles.owner = :owner;`
 
 	paramsMap := dataRow.InnerMap()
 
@@ -310,67 +271,7 @@ func (h *ConsoleNotesHandler) consoleNoteGetOutView(dataRow *datastore.DataRow) 
 	return outView, nil
 }
 
-func (h *ConsoleNotesHandler) HandleGet(gctx *gin.Context) {
-	uid := gctx.Param("uid")
-	wantLang := gctx.Query("wantLang")
-	if uid == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
-		return
-	}
-	accountModel, err := business.FindAccountFromCookie(gctx)
-	if err != nil {
-		logrus.Warnln("ConsoleNotesSelectHandler", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
-		return
-	}
-	if accountModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
-		return
-	}
-	noteRow, err := h.PGConsoleGetNote(accountModel.Uid, uid, wantLang)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
-		return
-	}
-
-	outView, err := h.consoleNoteGetOutView(noteRow)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
-		return
-	}
-	responseResult := nemodels.NECodeOk.WithLocalData(nemodels.LangEn, outView)
-
-	gctx.JSON(http.StatusOK, responseResult)
-}
-
-func (h *ConsoleNotesHandler) HandleDelete(gctx *gin.Context) {
-	uid := gctx.Param("uid")
-	lang := gctx.Query("lang")
-	if uid == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
-		return
-	}
-	accountModel, err := business.FindAccountFromCookie(gctx)
-	if err != nil {
-		logrus.Warnln("ConsoleNotesSelectHandler", err)
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错b"))
-		return
-	}
-	if accountModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
-		return
-	}
-	err = h.PGConsoleDeleteNote(accountModel.Uid, uid, lang)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
-		return
-	}
-	responseResult := nemodels.NECodeOk.WithData(uid)
-
-	gctx.JSON(http.StatusOK, responseResult)
-}
-
-func (h *ConsoleNotesHandler) PGConsoleGetNote(owner, uid string, wantLang string) (*datastore.DataRow, error) {
+func (h *ConsoleNotesHandler) PGConsoleGetNote(owner, uid string) (*datastore.DataRow, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGConsoleGetNote uid is empty")
 	}
@@ -379,14 +280,9 @@ func (h *ConsoleNotesHandler) PGConsoleGetNote(owner, uid string, wantLang strin
 		"owner": owner,
 	}
 	var pageSqlText string
-	if business.IsSupportedLanguage(wantLang) {
-		pageSqlText = ` select * from articles where owner = :owner and (cid = :cid and lang = :wantLang); `
-		pageSqlParams["cid"] = uid
-		pageSqlParams["wantLang"] = wantLang
-	} else {
-		pageSqlText = ` select * from articles where owner = :owner and uid = :uid; `
-		pageSqlParams["uid"] = uid
-	}
+
+	pageSqlText = ` select * from articles where owner = :owner and uid = :uid; `
+	pageSqlParams["uid"] = uid
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
@@ -442,51 +338,93 @@ func (h *ConsoleNotesHandler) HandleUpdate(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("uid不能为空"))
 		return
 	}
+	action := gctx.Query("action")
+
 	accountModel, err := business.FindAccountFromCookie(gctx)
 	if err != nil {
-		logrus.Warnln("NoteUpdateHandler", err)
+		logrus.Warnln("HandleInsert", err)
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询账号出错c"))
 		return
 	}
 	if accountModel == nil || accountModel.IsAnonymous() {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能修改笔记"))
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在或匿名用户不能发布笔记"))
 		return
 	}
 
-	model := &notes.MTNoteModel{}
-	if err := gctx.ShouldBindJSON(model); err != nil {
+	jsonMap := jsonmap.NewJsonMap()
+
+	if err := gctx.ShouldBind(jsonMap.InnerMapPtr()); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
 	}
-	if model.Title == "" || model.Body == "" {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空2"))
+
+	inTitle := jsonMap.WillGetString("title")
+	inBody := jsonMap.WillGetString("body")
+	inLang := jsonMap.WillGetString("lang")
+	if action != "delete" {
+		if inTitle == "" || inBody == "" || inLang == "" || jsonMap.Err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("标题或内容不能为空3"))
+			return
+		}
+		if !nemodels.IsValidLanguage(inLang) {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Lang参数错误"))
+			return
+		}
+	}
+	nowTime := time.Now()
+	dataRow := datastore.NewDataRow()
+
+	// 新增记录
+	if uid == helpers.EmptyUuid() {
+		uid = helpers.MustUuid()
+		dataRow.SetString("uid", uid)
+	} else if action == "delete" {
+		err = h.PGConsoleDeleteNote(accountModel.Uid, uid, inLang)
+
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
+			return
+		}
+
+		result := nemodels.NECodeOk.WithData(map[string]any{
+			"changes": 1,
+			"uid":     uid,
+		})
+
+		gctx.JSON(http.StatusOK, result)
 		return
 	}
-	oldModel, err := h.PGConsoleGetNote(accountModel.Uid, uid, "")
+
+	dataRow = dataRow.SetStringChain("uid", uid).SetStringChainFrom("title", jsonMap).
+		SetStringChainFrom("header", jsonMap).SetStringChainFrom("body", jsonMap).
+		SetNullStringChainFrom("description", jsonMap).SetNullStringChainFrom("keywords", jsonMap).
+		SetIntChain("status", 0).SetStringChainFrom("cover", jsonMap).
+		SetNullUuidStringChain("owner", accountModel.Uid).SetNullUuidStringChainFrom("channel", jsonMap).
+		SetIntChain("discover", 0).SetNullUuidStringChainFrom("partition", jsonMap).
+		SetNullTimeChain("create_time", nowTime).SetNullTimeChain("update_time", nowTime).
+		SetNullStringChainFrom("version", jsonMap).SetNullStringChainFrom("build", jsonMap).
+		SetNullStringChainFrom("url", jsonMap).SetNullStringChainFrom("branch", jsonMap).
+		SetNullStringChainFrom("commit", jsonMap).SetNullTimeChain("commit_time", datetime.NullTime).
+		SetNullStringChainFrom("relative_path", jsonMap).SetNullUuidStringChainFrom("repo_id", jsonMap).
+		SetStringChainFrom("lang", jsonMap).SetNullStringChainFrom("name", jsonMap).
+		SetNullStringChainFrom("checksum", jsonMap).SetNullStringChainFrom("syncno", jsonMap).
+		SetNullStringChainFrom("repo_first_commit", jsonMap)
+
+	if dataRow.Err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(dataRow.Err, "参数错误2"))
+		return
+	}
+
+	err = h.PGConsoleInsertNote(dataRow)
 	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
-		return
-	}
-	if oldModel == nil {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("笔记不存在"))
-		return
-	}
-	owner := oldModel.GetStringOrEmpty("owner")
-	if owner != accountModel.Uid {
-		gctx.JSON(http.StatusOK, nemodels.NECodeUnauthorized.WithMessage("没有权限修改该笔记"))
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "插入笔记出错"))
 		return
 	}
 
-	model.Uid = uid
-	model.UpdateTime = time.Now().UTC()
-
-	err = h.PGConsoleUpdateNote(model)
-	if err != nil {
-		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "更新笔记出错"))
-		return
-	}
-
-	result := nemodels.NECodeOk.WithData(model.Uid)
+	result := nemodels.NECodeOk.WithData(map[string]any{
+		"changes": 1,
+		"uid":     uid,
+	})
 
 	gctx.JSON(http.StatusOK, result)
 }
