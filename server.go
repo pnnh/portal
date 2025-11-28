@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"portal/business/account"
+	"portal/business/account/userauth"
+	"portal/business/account/usercon"
 	"portal/business/comments"
 	"portal/business/images"
 	"portal/business/images/imgcon"
@@ -81,8 +83,10 @@ func devHandler(c *gin.Context) {
 	if strings.Contains(userAgent, "node") && strings.Contains(fullURL, "huable.local") {
 		logrus.Warnln("阻止通过服务器请求外部地址: ", fullURL, " ", userAgent)
 		c.Abort()
-	} else if !strings.Contains(userAgent, "node") && !strings.Contains(fullURL, "huable.local") {
+	} else if !strings.Contains(fullURL, "huable.local") &&
+		(!strings.Contains(userAgent, "node") && !strings.Contains(userAgent, "stargate")) {
 		logrus.Warnln("阻止通过浏览器请求内部地址: ", fullURL, " ", userAgent)
+		// 当从浏览器而非内部服务请求http://127.0.0.1等类似内部地址时阻止请求
 		c.Abort()
 	}
 	c.Next()
@@ -136,7 +140,8 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/account/signin", account.SigninHandler)
 	s.router.POST("/portal/account/signout", account.SignoutHandler)
 	s.router.GET("/portal/account/userinfo", account.UserinfoHandler)
-	s.router.GET("/portal/console/userinfo", account.UserinfoHandler)
+	s.router.GET("/portal/console/userinfo", usercon.UserinfoHandler)
+	s.router.GET("/portal/auth/userinfo", userauth.UserinfoHandler)
 	s.router.POST("/portal/console/userinfo/edit", account.UserinfoEditHandler)
 	s.router.GET("/portal/account/session", account.SessionQueryHandler)
 	s.router.GET("/portal/account/auth/app", account.AppQueryHandler)
