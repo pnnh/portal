@@ -125,7 +125,8 @@ type MTChannelView struct {
 	Match string `json:"match"` // 用于自动完成时的匹配
 }
 
-func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.NESelectResult[MTChannelModel], error) {
+func SelectChannels(keyword string, page int, size int, lang string) (*helpers.Pagination,
+	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from channels `
 	baseSqlParams := map[string]interface{}{}
@@ -148,24 +149,29 @@ func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTChannelModel
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
+
 	defer func() {
 		if closeErr := rows.Close(); closeErr != nil {
 			logrus.Warnf("rows.Close: %v", closeErr)
 		}
 	}()
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
 
-	resultRange := make([]MTChannelModel, 0)
-	for _, item := range sqlResults {
-		resultRange = append(resultRange, *item)
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	countSqlText := `select count(1) as count from (` +
@@ -181,23 +187,23 @@ func SelectChannels(keyword string, page int, size int, lang string) (*nemodels.
 
 	rows, err = datastore.NamedQuery(countSqlText, countSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
 	if err = sqlx.StructScan(rows, &countSqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
+		return nil, nil, fmt.Errorf("StructScan: %w", err)
 	}
 	if len(countSqlResults) == 0 {
-		return nil, fmt.Errorf("查询笔记总数有误，数据为空")
+		return nil, nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close2: %v", closeErr)
+		}
+	}()
 
-	selectData := &nemodels.NESelectResult[MTChannelModel]{
-		Page:  pagination.Page,
-		Size:  pagination.Size,
-		Count: countSqlResults[0].Count,
-		Range: resultRange,
-	}
+	pagination.Count = countSqlResults[0].Count
 
-	return selectData, nil
+	return pagination, sqlResults, nil
 }
 
 // 输入频道时自动完成

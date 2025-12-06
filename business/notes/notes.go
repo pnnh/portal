@@ -229,6 +229,11 @@ func SelectNotes(channel, keyword string, page int, size int, lang string) (*hel
 		return nil, nil, fmt.Errorf("查询笔记总数有误，数据为空")
 	}
 	pagination.Count = countSqlResults[0].Count
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close2: %v", closeErr)
+		}
+	}()
 
 	return pagination, sqlResults, nil
 }

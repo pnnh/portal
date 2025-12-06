@@ -4,11 +4,6 @@ FROM golang:1.24 AS base
 FROM base AS deps
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 FROM deps AS builder
 WORKDIR /app
