@@ -1,12 +1,8 @@
 package channels
 
 import (
-	"database/sql"
 	"fmt"
-	"strings"
 	"time"
-
-	nemodels "neutron/models"
 
 	"neutron/helpers"
 	"neutron/services/datastore"
@@ -15,114 +11,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type MTChannelTable struct {
-	Error       error          `json:"-" db:"-"`
-	Uid         string         `json:"uid"`
-	Name        string         `json:"name"`
-	Title       sql.NullString `json:"title"`
-	Description sql.NullString `json:"description"`
-	Image       sql.NullString `json:"image"`
-	Status      int            `json:"status"`
-	CreateTime  time.Time      `json:"create_time" db:"create_time"`
-	UpdateTime  time.Time      `json:"update_time" db:"update_time"`
-	Lang        sql.NullString `json:"lang" db:"lang"`
-	Owner       string         `json:"owner" db:"owner"`
-}
-
-func (m *MTChannelTable) FromMap(tableMap *datastore.DataRow) *MTChannelTable {
-	if tableMap == nil {
-		m.Error = fmt.Errorf("tableMap cannot be nil")
-		return m
-	}
-	m.Uid = tableMap.GetString("uid")
-	m.Name = tableMap.GetString("name")
-	m.Title = tableMap.GetNullString("title")
-	m.Description = tableMap.GetNullString("description")
-	m.Image = tableMap.GetNullString("image")
-	m.Status = tableMap.GetInt("status")
-	m.CreateTime = tableMap.GetTime("create_time")
-	m.UpdateTime = tableMap.GetTime("update_time")
-	m.Lang = tableMap.GetNullString("lang")
-	m.Owner = tableMap.GetString("owner")
-
-	return m
-}
-
-func (m *MTChannelTable) TableName() string {
-	return "channels"
-}
-
-func (m *MTChannelTable) PGGetByUid(uid string) *MTChannelTable {
+func PGChanGetByUid(uid string) (*datastore.DataRow, error) {
 	getMap, err := datastore.NewGetQuery("channels",
 		"status = 1 and uid = :uid", "", "",
 		map[string]any{"uid": uid})
 	if err != nil {
-		m.Error = fmt.Errorf("NewGetQuery: %w", err)
-		return m
+		return nil, fmt.Errorf("NewGetQuery: %w", err)
 	}
-	table := m.FromMap(getMap)
-	if table.Error != nil {
-		m.Error = fmt.Errorf("FromTableMap: %w", err)
-		return m
-	}
-	return table
-}
-
-func (m *MTChannelTable) ToModel() *MTChannelModel {
-	return &MTChannelModel{
-		MTChannelTable: *m,
-		Title:          m.Title.String,
-		Description:    m.Description.String,
-		Image:          m.Image.String,
-		Lang:           m.Lang.String,
-	}
+	return getMap, nil
 }
 
 type MTChannelModel struct {
-	MTChannelTable
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Image       string `json:"image"`
-	Lang        string `json:"lang"`
-}
-
-func (m *MTChannelModel) FromTable(table *MTChannelTable) (*MTChannelModel, error) {
-	if table == nil {
-		return nil, fmt.Errorf("table cannot be nil")
-	}
-	m.Uid = table.Uid
-	m.Name = table.Name
-	m.Title = table.Title.String
-	m.Description = table.Description.String
-	m.Image = table.Image.String
-	m.Status = table.Status
-	m.CreateTime = table.CreateTime
-	m.UpdateTime = table.UpdateTime
-	m.Lang = table.Lang.String
-	m.Owner = table.Owner
-
-	return m, nil
-}
-
-//func (m *MTChannelModel) GetByUid(uid string) (*MTChannelModel, error) {
-//	table:= (&MTChannelTable{}).PGGetByUid(uid)
-//	if table.Error != nil {
-//		return nil, fmt.Errorf("FromTableMap: %w", table.Error)
-//	}
-//	return m.FromTable(table)
-//}
-
-func (m MTChannelModel) ToViewModel() interface{} {
-	view := &MTChannelView{
-		MTChannelModel: m,
-	}
-
-	return view
-}
-
-type MTChannelView struct {
-	MTChannelModel
-	Match string `json:"match"` // 用于自动完成时的匹配
+	Error       error     `json:"-" db:"-"`
+	Uid         string    `json:"uid"`
+	Name        string    `json:"name"`
+	Status      int       `json:"status"`
+	CreateTime  time.Time `json:"create_time" db:"create_time"`
+	UpdateTime  time.Time `json:"update_time" db:"update_time"`
+	Owner       string    `json:"owner" db:"owner"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Image       string    `json:"image"`
+	Lang        string    `json:"lang"`
 }
 
 func SelectChannels(keyword string, page int, size int, lang string) (*helpers.Pagination,
@@ -207,7 +117,7 @@ func SelectChannels(keyword string, page int, size int, lang string) (*helpers.P
 }
 
 // 输入频道时自动完成
-func PGCompleteChannels(keyword string, lang string) (*nemodels.NESelectResult[MTChannelView], error) {
+func PGCompleteChannels(keyword string, lang string) ([]*datastore.DataRow, error) {
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword cannot be empty")
 	}
@@ -235,77 +145,34 @@ func PGCompleteChannels(keyword string, lang string) (*nemodels.NESelectResult[M
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTChannelModel
+
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
 
-	resultRange := make([]MTChannelView, 0)
-	for _, item := range sqlResults {
-		viewModel := item.ToViewModel().(*MTChannelView)
-		if exactMatch {
-			viewModel.Match = "exact"
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
 		}
-		resultRange = append(resultRange, *viewModel)
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		if exactMatch {
+			tableMap.SetString("match", "exact")
+		}
+		sqlResults = append(sqlResults, tableMap)
 	}
-	if len(resultRange) == 1 && strings.ToLower(resultRange[0].Name) == strings.ToLower(keyword) {
-		resultRange[0].Match = "exact"
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	selectData := &nemodels.NESelectResult[MTChannelView]{
-		Page:  1,
-		Size:  limitSize,
-		Count: len(resultRange),
-		Range: resultRange,
-	}
-
-	return selectData, nil
-}
-
-func PGGetChannelByCid(cid, lang string) (*MTChannelModel, error) {
-	pageSqlText := ` select * from channels where status = 1 and cid = :cid and lang = :lang; `
-	pageSqlParams := map[string]interface{}{
-		"cid":  cid,
-		"lang": lang,
-	}
-	var sqlResults []*MTChannelModel
-
-	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
-	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
-	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
-
-	for _, item := range sqlResults {
-		return item, nil
-	}
-	return nil, nil
-}
-
-func PGConsoleGetChannelByUid(uid string) (*MTChannelModel, error) {
-	pageSqlText := ` select * from channels where uid = :uid; `
-	pageSqlParams := map[string]interface{}{
-		"uid": uid,
-	}
-	var sqlResults []*MTChannelModel
-
-	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
-	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
-	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
-
-	for _, item := range sqlResults {
-		return item, nil
-	}
-	return nil, nil
+	return sqlResults, nil
 }

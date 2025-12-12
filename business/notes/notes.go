@@ -143,21 +143,6 @@ type MTNoteView struct {
 	FullRepoPath string `json:"full_repo_path"`
 }
 
-func (v *MTNoteView) ToModel() *MTNoteModel {
-	return &MTNoteModel{
-		MTNoteTable:  v.MTNoteModel.MTNoteTable,
-		Partition:    v.Partition,
-		Version:      v.Version,
-		Build:        v.Build,
-		Url:          v.Url,
-		Branch:       v.Branch,
-		Commit:       v.Commit,
-		CommitTime:   v.CommitTime,
-		RelativePath: v.RelativePath,
-		RepoId:       v.RepoId,
-	}
-}
-
 func SelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)

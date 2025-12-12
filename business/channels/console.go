@@ -41,7 +41,7 @@ func ConsoleChannelGetHandler(gctx *gin.Context) {
 	}
 	var modelData any
 	if selectResult != nil {
-		modelData = selectResult.ToViewModel()
+		modelData = selectResult
 	}
 	responseResult := nemodels.NECodeOk.WithData(modelData)
 
@@ -83,7 +83,7 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 		return
 	}
 
-	model := &MTChannelView{}
+	model := &MTChannelModel{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
@@ -114,7 +114,7 @@ func ConsoleChannelInsertHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, result)
 }
 
-func PGConsoleInsertChannel(model *MTChannelView) error {
+func PGConsoleInsertChannel(model *MTChannelModel) error {
 	sqlText := `insert into channels(uid, name, title, description, image, status, create_time, update_time, lang, owner)
 values(:uid, :name, :title, :description, :image, 0, now(), now(), :lang, :owner)
 on conflict (uid)
@@ -154,7 +154,7 @@ func ConsoleChannelUpdateHandler(gctx *gin.Context) {
 		return
 	}
 
-	model := &MTChannelView{}
+	model := &MTChannelModel{}
 	if err := gctx.ShouldBindJSON(model); err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 		return
@@ -195,7 +195,7 @@ func ConsoleChannelUpdateHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, result)
 }
 
-func PGConsoleUpdateChannel(model *MTChannelView) error {
+func PGConsoleUpdateChannel(model *MTChannelModel) error {
 	sqlText := `update channels set name = :name, title = :title, description = :description, lang = :lang, image = :image,
 	update_time = now() where uid = :uid;`
 
@@ -238,19 +238,35 @@ func ConsoleChannelSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("账号不存在"))
 		return
 	}
-	selectResult, err := ConsoleSelectChannels(accountModel.Uid, keyword, pageInt, sizeInt, lang)
+	pagination, selectResult, err := ConsoleSelectChannels(accountModel.Uid, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询频道出错"))
 		return
 	}
 
-	selectResponse := nemodels.NESelectResultToResponse(selectResult)
-	responseResult := nemodels.NECodeOk.WithData(selectResponse)
+	respView := make([]map[string]interface{}, 0)
+	for _, v := range selectResult {
+		outView, err := chanGetOutView(v)
+		if err != nil {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+			return
+		}
+		respView = append(respView, outView)
+	}
+	resp := map[string]any{
+		"page":  pagination.Page,
+		"size":  pagination.Size,
+		"count": pagination.Count,
+		"range": respView,
+	}
+
+	responseResult := nemodels.NECodeOk.WithData(resp)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-func ConsoleSelectChannels(owner, keyword string, page int, size int, lang string) (*nemodels.NESelectResult[MTChannelModel], error) {
+func ConsoleSelectChannels(owner, keyword string, page int, size int, lang string) (*helpers.Pagination,
+	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from channels `
 	baseSqlParams := map[string]interface{}{}
@@ -274,19 +290,30 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 	for k, v := range baseSqlParams {
 		pageSqlParams[k] = v
 	}
-	var sqlResults []*MTChannelModel
+
+	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
-	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
 
-	resultRange := make([]MTChannelModel, 0)
-	for _, item := range sqlResults {
-		resultRange = append(resultRange, *item)
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	countSqlText := `select count(1) as count from (` +
@@ -302,23 +329,24 @@ func ConsoleSelectChannels(owner, keyword string, page int, size int, lang strin
 
 	rows, err = datastore.NamedQuery(countSqlText, countSqlParams)
 	if err != nil {
-		return nil, fmt.Errorf("NamedQuery: %w", err)
+		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
 	if err = sqlx.StructScan(rows, &countSqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
+		return nil, nil, fmt.Errorf("StructScan: %w", err)
 	}
 	if len(countSqlResults) == 0 {
-		return nil, fmt.Errorf("查询频道总数有误，数据为空")
+		return nil, nil, fmt.Errorf("查询频道总数有误，数据为空")
 	}
 
-	selectData := &nemodels.NESelectResult[MTChannelModel]{
-		Page:  pagination.Page,
-		Size:  pagination.Size,
-		Count: countSqlResults[0].Count,
-		Range: resultRange,
-	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close2: %v", closeErr)
+		}
+	}()
 
-	return selectData, nil
+	pagination.Count = countSqlResults[0].Count
+
+	return pagination, sqlResults, nil
 }
 
 func ConsoleChannelDeleteHandler(gctx *gin.Context) {
