@@ -9,7 +9,6 @@ import (
 	"portal/worker"
 
 	"neutron/config"
-	"neutron/services/datastore"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -64,15 +63,15 @@ func PortalMain() {
 		logrus.Fatalln("初始化配置失败1", err)
 	}
 
-	accountDSN, ok := config.GetConfiguration("DATABASE")
-	if !ok || accountDSN == nil {
-		logrus.Errorln("DATABASE未配置")
-		return
-	}
-
-	if err := datastore.Init(accountDSN.(string)); err != nil {
-		logrus.Fatalln("datastore: ", err)
-	}
+	//accountDSN, ok := config.GetConfiguration("DATABASE")
+	//if !ok || accountDSN == nil {
+	//	logrus.Errorln("DATABASE未配置")
+	//	return
+	//}
+	//
+	//if err := datastore.Init(accountDSN.(string)); err != nil {
+	//	logrus.Fatalln("datastore: ", err)
+	//}
 
 	webServer, err := NewWebServer()
 	if err != nil {

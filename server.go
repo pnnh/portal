@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"portal/host/album"
+	"portal/host/notebook"
 	"strings"
 	"time"
 
@@ -19,7 +21,6 @@ import (
 	"portal/business/viewers"
 
 	"neutron/config"
-	"neutron/services/filesystem"
 	"portal/business/channels"
 
 	"github.com/sirupsen/logrus"
@@ -102,20 +103,20 @@ func (s *WebServer) Init() error {
 	//s.router.POST("/account/signin/webauthn/begin/:username", authHandler.BeginLogin)
 	//s.router.POST("/account/signin/webauthn/finish/:username", authHandler.FinishLogin)
 
-	if config.Debug() {
-		s.router.Use(devHandler)
-	}
+	//if config.Debug() {
+	//	s.router.Use(devHandler)
+	//}
 
 	s.router.Use(gin.Recovery())
-	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
-	if !ok || storageUrl == "" {
-		return fmt.Errorf("STORAGE_URL 未配置2")
-	}
-	storagePath, err := filesystem.ResolvePath(storageUrl)
-	if err != nil {
-		return fmt.Errorf("解析路径失败: %w", err)
-	}
-	s.router.Static("/portal/storage", storagePath)
+	//storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
+	//if !ok || storageUrl == "" {
+	//	return fmt.Errorf("STORAGE_URL 未配置2")
+	//}
+	//storagePath, err := filesystem.ResolvePath(storageUrl)
+	//if err != nil {
+	//	return fmt.Errorf("解析路径失败: %w", err)
+	//}
+	//s.router.Static("/portal/storage", storagePath)
 
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
@@ -149,6 +150,12 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/console/images", imgcon.ConsoleImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
+
+	s.router.GET("/portal/host/notebook/notes", notebook.HostNoteSelectHandler)
+	s.router.GET("/portal/host/notebook/notes/file", notebook.HostNoteFileHandler)
+	s.router.GET("/portal/host/notebook/notes/content", notebook.HostNoteContentHandler)
+	s.router.GET("/portal/host/album/images", album.HostImageSelectHandler)
+	s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path

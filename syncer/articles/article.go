@@ -3,6 +3,7 @@ package articles
 import (
 	"database/sql"
 	"fmt"
+	"neutron/services/filesystem"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,7 +56,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 	if info.IsDir() && strings.HasPrefix(fileNmae, ".") {
 		return filepath.SkipDir
 	}
-	if IsIgnoredPath(path) {
+	if filesystem.IsIgnoredPath(path) {
 		return filepath.SkipDir
 	}
 	if info.IsDir() {

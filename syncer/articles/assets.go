@@ -96,7 +96,7 @@ func (j *SyncJob) visitFile(path string, info os.FileInfo, err error) error {
 	}
 
 	if info.IsDir() {
-		if IsIgnoredPath(path) {
+		if filesystem.IsIgnoredPath(path) {
 			return filepath.SkipDir
 		}
 		tryIgnorePath := filepath.Join(path, ".gitignore")
