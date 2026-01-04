@@ -6,6 +6,7 @@ import (
 	"os"
 	"portal/host/album"
 	"portal/host/notebook"
+	"portal/host/storage"
 	"strings"
 	"time"
 
@@ -20,8 +21,9 @@ import (
 	"portal/business/notes/community"
 	"portal/business/viewers"
 
-	"github.com/pnnh/neutron/config"
 	"portal/business/channels"
+
+	"github.com/pnnh/neutron/config"
 
 	"github.com/sirupsen/logrus"
 
@@ -156,6 +158,8 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/host/notebook/notes/content", notebook.HostNoteContentHandler)
 	s.router.GET("/portal/host/album/images", album.HostImageSelectHandler)
 	s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
+	s.router.GET("/portal/host/storage/files", storage.HostFileSelectHandler)
+	s.router.GET("/portal/host/storage/files/desc", storage.HostFileDescHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path

@@ -6,6 +6,12 @@ import (
 	"github.com/dromara/dongle"
 )
 
+func EncodeBase58String(rawStr string) string {
+	encoded := dongle.Encode.FromBytes([]byte(rawStr)).ByBase58().ToString()
+	//encoded := base58.CheckEncode([]byte(rawStr), 0x00)
+	return encoded
+}
+
 func DecodeBase58String(encodedStr string) (string, error) {
 
 	result := dongle.Decode.FromString(encodedStr).ByBase58()
