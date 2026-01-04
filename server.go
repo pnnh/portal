@@ -20,7 +20,7 @@ import (
 	"portal/business/notes/community"
 	"portal/business/viewers"
 
-	"neutron/config"
+	"github.com/pnnh/neutron/config"
 	"portal/business/channels"
 
 	"github.com/sirupsen/logrus"

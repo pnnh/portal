@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"neutron/helpers"
-	nemodels "neutron/models"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/helpers"
+	nemodels "github.com/pnnh/neutron/models"
+	"github.com/pnnh/neutron/services/datastore"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"

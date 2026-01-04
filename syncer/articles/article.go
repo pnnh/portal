@@ -3,20 +3,20 @@ package articles
 import (
 	"database/sql"
 	"fmt"
-	"neutron/services/filesystem"
+	"github.com/pnnh/neutron/services/filesystem"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"neutron/services/checksum"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/services/checksum"
+	"github.com/pnnh/neutron/services/datastore"
 	"portal/business/notes"
 	"portal/business/notes/community"
 
 	"github.com/iancoleman/strcase"
 
-	"neutron/helpers"
+	"github.com/pnnh/neutron/helpers"
 	"portal/services/githelper"
 
 	"github.com/adrg/frontmatter"

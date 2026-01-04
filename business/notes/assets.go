@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"neutron/helpers"
-	nemodels "neutron/models"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/helpers"
+	nemodels "github.com/pnnh/neutron/models"
+	"github.com/pnnh/neutron/services/datastore"
 	"portal/models/repo"
 	"portal/services/githelper"
 

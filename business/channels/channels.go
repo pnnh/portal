@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"neutron/helpers"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"

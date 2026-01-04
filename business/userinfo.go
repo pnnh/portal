@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"neutron/config"
-	"neutron/helpers"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/helpers"
 	"portal/models"
 
 	"github.com/gin-gonic/gin"

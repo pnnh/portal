@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"neutron/helpers"
-	"neutron/models"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/models"
+	"github.com/pnnh/neutron/services/datastore"
 	"portal/services/githelper"
 
 	"github.com/jmoiron/sqlx"

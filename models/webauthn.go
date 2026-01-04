@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/pnnh/neutron/services/datastore"
 	"github.com/sirupsen/logrus"
-	"neutron/services/datastore"
 )
 
 type WebauthnAccount struct {

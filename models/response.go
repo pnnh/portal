@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	nemodels "github.com/pnnh/neutron/models"
 	"github.com/sirupsen/logrus"
-	nemodels "neutron/models"
 )
 
 func ResponseCode(gctx *gin.Context, code nemodels.NECode) {

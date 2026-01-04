@@ -10,9 +10,9 @@ import (
 	"portal/business/comments"
 	"portal/business/viewers"
 
-	"neutron/config"
-	"neutron/services/datastore"
-	"neutron/services/redisdb"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/services/datastore"
+	"github.com/pnnh/neutron/services/redisdb"
 
 	"github.com/sirupsen/logrus"
 )

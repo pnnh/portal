@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pnnh/neutron/config"
 	"github.com/sirupsen/logrus"
-	"neutron/config"
 )
 
 type TurnstileModel struct {

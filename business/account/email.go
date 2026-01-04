@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"time"
 
-	nemodels "neutron/models"
+	nemodels "github.com/pnnh/neutron/models"
 
 	"portal/models"
 
-	"neutron/config"
-	"neutron/helpers"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"

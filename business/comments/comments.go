@@ -2,12 +2,12 @@ package comments
 
 import (
 	"fmt"
-	nemodels "neutron/models"
+	nemodels "github.com/pnnh/neutron/models"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"neutron/helpers"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/services/datastore"
 )
 
 const CommentViewersRedisKey = "comment:viewers"

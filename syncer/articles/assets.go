@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"neutron/config"
-	"neutron/helpers"
-	"neutron/services/checksum"
-	"neutron/services/filesystem"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/services/checksum"
+	"github.com/pnnh/neutron/services/filesystem"
 	"portal/models/repo"
 	"portal/services/githelper"
 

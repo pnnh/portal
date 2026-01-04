@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"path/filepath"
 
-	nemodels "neutron/models"
+	nemodels "github.com/pnnh/neutron/models"
 
-	"neutron/config"
-	"neutron/helpers"
-	"neutron/services/filesystem"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/services/filesystem"
 	"portal/business"
 	"portal/models"
 

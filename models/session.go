@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/services/datastore"
 )
 
 type SessionModel struct {

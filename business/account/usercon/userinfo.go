@@ -3,7 +3,7 @@ package usercon
 import (
 	"net/http"
 
-	nemodels "neutron/models"
+	nemodels "github.com/pnnh/neutron/models"
 	"portal/business"
 	"portal/models"
 

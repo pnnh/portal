@@ -31,10 +31,7 @@ jobs:
         run: go mod tidy
 
       - name: Test all packages
-        run: go test -v ./...  
-
-      - name: Test neutron
-        run: go test neutron/...
+        run: go test -v ./...
       
   build-and-push:
     needs: test

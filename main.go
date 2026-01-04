@@ -8,7 +8,7 @@ import (
 	"portal/syncer"
 	"portal/worker"
 
-	"neutron/config"
+	"github.com/pnnh/neutron/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"

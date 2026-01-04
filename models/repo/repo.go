@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"neutron/services/datastore"
+	"github.com/pnnh/neutron/services/datastore"
 
 	"github.com/jmoiron/sqlx"
 )

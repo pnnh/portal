@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"neutron/helpers"
-	nemodels "neutron/models"
+	"github.com/pnnh/neutron/helpers"
+	nemodels "github.com/pnnh/neutron/models"
 	"portal/business"
 
 	"github.com/gin-gonic/gin"

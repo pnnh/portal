@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	nemodels "neutron/models"
-	"neutron/services/datastore"
+	nemodels "github.com/pnnh/neutron/models"
+	"github.com/pnnh/neutron/services/datastore"
 
 	"github.com/gin-gonic/gin"
 )

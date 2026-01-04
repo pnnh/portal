@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"neutron/config"
-	"neutron/services/datastore"
-	"neutron/services/filesystem"
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/services/datastore"
+	"github.com/pnnh/neutron/services/filesystem"
 	"portal/syncer/articles"
 
 	"github.com/sirupsen/logrus"
