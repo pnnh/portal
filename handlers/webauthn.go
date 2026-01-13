@@ -295,7 +295,7 @@ func (s *WebauthnHandler) FinishLogin(gctx *gin.Context) {
 		logrus.Printf("Error occurred in NewAccessResponse2222: %+v", err)
 		return
 	}
-	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
+	issuer := config.MustGetConfigurationString("PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(username,
 		"authorizationserver.PrivateKeyString",
 		session.JwtId, issuer)

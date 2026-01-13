@@ -132,7 +132,7 @@ func sendCommentViewerMQMessages(gctx *gin.Context, accountModel *models.Account
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
 		}
-		redisUrl, ok := config.GetConfigurationString("app.REDIS_URL")
+		redisUrl, ok := config.GetConfigurationString("REDIS_URL")
 		if !ok || redisUrl == "" {
 			logrus.Fatalln("REDIS_URL未配置")
 		}

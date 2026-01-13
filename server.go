@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
+
 	"portal/host/album"
 	"portal/host/notebook"
 	"portal/host/storage"
-	"strings"
-	"time"
 
 	"portal/business/account"
 	"portal/business/account/userauth"
@@ -160,6 +161,7 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
 	s.router.GET("/portal/host/storage/files", storage.HostFileSelectHandler)
 	s.router.GET("/portal/host/storage/files/desc", storage.HostFileDescHandler)
+	s.router.GET("/portal/host/storage/files/data/:uid", storage.HostFileDataHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path

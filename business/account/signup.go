@@ -1,17 +1,19 @@
 package account
 
 import (
-	nemodels "github.com/pnnh/neutron/models"
 	"net/http"
 	"time"
+
+	nemodels "github.com/pnnh/neutron/models"
+
+	"portal/business"
+	"portal/business/cloudflare"
+	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/helpers"
 	"github.com/sirupsen/logrus"
-	"portal/business"
-	"portal/business/cloudflare"
-	"portal/models"
 )
 
 type SignupRequest struct {
@@ -117,7 +119,7 @@ func SignupHandler(gctx *gin.Context) {
 		logrus.Errorln("JWT_PRIVATE_KEY 未配置")
 	}
 
-	issuer := config.MustGetConfigurationString("app.PUBLIC_PORTAL_URL")
+	issuer := config.MustGetConfigurationString("PUBLIC_PORTAL_URL")
 	jwtToken, err := helpers.GenerateJwtTokenRs256(sessionModel.Username, jwtPrivateKey, sessionModel.Uid, issuer)
 	if (jwtToken == "") || (err != nil) {
 		logrus.Println("GenerateJwtTokenRs256", err)

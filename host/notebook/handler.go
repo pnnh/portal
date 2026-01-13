@@ -1,18 +1,19 @@
 package notebook
 
 import (
-	"encoding/base64"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"portal/business/notes"
+	"portal/services/base58"
+
 	"github.com/pnnh/neutron/helpers/jsonmap"
 	nemodels "github.com/pnnh/neutron/models"
 	"github.com/pnnh/neutron/services/checksum"
 	"github.com/pnnh/neutron/services/filesystem"
-	"net/http"
-	"os"
-	"path/filepath"
-	"portal/business/notes"
-	"portal/services/base58"
-	"strings"
 
 	"github.com/adrg/frontmatter"
 	"github.com/gin-gonic/gin"
@@ -88,7 +89,7 @@ func HostNoteSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(fmt.Errorf("dir参数不能为空"), "查询笔记出错"))
 		return
 	}
-	dirData, err := base64.URLEncoding.DecodeString(dirParam)
+	dirData, err := base58.DecodeBase58String(dirParam)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
@@ -124,7 +125,7 @@ func HostNoteFileHandler(gctx *gin.Context) {
 		return
 	}
 
-	dirData, err := base64.URLEncoding.DecodeString(dirParam)
+	dirData, err := base58.DecodeBase58String(dirParam)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return
