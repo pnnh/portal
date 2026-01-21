@@ -66,7 +66,7 @@ func getFile(fullPath string) (*jsonmap.JsonMap, error) {
 	return dataRow, nil
 }
 
-func listFiles(targetDir string) ([]*jsonmap.JsonMap, error) {
+func listFiles(targetDir string, showIgnore bool) ([]*jsonmap.JsonMap, error) {
 	dir := targetDir
 
 	entries, err := os.ReadDir(dir)
@@ -83,7 +83,11 @@ func listFiles(targetDir string) ([]*jsonmap.JsonMap, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error checking file %q: %v\n", fileName, err)
 		}
-		if isHidden {
+		if isHidden && !showIgnore {
+			continue
+		}
+		isIgnore := filesystem.IsIgnoredPath(fileName)
+		if isIgnore && !showIgnore {
 			continue
 		}
 
@@ -95,6 +99,8 @@ func listFiles(targetDir string) ([]*jsonmap.JsonMap, error) {
 		if err != nil {
 			return nil, fmt.Errorf("获取文件信息失败: %w", err)
 		}
+		innerMap := dataRow.InnerMap()
+		innerMap["is_ignore"] = isIgnore
 
 		noteFiles = append(noteFiles, dataRow)
 
@@ -114,8 +120,14 @@ func HostFileSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错2"))
 		return
 	}
+	showIgnore := gctx.Query("showIgnore")
+	showIgnoreBoolean := false
+	if showIgnore == "true" {
+		showIgnoreBoolean = true
+	}
+
 	targetDir := string(dirData)
-	selectResult, err := listFiles(targetDir)
+	selectResult, err := listFiles(targetDir, showIgnoreBoolean)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错2"))
 		return
