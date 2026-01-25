@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"portal/services/base58"
 	filesystem2 "portal/services/filesystem"
@@ -15,11 +17,12 @@ import (
 	nemodels "github.com/pnnh/neutron/models"
 	"github.com/pnnh/neutron/services/checksum"
 	"github.com/pnnh/neutron/services/filesystem"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 )
 
-func getFile(fullPath string) (*jsonmap.JsonMap, error) {
+func getFile(fullPath string, portalUrl string, viewType string) (*jsonmap.JsonMap, error) {
 	fileStat, err := os.Stat(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("getFile error: %v ", err)
@@ -27,9 +30,53 @@ func getFile(fullPath string) (*jsonmap.JsonMap, error) {
 	fileName := fileStat.Name()
 	fileUid := ""
 	mimeType := ""
+	imageUrl := "" //封面图片
 	if fileStat.IsDir() {
 		fileUid = base58.EncodeBase58String(fileName)
-		mimeType = "directory"
+		if strings.HasSuffix(fileName, ".notebook") {
+			mimeType = "polaris/notebook"
+		} else if strings.HasSuffix(fileName, ".note") {
+			mimeType = "polaris/note"
+		} else if strings.HasSuffix(fileName, ".album") {
+			mimeType = "polaris/album"
+		} else if strings.HasSuffix(fileName, ".image") {
+			mimeType = "polaris/image"
+			if viewType == "library" {
+				metadataPath := filepath.Join(fullPath, "metadata.json")
+				metadataData, err := os.ReadFile(metadataPath)
+				if err != nil {
+					return nil, fmt.Errorf("读取文件失败: %w", err)
+				}
+				metadataText := string(metadataData)
+				metadataMap := make(map[string]interface{})
+				err = json.Unmarshal([]byte(metadataText), &metadataMap)
+				if err != nil {
+					return nil, fmt.Errorf("解析图片元数据失败: %w", err)
+				}
+				metadataJson := jsonmap.ConvertJsonMap(metadataMap)
+				indexFile := metadataJson.GetString("index_file")
+				if indexFile == "" {
+					return nil, fmt.Errorf("图片元数据缺少index_file字段")
+				}
+				imageFilePath := filepath.Join(fullPath, indexFile)
+				imageFileStat, err := os.Stat(imageFilePath)
+				if err != nil {
+					return nil, fmt.Errorf("getFile imageFileStat error: %v ", err)
+				}
+				if imageFileStat.IsDir() || !helpers.IsImageFile(imageFilePath) {
+					return nil, fmt.Errorf("图片封面不能是目录")
+				}
+				imageFullPath := imageFilePath
+				imageHash := base58.EncodeBase58String(imageFullPath)
+				imageUrl = fmt.Sprintf("%s/host/storage/files/data/%s", portalUrl, imageHash)
+			}
+		} else if strings.HasSuffix(fileName, ".imagechannel") {
+			mimeType = "polaris/imagechannel"
+		} else if strings.HasSuffix(fileName, ".notechannel") {
+			mimeType = "polaris/notechannel"
+		} else {
+			mimeType = "directory"
+		}
 	} else {
 		sumValue, err := checksum.CalcSha256(fullPath)
 		if err != nil {
@@ -46,10 +93,6 @@ func getFile(fullPath string) (*jsonmap.JsonMap, error) {
 	dataRow.SetString("title", fileName)
 	dataRow.SetString("uid", fileUid)
 
-	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
-	if !ok {
-		return nil, fmt.Errorf("getFile portalUrl is Empty")
-	}
 	pathHash := base58.EncodeBase58String(fullPath)
 	fileUrl := fmt.Sprintf("%s/host/storage/files/data/%s", portalUrl, pathHash)
 	dataRow.SetString("url", fileUrl)
@@ -63,10 +106,11 @@ func getFile(fullPath string) (*jsonmap.JsonMap, error) {
 	innerMap["is_dir"] = fileStat.IsDir()
 	innerMap["is_image"] = helpers.IsImageFile(fileName)
 	innerMap["path"] = pathHash
+	innerMap["image_url"] = imageUrl
 	return dataRow, nil
 }
 
-func listFiles(targetDir string, showIgnore bool) ([]*jsonmap.JsonMap, error) {
+func listFiles(targetDir string, showIgnore bool, viewType string) ([]*jsonmap.JsonMap, error) {
 	dir := targetDir
 
 	entries, err := os.ReadDir(dir)
@@ -75,6 +119,11 @@ func listFiles(targetDir string, showIgnore bool) ([]*jsonmap.JsonMap, error) {
 	}
 
 	var noteFiles []*jsonmap.JsonMap
+
+	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
+	if !ok {
+		return nil, fmt.Errorf("getFile portalUrl is Empty")
+	}
 	for _, entry := range entries {
 		// 获取名称
 		fileName := entry.Name()
@@ -95,9 +144,10 @@ func listFiles(targetDir string, showIgnore bool) ([]*jsonmap.JsonMap, error) {
 		if fullPath == "" {
 			continue
 		}
-		dataRow, err := getFile(fullPath)
+		dataRow, err := getFile(fullPath, portalUrl, viewType)
 		if err != nil {
-			return nil, fmt.Errorf("获取文件信息失败: %w", err)
+			logrus.Warningln("获取文件信息失败: %w", err)
+			continue
 		}
 		innerMap := dataRow.InnerMap()
 		innerMap["is_ignore"] = isIgnore
@@ -115,6 +165,10 @@ func HostFileSelectHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(fmt.Errorf("dir参数不能为空"), "查询笔记出错"))
 		return
 	}
+	viewParam := gctx.Query("viewType")
+	if viewParam != "filesystem" && viewParam != "library" {
+		viewParam = "library"
+	}
 	dirData, err := base58.DecodeBase58String(dirParam)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错2"))
@@ -127,7 +181,7 @@ func HostFileSelectHandler(gctx *gin.Context) {
 	}
 
 	targetDir := string(dirData)
-	selectResult, err := listFiles(targetDir, showIgnoreBoolean)
+	selectResult, err := listFiles(targetDir, showIgnoreBoolean, viewParam)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错2"))
 		return
@@ -168,7 +222,13 @@ func HostFileDescHandler(gctx *gin.Context) {
 		return
 	}
 
-	dataRow, err := getFile(fullPath)
+	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
+	if !ok {
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "getFile portalUrl is Empty"))
+		return
+	}
+
+	dataRow, err := getFile(fullPath, portalUrl, "filesystem")
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错1"))
 		return
