@@ -74,6 +74,10 @@ func getFile(fullPath string, portalUrl string, viewType string) (*jsonmap.JsonM
 			mimeType = "polaris/imagechannel"
 		} else if strings.HasSuffix(fileName, ".notechannel") {
 			mimeType = "polaris/notechannel"
+		} else if strings.HasSuffix(fileName, ".memes") {
+			mimeType = "polaris/memes"
+		} else if strings.HasSuffix(fileName, ".bookcase") {
+			mimeType = "polaris/bookcase"
 		} else {
 			mimeType = "directory"
 		}
