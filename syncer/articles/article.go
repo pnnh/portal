@@ -3,23 +3,23 @@ package articles
 import (
 	"database/sql"
 	"fmt"
-	"github.com/pnnh/neutron/services/filesystem"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/pnnh/neutron/services/checksum"
-	"github.com/pnnh/neutron/services/datastore"
+	"github.com/pnnh/neutron/services/filesystem"
+
 	"portal/business/notes"
 	"portal/business/notes/community"
 
+	"github.com/pnnh/neutron/services/checksum"
+	"github.com/pnnh/neutron/services/datastore"
+
 	"github.com/iancoleman/strcase"
 
-	"github.com/pnnh/neutron/helpers"
-	"portal/services/githelper"
-
 	"github.com/adrg/frontmatter"
+	"github.com/pnnh/neutron/helpers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,7 +57,11 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		return filepath.SkipDir
 	}
 	if filesystem.IsIgnoredPath(path) {
-		return filepath.SkipDir
+		if info.IsDir() {
+			return filepath.SkipDir
+		}
+		// 匹配到忽略的文件时继续遍历当前目录下的其它文件或目录
+		return nil
 	}
 	if info.IsDir() {
 		logrus.Infoln("===visitDir===", path)
@@ -91,22 +95,22 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		//}
 		logrus.Infoln("开始同步文章: ", path)
 
-		baseDir := filepath.Dir(path)
-		err = w.repoWorker.AddJob(baseDir)
-		if err != nil {
-			logrus.Warningln("添加任务失败: %w", err)
-		}
+		//baseDir := filepath.Dir(path)
+		//err = w.repoWorker.AddJob(baseDir)
+		//if err != nil {
+		//	logrus.Warningln("添加任务失败: %w", err)
+		//}
 		noteTitle := strings.Trim(matter.Title, " \n\r\t ")
 		if noteTitle == "" {
 			noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 		}
 		// 旧的兼容格式处理
-		if noteTitle == "index" {
-			parentDir := filepath.Base(baseDir)
-			if strings.HasSuffix(parentDir, ".note") {
-				noteTitle = strings.TrimSuffix(parentDir, ".note")
-			}
-		}
+		//if noteTitle == "index" {
+		//	parentDir := filepath.Base(baseDir)
+		//	if strings.HasSuffix(parentDir, ".note") {
+		//		noteTitle = strings.TrimSuffix(parentDir, ".note")
+		//	}
+		//}
 		note := &notes.MTNoteTable{}
 		note.Uid = matter.Uid
 		note.Title = noteTitle
@@ -123,22 +127,22 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		note.Checksum = sql.NullString{String: sumValue, Valid: true}
 		note.Syncno = sql.NullString{String: w.syncno, Valid: true}
 
-		gitInfo, err := githelper.GitInfoGet(baseDir)
-		if err != nil {
-			logrus.Warningln("获取git信息失败: %w", err)
-		}
-		if gitInfo != nil {
-			note.Version = sql.NullString{String: gitInfo.CommitId, Valid: true}
-			note.Build = sql.NullString{String: "", Valid: true}
-			note.Url = sql.NullString{String: gitInfo.RemoteUrl, Valid: true}
-			note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
-			note.Commit = sql.NullString{String: gitInfo.CommitId, Valid: true}
-			note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
-			relativePath := strings.TrimPrefix(path, gitInfo.RootPath)
-			note.RelativePath = sql.NullString{String: relativePath, Valid: true}
-			//note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
-			note.RepoFirstCommit = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
-		}
+		//gitInfo, err := githelper.GitInfoGet(baseDir)
+		//if err != nil {
+		//	logrus.Warningln("获取git信息失败: %w", err)
+		//}
+		//if gitInfo != nil {
+		//	note.Version = sql.NullString{String: gitInfo.CommitId, Valid: true}
+		//	note.Build = sql.NullString{String: "", Valid: true}
+		//	note.Url = sql.NullString{String: gitInfo.RemoteUrl, Valid: true}
+		//	note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
+		//	note.Commit = sql.NullString{String: gitInfo.CommitId, Valid: true}
+		//	note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
+		//	relativePath := strings.TrimPrefix(path, gitInfo.RootPath)
+		//	note.RelativePath = sql.NullString{String: relativePath, Valid: true}
+		//	//note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
+		//	note.RepoFirstCommit = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
+		//}
 
 		dataRow := datastore.NewDataRow()
 		dataRow.SetString("uid", note.Uid)

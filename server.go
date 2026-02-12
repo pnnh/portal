@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"portal/host/album"
-	"portal/host/notebook"
-	"portal/host/storage"
-
 	"portal/business/account"
 	"portal/business/account/userauth"
 	"portal/business/account/usercon"
@@ -21,6 +17,10 @@ import (
 	"portal/business/notes"
 	"portal/business/notes/community"
 	"portal/business/viewers"
+	"portal/cloud/files"
+	"portal/host/album"
+	"portal/host/notebook"
+	"portal/host/storage"
 
 	"portal/business/channels"
 
@@ -154,14 +154,19 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/console/images", imgcon.ConsoleImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 
-	s.router.GET("/portal/host/notebook/notes", notebook.HostNoteSelectHandler)
-	s.router.GET("/portal/host/notebook/notes/file", notebook.HostNoteFileHandler)
-	s.router.GET("/portal/host/notebook/notes/content", notebook.HostNoteContentHandler)
-	s.router.GET("/portal/host/album/images", album.HostImageSelectHandler)
-	s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
-	s.router.GET("/portal/host/storage/files", storage.HostFileSelectHandler)
-	s.router.GET("/portal/host/storage/files/desc", storage.HostFileDescHandler)
-	s.router.GET("/portal/host/storage/files/data/:uid", storage.HostFileDataHandler)
+	// 访问本地文件系统的接口，测试目的
+	if config.Debug() {
+		s.router.GET("/portal/host/notebook/notes", notebook.HostNoteSelectHandler)
+		s.router.GET("/portal/host/notebook/notes/file", notebook.HostNoteFileHandler)
+		s.router.GET("/portal/host/notebook/notes/content", notebook.HostNoteContentHandler)
+		s.router.GET("/portal/host/album/images", album.HostImageSelectHandler)
+		s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
+		s.router.GET("/portal/host/storage/files", storage.HostFileSelectHandler)
+		s.router.GET("/portal/host/storage/files/desc", storage.HostFileDescHandler)
+		s.router.GET("/portal/host/storage/files/data/:uid", storage.HostFileDataHandler)
+	}
+	s.router.GET("/portal/cloud/files", files.CloudFileSelectHandler)
+	s.router.GET("/portal/cloud/files/desc", files.CloudFileDescHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path

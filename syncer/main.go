@@ -5,10 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"portal/syncer/articles"
+
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/services/datastore"
 	"github.com/pnnh/neutron/services/filesystem"
-	"portal/syncer/articles"
 
 	"github.com/sirupsen/logrus"
 )
@@ -35,20 +36,20 @@ func SyncerMain(configFlag string) {
 	var wg = &sync.WaitGroup{}
 	nowTime := time.Now()
 	syncno := fmt.Sprintf("SYN%s", nowTime.Format("200601021504"))
-	// 仓库同步Worker
-	repoWorker, err := articles.NewRepoWorker(wg, syncno)
-	if err != nil {
-		logrus.Errorln("初始化RepoWorker失败", err)
-		return
-	}
+	//// 仓库同步Worker
+	//repoWorker, err := articles.NewRepoWorker(wg, syncno)
+	//if err != nil {
+	//	logrus.Errorln("初始化RepoWorker失败", err)
+	//	return
+	//}
 
-	wg.Add(1)
-	go repoWorker.StartWork()
+	//wg.Add(1)
+	//go repoWorker.StartWork()
 
-	blogUrl, ok := config.GetConfigurationString("BLOG_URL")
-	if !ok || blogUrl == "" {
-		logrus.Fatalln("BLOG_URL 未配置")
-	}
+	//blogUrl, ok := config.GetConfigurationString("BLOG_URL")
+	//if !ok || blogUrl == "" {
+	//	logrus.Fatalln("BLOG_URL 未配置")
+	//}
 	//blogDir, err := filesystem.ResolvePath(blogUrl)
 	//if err != nil {
 	//	logrus.Fatalln("解析路径失败", err)
@@ -65,8 +66,8 @@ func SyncerMain(configFlag string) {
 		return
 	}
 
-	wg.Add(2)
-	go SyncDirectoryForever(repoWorker, sourceDir, wg, syncno)
+	wg.Add(1)
+	go SyncDirectoryForever(nil, sourceDir, wg, syncno)
 	//go SyncDirectoryForever(repoWorker, blogDir, wg, syncno)
 
 	wg.Wait()

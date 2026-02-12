@@ -7,11 +7,12 @@ import (
 
 	nemodels "github.com/pnnh/neutron/models"
 
+	"portal/business"
+	"portal/models"
+
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/helpers"
 	"github.com/pnnh/neutron/services/filesystem"
-	"portal/business"
-	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -72,7 +73,7 @@ func UserinfoEditHandler(gctx *gin.Context) {
 		storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
 		if !ok || storageUrl == "" {
 			logrus.Warnln("UserinfoHandler STORAGE_URL 未配置2")
-			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "STORAGE_URL 未配置"))
+			gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "STORAGE_URL 未配置3"))
 			return
 		}
 		storagePath, err := filesystem.ResolvePath(storageUrl)
