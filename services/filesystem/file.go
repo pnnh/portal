@@ -1,6 +1,8 @@
 package filesystem
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 func IsTextFile(fileName string) (bool, error) {
 	extName := filepath.Ext(fileName)

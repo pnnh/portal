@@ -1,7 +1,6 @@
 package articles
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,15 +9,9 @@ import (
 
 	"github.com/pnnh/neutron/services/filesystem"
 
-	"portal/business/notes"
-	"portal/business/notes/community"
-
 	"github.com/pnnh/neutron/services/checksum"
 	"github.com/pnnh/neutron/services/datastore"
 
-	"github.com/iancoleman/strcase"
-
-	"github.com/adrg/frontmatter"
 	"github.com/pnnh/neutron/helpers"
 	"github.com/sirupsen/logrus"
 )
@@ -30,6 +23,7 @@ type ArticleWorker struct {
 	repoWorker *RepoWorker
 	rootPath   string
 	syncno     string
+	dirUidMap  map[string]string
 }
 
 func NewArticleWorker(repoWorker *RepoWorker, rootPath string, syncno string) (*ArticleWorker, error) {
@@ -37,6 +31,7 @@ func NewArticleWorker(repoWorker *RepoWorker, rootPath string, syncno string) (*
 		repoWorker: repoWorker,
 		rootPath:   rootPath,
 		syncno:     syncno,
+		dirUidMap:  make(map[string]string),
 	}, nil
 }
 
@@ -52,8 +47,8 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		return fmt.Errorf("error walking the path %s, %w", path, err)
 	}
 
-	fileNmae := strings.ToLower(filepath.Base(path))
-	if info.IsDir() && strings.HasPrefix(fileNmae, ".") {
+	fileName := strings.ToLower(filepath.Base(path))
+	if info.IsDir() && strings.HasPrefix(fileName, ".") {
 		return filepath.SkipDir
 	}
 	if filesystem.IsIgnoredPath(path) {
@@ -63,122 +58,77 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, err error) erro
 		// 匹配到忽略的文件时继续遍历当前目录下的其它文件或目录
 		return nil
 	}
+	sumValue := ""
+	mimeType := ""
+	newUid := helpers.MustUuid()
+	parentUid := ""
 	if info.IsDir() {
-		logrus.Infoln("===visitDir===", path)
-	}
-	if info.IsDir() || !strings.HasSuffix(fileNmae, ".md") {
-		return nil
-	}
-	noteText, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("读取文件失败: %w", err)
-	}
-	matter := &notes.MTNoteMatter{}
-	rest, err := frontmatter.Parse(strings.NewReader(string(noteText)), matter)
-	if err != nil {
-		return fmt.Errorf("解析文章元数据失败: %w", err)
-	}
-	if matter.Cls == "MTNote" && helpers.IsUuid(matter.Uid) {
-		//logrus.Infoln("这是一个MTNote: ", matter)
-
-		sumValue, err := checksum.CalcSha256(path)
+		mimeType = "directory"
+		w.dirUidMap[path] = newUid
+	} else {
+		sum, err := checksum.CalcSha256(path)
 		if err != nil {
 			return fmt.Errorf("计算文件校验和失败: %w", err)
 		}
-		//dbNote, err := notes.PGGetNoteByChecksum(sumValue)
-		//if err != nil {
-		//	return fmt.Errorf("查询文章失败: %w", err)
-		//}
-		//if dbNote != nil && dbNote.UpdateTime.After(time.Now().Add(-8*time.Hour)) {
-		//	//logrus.Infoln("文章已存在，跳过: ", path)
-		//	return nil
-		//}
-		logrus.Infoln("开始同步文章: ", path)
-
-		//baseDir := filepath.Dir(path)
-		//err = w.repoWorker.AddJob(baseDir)
-		//if err != nil {
-		//	logrus.Warningln("添加任务失败: %w", err)
-		//}
-		noteTitle := strings.Trim(matter.Title, " \n\r\t ")
-		if noteTitle == "" {
-			noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
-		}
-		// 旧的兼容格式处理
-		//if noteTitle == "index" {
-		//	parentDir := filepath.Base(baseDir)
-		//	if strings.HasSuffix(parentDir, ".note") {
-		//		noteTitle = strings.TrimSuffix(parentDir, ".note")
-		//	}
-		//}
-		note := &notes.MTNoteTable{}
-		note.Uid = matter.Uid
-		note.Title = noteTitle
-		note.Body = string(rest)
-		note.Description = matter.Description
-		note.Keywords = matter.Keywords
-		note.Channel = sql.NullString{String: matter.Chan, Valid: matter.Chan != ""}
-		note.UpdateTime = time.Now()
-		note.Status = 1 // 已发布
-		note.Header = "MTNote"
-		note.Lang = "zh"
-		note.Name = strcase.ToKebab(noteTitle)
-		note.Owner = SyncerArticleOwner
-		note.Checksum = sql.NullString{String: sumValue, Valid: true}
-		note.Syncno = sql.NullString{String: w.syncno, Valid: true}
-
-		//gitInfo, err := githelper.GitInfoGet(baseDir)
-		//if err != nil {
-		//	logrus.Warningln("获取git信息失败: %w", err)
-		//}
-		//if gitInfo != nil {
-		//	note.Version = sql.NullString{String: gitInfo.CommitId, Valid: true}
-		//	note.Build = sql.NullString{String: "", Valid: true}
-		//	note.Url = sql.NullString{String: gitInfo.RemoteUrl, Valid: true}
-		//	note.Branch = sql.NullString{String: gitInfo.Branch, Valid: true}
-		//	note.Commit = sql.NullString{String: gitInfo.CommitId, Valid: true}
-		//	note.CommitTime = sql.NullTime{Time: gitInfo.CommitTime, Valid: true}
-		//	relativePath := strings.TrimPrefix(path, gitInfo.RootPath)
-		//	note.RelativePath = sql.NullString{String: relativePath, Valid: true}
-		//	//note.RepoId = sql.NullString{String: gitInfo.RepoId, Valid: true}
-		//	note.RepoFirstCommit = sql.NullString{String: gitInfo.FirstCommitId, Valid: true}
-		//}
-
-		dataRow := datastore.NewDataRow()
-		dataRow.SetString("uid", note.Uid)
-		dataRow.SetString("title", note.Title)
-		dataRow.SetString("header", note.Header)
-		dataRow.SetString("body", note.Body)
-		dataRow.SetString("description", note.Description)
-		dataRow.SetString("keywords", note.Keywords)
-		dataRow.SetInt("status", note.Status)
-		dataRow.SetNullStringValue("cover", note.Cover)
-		dataRow.SetString("owner", note.Owner)
-		//dataRow.SetNullStringValue("channel", sql.NullString{Valid: helpers.IsUuid(note.Channel), String: note.Channel})
-		dataRow.SetNullStringValue("channel", note.Channel)
-		dataRow.SetInt("discover", note.Discover)
-		dataRow.SetNullStringValue("partition", note.Partition)
-		dataRow.SetTime("create_time", note.CreateTime)
-		dataRow.SetTime("update_time", note.UpdateTime)
-		dataRow.SetNullStringValue("version", note.Version)
-		dataRow.SetNullStringValue("build", note.Build)
-		dataRow.SetNullStringValue("url", note.Url)
-		dataRow.SetNullStringValue("branch", note.Branch)
-		dataRow.SetNullStringValue("commit", note.Commit)
-		dataRow.SetNullTimeValue("commit_time", note.CommitTime)
-		dataRow.SetNullStringValue("relative_path", note.RelativePath)
-		dataRow.SetNullStringValue("repo_id", note.RepoId)
-		dataRow.SetString("lang", note.Lang)
-		dataRow.SetNullString("name", note.Name)
-		dataRow.SetNullStringValue("checksum", note.Checksum)
-		dataRow.SetNullStringValue("syncno", note.Syncno)
-
-		nodeConsoleHandler := &community.ConsoleNotesHandler{}
-		err = nodeConsoleHandler.PGConsoleInsertNote(dataRow)
-		if err != nil {
-			logrus.Errorf("插入文章失败: %v", err)
-		}
+		sumValue = sum
+		mimeType = helpers.GetMimeType(path)
+		parentDir := filepath.Dir(path)
+		parentUid = w.dirUidMap[parentDir]
 	}
 
+	logrus.Infoln("开始同步文章: ", path)
+
+	noteTitle := strings.Trim(fileName, " \n\r\t ")
+	if noteTitle == "" {
+		noteTitle = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
+	}
+
+	nowTime := time.Now()
+	dataRow := datastore.NewDataRow()
+	dataRow.SetString("uid", newUid)
+	dataRow.SetString("title", noteTitle)
+	dataRow.SetString("header", "{}")
+	dataRow.SetString("body", "{}")
+	dataRow.SetString("description", "")
+	dataRow.SetString("keywords", "")
+	dataRow.SetInt("status", 1)
+	dataRow.SetNullString("cover", "")
+	dataRow.SetString("owner", SyncerArticleOwner)
+	dataRow.SetNullString("channel", "")
+	dataRow.SetInt("discover", 0)
+	dataRow.SetNullString("partition", "")
+	dataRow.SetTime("create_time", nowTime)
+	dataRow.SetTime("update_time", nowTime)
+	dataRow.SetNullString("version", "0")
+	dataRow.SetString("lang", "")
+	dataRow.SetString("url", "")
+	dataRow.SetNullString("parent", parentUid)
+	dataRow.SetNullString("name", fileName)
+	dataRow.SetNullString("checksum", sumValue)
+	dataRow.SetNullString("syncno", w.syncno)
+	dataRow.SetNullString("mimetype", mimeType)
+
+	err = PGInsertFile(dataRow)
+	if err != nil {
+		logrus.Errorf("插入文件数据失败: %v", err)
+	}
+
+	return nil
+}
+
+func PGInsertFile(dataRow *datastore.DataRow) error {
+	sqlText := `insert into files(uid, title, header, body, create_time, update_time, keywords, description, status, 
+	cover, owner, discover, version, url, 
+	lang, name, checksum, syncno, mimetype, parent)
+values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
+	:discover, :version, :url, 
+	:lang, :name, :checksum, :syncno, :mimetype, :parent);`
+
+	paramsMap := dataRow.InnerMap()
+
+	_, err := datastore.NamedExec(sqlText, paramsMap)
+	if err != nil {
+		return fmt.Errorf("PGConsoleInsertNote: %w", err)
+	}
 	return nil
 }

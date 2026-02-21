@@ -7,9 +7,10 @@ import (
 
 	"portal/syncer/articles"
 
+	"github.com/pnnh/neutron/services/filesystem"
+
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/services/datastore"
-	"github.com/pnnh/neutron/services/filesystem"
 
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +27,7 @@ func SyncerMain(configFlag string) {
 
 	accountDSN, ok := config.GetConfiguration("DATABASE")
 	if !ok || accountDSN == nil {
-		logrus.Errorln("DATABASE未配置2")
+		logrus.Errorln("DATABASE未配置3")
 	}
 
 	if err := datastore.Init(accountDSN.(string)); err != nil {
