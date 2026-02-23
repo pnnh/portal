@@ -25,6 +25,7 @@ import (
 	"portal/business/channels"
 
 	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/services/filesystem"
 
 	"github.com/sirupsen/logrus"
 
@@ -111,15 +112,15 @@ func (s *WebServer) Init() error {
 	//}
 
 	s.router.Use(gin.Recovery())
-	//storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
-	//if !ok || storageUrl == "" {
-	//	return fmt.Errorf("STORAGE_URL 未配置2")
-	//}
-	//storagePath, err := filesystem.ResolvePath(storageUrl)
-	//if err != nil {
-	//	return fmt.Errorf("解析路径失败: %w", err)
-	//}
-	//s.router.Static("/portal/storage", storagePath)
+	storageUrl, ok := config.GetConfigurationString("STORAGE_URL")
+	if !ok || storageUrl == "" {
+		return fmt.Errorf("STORAGE_URL 未配置2")
+	}
+	storagePath, err := filesystem.ResolvePath(storageUrl)
+	if err != nil {
+		return fmt.Errorf("解析路径失败: %w", err)
+	}
+	s.router.Static("/portal/storage", storagePath)
 
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)

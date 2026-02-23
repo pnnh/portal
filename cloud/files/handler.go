@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"portal/business"
 
+	"github.com/pnnh/neutron/config"
 	nemodels "github.com/pnnh/neutron/models"
 	"github.com/pnnh/neutron/services/datastore"
 	"github.com/sirupsen/logrus"
@@ -14,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func fileGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+func fileGetOutView(storageUrl string, dataRow *datastore.DataRow) (map[string]interface{}, error) {
 	outView := make(map[string]interface{})
 	outView["uid"] = dataRow.GetString("uid")
 	outView["title"] = dataRow.GetString("title")
@@ -31,7 +33,8 @@ func fileGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) 
 	outView["update_time"] = dataRow.GetTime("update_time")
 	outView["version"] = dataRow.GetStringOrDefault("version", "")
 	outView["build"] = dataRow.GetStringOrDefault("build", "")
-	outView["url"] = dataRow.GetStringOrDefault("url", "")
+	fileUrl := dataRow.GetStringOrDefault("url", "")
+	outView["url"] = strings.Replace(fileUrl, "storage://", storageUrl, 1)
 	outView["branch"] = dataRow.GetStringOrDefault("branch", "")
 	outView["commit"] = dataRow.GetStringOrDefault("commit", "")
 	outView["name"] = dataRow.GetStringOrDefault("name", "")
@@ -49,6 +52,7 @@ func CloudFileSelectHandler(gctx *gin.Context) {
 	keyword := gctx.Query("keyword")
 	page := gctx.Query("page")
 	size := gctx.Query("size")
+	parent := gctx.Query("parent")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		logrus.Warningln("pageInt warning", err)
@@ -72,15 +76,25 @@ func CloudFileSelectHandler(gctx *gin.Context) {
 	if viewParam != "filesystem" && viewParam != "library" {
 		viewParam = "library"
 	}
-
-	pagination, selectResult, err := SelectFiles(keyword, pageInt, sizeInt)
+	selectParams := &FileSelectParams{
+		Parent: parent,
+	}
+	pagination, selectResult, err := SelectFiles(keyword, pageInt, sizeInt, selectParams)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错2"))
 		return
 	}
+
+	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
+	if !ok || portalUrl == "" {
+		logrus.Warnln("PUBLIC_PORTAL_URL 未配置2")
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "PUBLIC_PORTAL_URL 未配置3"))
+		return
+	}
+	storageUrl := portalUrl + "/storage/"
 	respView := make([]map[string]interface{}, 0)
 	for _, v := range selectResult {
-		outView, err := fileGetOutView(v)
+		outView, err := fileGetOutView(storageUrl, v)
 		if err != nil {
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return

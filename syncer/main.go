@@ -37,25 +37,16 @@ func SyncerMain(configFlag string) {
 	var wg = &sync.WaitGroup{}
 	nowTime := time.Now()
 	syncno := fmt.Sprintf("SYN%s", nowTime.Format("200601021504"))
-	//// 仓库同步Worker
-	//repoWorker, err := articles.NewRepoWorker(wg, syncno)
-	//if err != nil {
-	//	logrus.Errorln("初始化RepoWorker失败", err)
-	//	return
-	//}
+	// 文件同步Worker
+	repoWorker, err := articles.NewRepoWorker(wg, syncno)
+	if err != nil {
+		logrus.Errorln("初始化RepoWorker失败", err)
+		return
+	}
 
-	//wg.Add(1)
-	//go repoWorker.StartWork()
+	wg.Add(1)
+	go repoWorker.StartWork()
 
-	//blogUrl, ok := config.GetConfigurationString("BLOG_URL")
-	//if !ok || blogUrl == "" {
-	//	logrus.Fatalln("BLOG_URL 未配置")
-	//}
-	//blogDir, err := filesystem.ResolvePath(blogUrl)
-	//if err != nil {
-	//	logrus.Fatalln("解析路径失败", err)
-	//	return
-	//}
 	sourceUrl, ok := config.GetConfiguration("SOURCE_URL")
 	if !ok || sourceUrl == nil {
 		logrus.Fatalln("SOURCE_URL 未配置")
@@ -68,22 +59,23 @@ func SyncerMain(configFlag string) {
 	}
 
 	wg.Add(1)
-	go SyncDirectoryForever(nil, sourceDir, wg, syncno)
-	//go SyncDirectoryForever(repoWorker, blogDir, wg, syncno)
+	go SyncDirectoryForever(repoWorker, sourceDir, wg, syncno)
 
 	wg.Wait()
 }
 
 func SyncDirectoryForever(repoWorker *articles.RepoWorker, dirPath string, wg *sync.WaitGroup, syncno string) {
 	logrus.Println("开始定时同步目录:", dirPath)
-	for {
-		// 文章同步Worker
-		articleWorker, err := articles.NewArticleWorker(repoWorker, dirPath, syncno)
-		if err != nil {
-			logrus.Errorln("初始化ArticleWorker失败", err)
-			return
-		}
-		articleWorker.StartWork()
+	defer func() {
+		logrus.Println("停止同步目录:", dirPath)
 		wg.Done()
+	}()
+	logrus.Infoln("开始一次目录同步:", dirPath)
+	// 文章同步Worker
+	articleWorker, err := articles.NewArticleWorker(repoWorker, dirPath, syncno)
+	if err != nil {
+		logrus.Errorln("初始化ArticleWorker失败", err)
+		return
 	}
+	articleWorker.StartWork()
 }

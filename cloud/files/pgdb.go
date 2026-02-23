@@ -9,13 +9,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SelectFiles(keyword string, page int, size int) (*helpers.Pagination,
+type FileSelectParams struct {
+	Parent string
+}
+
+func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
 	baseSqlText := ` select * from files `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
+	if params != nil && params.Parent != "" {
+		whereText += ` and parent = :parent `
+		baseSqlParams["parent"] = params.Parent
+	}
 	if keyword != "" {
 		whereText += ` and (title ilike :keyword or description ilike :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
