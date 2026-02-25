@@ -3,14 +3,17 @@ package images
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/pnnh/neutron/config"
 	nemodels "github.com/pnnh/neutron/models"
 	"github.com/pnnh/neutron/services/datastore"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 )
 
-func imageGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) {
+func imageGetOutView(storageUrl string, dataRow *datastore.DataRow) (map[string]interface{}, error) {
 	outView := make(map[string]interface{})
 	outView["uid"] = dataRow.GetString("uid")
 	outView["title"] = dataRow.GetStringOrEmpty("title")
@@ -23,7 +26,9 @@ func imageGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error)
 	outView["channel"] = dataRow.GetStringOrDefault("channel", "")
 	outView["file_path"] = dataRow.GetStringOrDefault("file_path", "")
 	outView["ext_name"] = dataRow.GetStringOrDefault("ext_name", "")
-	outView["file_url"] = dataRow.GetStringOrDefault("file_url", "")
+	fileUrl := dataRow.GetStringOrDefault("url", "")
+	outView["url"] = strings.Replace(fileUrl, "storage://", storageUrl, 1)
+
 	return outView, nil
 }
 
@@ -45,9 +50,16 @@ func ImageSelectHandler(gctx *gin.Context) {
 		return
 	}
 
+	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
+	if !ok || portalUrl == "" {
+		logrus.Warnln("PUBLIC_PORTAL_URL 未配置2")
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "PUBLIC_PORTAL_URL 未配置3"))
+		return
+	}
+	storageUrl := portalUrl + "/storage/"
 	respView := make([]map[string]interface{}, 0)
 	for _, v := range selectResult {
-		outView, err := imageGetOutView(v)
+		outView, err := imageGetOutView(storageUrl, v)
 		if err != nil {
 			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
 			return
@@ -77,7 +89,25 @@ func ImageGetHandler(gctx *gin.Context) {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询图片出错"))
 		return
 	}
-	responseResult := nemodels.NECodeOk.WithData(selectResult)
+	if selectResult == nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("图片不存在"))
+		return
+	}
+
+	portalUrl, ok := config.GetConfigurationString("PUBLIC_PORTAL_URL")
+	if !ok || portalUrl == "" {
+		logrus.Warnln("PUBLIC_PORTAL_URL 未配置2")
+		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "PUBLIC_PORTAL_URL 未配置3"))
+		return
+	}
+	storageUrl := portalUrl + "/storage/"
+	outView, err := imageGetOutView(storageUrl, selectResult)
+	if err != nil {
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithError(err))
+		return
+	}
+
+	responseResult := nemodels.NECodeOk.WithData(outView)
 
 	gctx.JSON(http.StatusOK, responseResult)
 }

@@ -55,8 +55,24 @@ var AnonymousAccount = &AccountModel{
 	Fingerprint: "",
 }
 
+var RootAccount = &AccountModel{
+	Uid:         "01990e6a-2689-731b-a5a2-b46117e22040",
+	Username:    "root",
+	Password:    "",
+	CreateTime:  time.Unix(0, 0),
+	UpdateTime:  time.Unix(0, 0),
+	Nickname:    "根用户",
+	EMail:       "",
+	Credentials: "",
+	Session:     "",
+	Description: "",
+	Status:      0,
+	Website:     "",
+	Fingerprint: "",
+}
+
 var DebugAccount = &AccountModel{
-	Uid:        "00000000-0000-0000-0000-000000000001",
+	Uid:        "019c93b4-6475-711b-8144-fdc94ffa0edc",
 	Username:   "debug",
 	Password:   "",
 	CreateTime: time.Unix(0, 0),

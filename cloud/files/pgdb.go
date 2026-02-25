@@ -93,6 +93,51 @@ func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (
 	return pagination, sqlResults, nil
 }
 
+func SelectFilePath(uid string) ([]*datastore.DataRow, error) {
+	baseSqlText := ` SELECT ancestors.uid, ancestors.title, ancestors.name
+FROM files AS target,
+     files AS ancestors
+WHERE target.uid = :uid
+  AND ancestors.path @> target.path
+ORDER BY nlevel(ancestors.path); `
+	baseSqlParams := map[string]interface{}{
+		"uid": uid,
+	}
+
+	var sqlResults = make([]*datastore.DataRow, 0)
+
+	rows, err := datastore.NamedQuery(baseSqlText, baseSqlParams)
+	if err != nil {
+		return nil, fmt.Errorf("NamedQuery: %w", err)
+	}
+
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
+		}
+	}()
+
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		sqlResults = append(sqlResults, tableMap)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close2: %v", closeErr)
+		}
+	}()
+
+	return sqlResults, nil
+}
+
 func PGGetFile(owner, uid string) (*datastore.DataRow, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGConsoleGetNote uid is empty")

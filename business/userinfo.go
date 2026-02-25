@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"portal/models"
+
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/helpers"
-	"portal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -82,25 +83,24 @@ func FindSessionFromToken(authToken string) (*models.SessionModel, error) {
 }
 
 func FindAccountFromCookie(gctx *gin.Context) (*models.AccountModel, error) {
-
 	authCookie, err := gctx.Request.Cookie(AuthCookieName)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		return nil, fmt.Errorf("获取cookie失败: %s", err)
 	}
 	if authCookie == nil || authCookie.Value == "" {
+		if config.Debug() {
+			debugQuery := gctx.Query("debug")
+			debugHeader := gctx.GetHeader("debug")
+			if debugQuery == "true" || debugHeader == "true" {
+				return models.DebugAccount, nil
+			}
+		}
 		return models.AnonymousAccount, nil
 	}
 
 	sessionModel, err := FindSessionFromToken(authCookie.Value)
 	if err != nil {
 		return nil, fmt.Errorf("查询用户会话出错: %s", err)
-	}
-	if config.Debug() {
-		debugQuery := gctx.Query("debug")
-		debugHeader := gctx.GetHeader("debug")
-		if debugQuery == "true" || debugHeader == "true" {
-			return models.DebugAccount, nil
-		}
 	}
 	if sessionModel == nil || sessionModel.Type == "anonymous" {
 		return models.AnonymousAccount, nil

@@ -2,18 +2,20 @@ package articles
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"portal/services"
 	"portal/services/base58"
 	"strings"
 	"time"
 
+	"github.com/pnnh/neutron/config"
+	"github.com/pnnh/neutron/helpers/jsonmap"
 	"github.com/pnnh/neutron/services/filesystem"
 
-	"github.com/pnnh/neutron/services/checksum"
-	"github.com/pnnh/neutron/services/datastore"
-
 	"github.com/pnnh/neutron/helpers"
+	"github.com/pnnh/neutron/services/checksum"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +26,7 @@ const SyncParentUid = "76de121c-0fab-11f1-a643-6c02e0549f86"
 type dirStat struct {
 	uid    string
 	synced bool
+	path   string // 当前目录相对于根目录的完整路径，postgresql ltree格式，以点分隔目录UID
 }
 
 type ArticleWorker struct {
@@ -34,12 +37,15 @@ type ArticleWorker struct {
 }
 
 func NewArticleWorker(repoWorker *RepoWorker, rootPath string, syncno string) (*ArticleWorker, error) {
-	return &ArticleWorker{
+	worker := &ArticleWorker{
 		repoWorker: repoWorker,
 		rootPath:   rootPath,
 		syncno:     syncno,
 		dirStatMap: make(map[string]*dirStat),
-	}, nil
+	}
+	worker.dirStatMap[rootPath] = &dirStat{uid: SyncParentUid, synced: true, path: SyncParentUid}
+
+	return worker, nil
 }
 
 func (w *ArticleWorker) StartWork() {
@@ -52,6 +58,9 @@ func (w *ArticleWorker) StartWork() {
 func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error) error {
 	if visitErr != nil {
 		return fmt.Errorf("error walking the path %s, %w", path, visitErr)
+	}
+	if path == w.rootPath {
+		return nil // 根目录本身不处理，直接遍历其下的文件或目录
 	}
 
 	fileName := filepath.Base(path)
@@ -69,11 +78,14 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 	mimeType := ""
 	newUid := helpers.MustUuid()
 	parentUid := ""
+	parentDir := filepath.Dir(path)
+	parentDirStat := w.dirStatMap[parentDir]
+	if parentDirStat == nil {
+		panic("未找到父目录的统计信息2，路径: " + parentDir)
+	}
 	if info.IsDir() {
 		mimeType = "directory"
-		if path != w.rootPath {
-			w.dirStatMap[path] = &dirStat{uid: newUid, synced: false}
-		}
+		w.dirStatMap[path] = &dirStat{uid: newUid, synced: false, path: parentDirStat.path + "." + newUid}
 	} else {
 		sum, err := checksum.CalcSha256(path)
 		if err != nil {
@@ -82,26 +94,11 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 		sumValue = sum
 		mimeType = helpers.GetMimeType(path)
 	}
-	parentDir := filepath.Dir(path)
-	parentDirStat := w.dirStatMap[parentDir]
-	if parentDirStat != nil {
-		if !parentDirStat.synced {
-			return filepath.SkipDir
-		}
-		parentUid = parentDirStat.uid
-	}
 
-	// 执行到此处parentUid为空说明处于根目录下，根目录的父目录UID设置为一个固定值，表示没有父目录
-	if parentUid == "" {
-		if parentDir == w.rootPath {
-			parentUid = SyncParentUid
-		} else if path == w.rootPath {
-			// 根目录不处理，直接返回
-			return nil
-		} else {
-			panic(fmt.Sprintf("未找到父目录UID: %s, parentDir: %s", parentUid, parentDir))
-		}
+	if !parentDirStat.synced {
+		return filepath.SkipDir
 	}
+	parentUid = parentDirStat.uid
 
 	noteTitle := strings.Trim(fileName, " \n\r\t ")
 	if noteTitle == "" {
@@ -109,7 +106,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 	}
 
 	nowTime := time.Now()
-	dataRow := datastore.NewDataRow()
+	dataRow := jsonmap.NewJsonMap()
 	dataRow.SetString("uid", newUid)
 	dataRow.SetString("title", noteTitle)
 	dataRow.SetString("header", "{}")
@@ -132,6 +129,7 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 	dataRow.SetNullString("syncno", w.syncno)
 	dataRow.SetNullString("mimetype", mimeType)
 	dataRow.SetString("url", "")
+	dataRow.SetString("path", w.dirStatMap[parentDir].path+"."+newUid)
 
 	targetPath := ""
 	if !info.IsDir() {
@@ -162,9 +160,36 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 	if path == w.rootPath {
 		return nil
 	}
-	err := PGInsertFile(dataRow)
+
+	portalUrl, ok := config.GetConfigurationString("INTERNAL_PORTAL_URL")
+	if !ok || portalUrl == "" {
+		return fmt.Errorf("INTERNAL_PORTAL_URL 未配置2")
+	}
+	// 插入文章数据到Portal服务，仅开发阶段执行
+	postUrl := fmt.Sprintf("%s/cloud/files/%s?debug=true", portalUrl, newUid)
+	dataString, err := services.PTMarshalJsonMapToString(dataRow)
+	if err != nil {
+		return fmt.Errorf("序列化数据失败: %w", err)
+	}
+	reader := strings.NewReader(dataString)
+	request, err := http.NewRequest("POST", postUrl, reader)
+	if err != nil {
+		return fmt.Errorf("创建HTTP请求失败: %w", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	//err := PGInsertFile(dataRow)
+	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		logrus.Errorf("插入文件数据失败: %s %v", fileName, err)
+		return nil
+	}
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			logrus.Errorf("关闭HTTP响应体失败: %v", err)
+		}
+	}()
+	if response.StatusCode != http.StatusOK {
+		logrus.Errorf("插入文件数据失败，HTTP状态码: %d", response.StatusCode)
 		return nil
 	}
 
@@ -177,22 +202,5 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 		}
 	}
 
-	return nil
-}
-
-func PGInsertFile(dataRow *datastore.DataRow) error {
-	sqlText := `insert into files(uid, title, header, body, create_time, update_time, keywords, description, status, 
-	cover, owner, discover, version, url, 
-	lang, name, checksum, syncno, mimetype, parent)
-values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
-	:discover, :version, :url, 
-	:lang, :name, :checksum, :syncno, :mimetype, :parent);`
-
-	paramsMap := dataRow.InnerMap()
-
-	_, err := datastore.NamedExec(sqlText, paramsMap)
-	if err != nil {
-		return fmt.Errorf("PGConsoleInsertNote: %w", err)
-	}
 	return nil
 }

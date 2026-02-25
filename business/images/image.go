@@ -7,6 +7,7 @@ import (
 
 	"github.com/pnnh/neutron/helpers"
 	"github.com/pnnh/neutron/services/datastore"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -106,6 +107,11 @@ func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 	var sqlResults = make([]*datastore.DataRow, 0)
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
+		}
+	}()
 	if err != nil {
 		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
@@ -120,8 +126,8 @@ func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("rows error: %w", err)
 	}
-	countSqlText := `select count(1) as count from (` +
-		fmt.Sprintf("%s %s", baseSqlText, whereText) + `) as temp;`
+	countSqlText := fmt.Sprintf("select count(1) as count "+" from (%s) as temp;",
+		fmt.Sprintf("%s %s", baseSqlText, whereText))
 
 	countSqlParams := map[string]interface{}{}
 	for k, v := range baseSqlParams {
@@ -132,6 +138,11 @@ func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 	}
 
 	rows, err = datastore.NamedQuery(countSqlText, countSqlParams)
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
+		}
+	}()
 	if err != nil {
 		return nil, nil, fmt.Errorf("NamedQuery: %w", err)
 	}
@@ -146,24 +157,30 @@ func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 	return pagination, sqlResults, nil
 }
 
-func PGGetImage(uid string) (*MTImageModel, error) {
+func PGGetImage(uid string) (*datastore.DataRow, error) {
 
-	pageSqlText := ` select * from images where (status = 1 or discover < 10) and uid = :uid; `
+	pageSqlText := ` select f.*, m.* from images m, files f where m.status = 1 and f.status = 1 
+                                          and m.uid = f.uid and m.uid = :uid; `
 	pageSqlParams := map[string]interface{}{
 		"uid": uid,
 	}
-	var sqlResults []*MTImageModel
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logrus.Warnf("rows.Close: %v", closeErr)
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("NamedQuery: %w", err)
 	}
-	if err = sqlx.StructScan(rows, &sqlResults); err != nil {
-		return nil, fmt.Errorf("StructScan: %w", err)
-	}
-
-	for _, item := range sqlResults {
-		return item, nil
+	for rows.Next() {
+		rowMap := make(map[string]interface{})
+		if err := rows.MapScan(rowMap); err != nil {
+			return nil, fmt.Errorf("MapScan: %w", err)
+		}
+		tableMap := datastore.MapToDataRow(rowMap)
+		return tableMap, nil
 	}
 	return nil, nil
 }

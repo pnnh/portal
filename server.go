@@ -167,6 +167,8 @@ func (s *WebServer) Init() error {
 		s.router.GET("/portal/host/storage/files/data/:uid", storage.HostFileDataHandler)
 	}
 	s.router.GET("/portal/cloud/files", files.CloudFileSelectHandler)
+	s.router.POST("/portal/cloud/files/:uid", files.CloudFileUpdateHandler)
+	s.router.GET("/portal/cloud/files/path", files.CloudFilePathSelectHandler)
 	s.router.GET("/portal/cloud/files/desc", files.CloudFileDescHandler)
 
 	s.router.NoRoute(func(c *gin.Context) {
