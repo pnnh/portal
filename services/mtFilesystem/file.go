@@ -1,4 +1,4 @@
-package filesystem
+package mtFilesystem
 
 import (
 	"path/filepath"
