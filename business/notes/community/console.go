@@ -24,12 +24,12 @@ type ConsoleNotesHandler struct {
 }
 
 func (h *ConsoleNotesHandler) RegisterRouter(router *gin.Engine) {
-	router.GET("/portal/console/community/articles", h.HandleSelect)
+	//router.GET("/portal/console/community/articles", h.HandleSelect)
 	//router.GET("/portal/:lang/console/articles", h.HandleSelect)
 	//router.POST("/portal/console/community/articles", h.HandleInsert)
 	//router.GET("/portal/console/community/articles/:uid", h.HandleGet)
 	//router.GET("/portal/:lang/console/articles/:uid", h.HandleGet)
-	router.POST("/portal/console/community/articles/:uid", h.HandleUpdate)
+	//router.POST("/portal/console/community/articles/:uid", h.HandleUpdate)
 	//router.DELETE("/portal/console/community/articles/:uid", h.HandleDelete)
 }
 

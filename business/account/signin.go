@@ -3,19 +3,21 @@ package account
 import (
 	"database/sql"
 	"fmt"
-	nemodels "github.com/pnnh/neutron/models"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	nemodels "github.com/pnnh/neutron/models"
+
+	"portal/business"
+	"portal/business/cloudflare"
+	"portal/models"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/helpers"
 	"github.com/sirupsen/logrus"
-	"portal/business"
-	"portal/business/cloudflare"
-	"portal/models"
 )
 
 type SigninRequest struct {
@@ -37,11 +39,22 @@ func SigninHandler(gctx *gin.Context) {
 		return
 	}
 
-	ipAddr := helpers.GetIpAddress(gctx)
-	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
-	if err != nil || !verifyOk {
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Signin验证出错"))
-		return
+	serveMode, ok := config.GetConfigurationString("SERVE_MODE")
+	if !ok || serveMode == "" {
+		logrus.Errorln("serveMode未配置2")
+	}
+	if serveMode == "SELFHOST" {
+		// 本地主机模式不需要真人校验，直接跳过
+	} else if serveMode == "LOCALNET" {
+		// todo: 处理局域网环境下的登录验证
+	} else {
+		// 默认为云端广域网环境服务模式，需要进行Turnstile验证
+		ipAddr := helpers.GetIpAddress(gctx)
+		verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
+		if err != nil || !verifyOk {
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Signin验证出错"))
+			return
+		}
 	}
 
 	accountModel, err := models.GetAccountByUsername(request.Username)

@@ -41,12 +41,23 @@ func SignupHandler(gctx *gin.Context) {
 		return
 	}
 
-	ipAddr := helpers.GetIpAddress(gctx)
-	verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
-	if err != nil || !verifyOk {
-		logrus.Println("VerifyTurnstileToken", err)
-		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Signup验证出错"))
-		return
+	serveMode, ok := config.GetConfigurationString("SERVE_MODE")
+	if !ok || serveMode == "" {
+		logrus.Errorln("serveMode未配置2")
+	}
+	if serveMode == "SELFHOST" {
+		// 本地主机模式不需要真人校验，直接跳过
+	} else if serveMode == "LOCALNET" {
+		// todo: 处理局域网环境下的登录验证
+	} else {
+		// 默认为云端广域网环境服务模式，需要进行Turnstile验证
+		ipAddr := helpers.GetIpAddress(gctx)
+		verifyOk, err := cloudflare.VerifyTurnstileToken(request.TurnstileModel.TurnstileToken, ipAddr)
+		if err != nil || !verifyOk {
+			logrus.Println("VerifyTurnstileToken", err)
+			gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("Signup验证出错"))
+			return
+		}
 	}
 
 	isExist, err := models.CheckAccountExists(request.Username)
@@ -116,7 +127,9 @@ func SignupHandler(gctx *gin.Context) {
 
 	jwtPrivateKey, ok := config.GetConfigurationString("JWT_PRIVATE_KEY")
 	if !ok || jwtPrivateKey == "" {
-		logrus.Errorln("JWT_PRIVATE_KEY 未配置")
+		logrus.Errorln("JWT_PRIVATE_KEY 未配置2")
+		gctx.JSON(http.StatusOK, nemodels.NECodeError.WithMessage("服务器未配置JWT_PRIVATE_KEY"))
+		return
 	}
 
 	issuer := config.MustGetConfigurationString("PUBLIC_PORTAL_URL")
