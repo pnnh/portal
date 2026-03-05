@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"portal/services/mtFilesystem"
+	"portal/services/PTFilesystem"
 
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/services/filesystem"
@@ -36,7 +36,7 @@ func MTNewFilePorter(targetPath string) (*MTFilePorter, error) {
 func (p *MTFilePorter) CopyFile(srcPath, targetPath string) (string, error) {
 	targetDir := filepath.Dir(targetPath)
 	fullTargetDir := filepath.Join(p.targetRootPath, string(os.PathSeparator), targetDir)
-	err := mtFilesystem.MTCreateDir(fullTargetDir)
+	err := PTFilesystem.MTCreateDir(fullTargetDir)
 	if err != nil {
 		return "", fmt.Errorf("MkdirAll: %w", err)
 	}

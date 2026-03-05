@@ -101,7 +101,7 @@ func getFile(fullPath string, portalUrl string, viewType string) (*jsonmap.JsonM
 	fileUrl := fmt.Sprintf("%s/host/storage/files/data/%s", portalUrl, pathHash)
 	dataRow.SetString("url", fileUrl)
 	dataRow.SetString("mimetype", mimeType)
-	isTextFile, err := mtFilesystem.IsTextFile(fullPath)
+	isTextFile, err := PTFilesystem.IsTextFile(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("判断文件类型失败: %w", err)
 	}

@@ -5,10 +5,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"portal/services"
-	"portal/services/base58"
 	"strings"
 	"time"
+
+	"portal/services"
+	"portal/services/PTFilesystem"
+	"portal/services/PTHash"
+	"portal/services/base58"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/helpers/jsonmap"
@@ -32,6 +37,7 @@ type dirStat struct {
 type ArticleWorker struct {
 	repoWorker *RepoWorker
 	rootPath   string
+	repoId     string
 	syncno     string
 	dirStatMap map[string]*dirStat
 }
@@ -44,6 +50,31 @@ func NewArticleWorker(repoWorker *RepoWorker, rootPath string, syncno string) (*
 		dirStatMap: make(map[string]*dirStat),
 	}
 	worker.dirStatMap[rootPath] = &dirStat{uid: SyncParentUid, synced: true, path: SyncParentUid}
+	repoFilePath := filepath.Join(rootPath, ".polaris", "repo.yml")
+
+	repoFilePath, err := filesystem.ResolvePath(repoFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("ParseConfigFile ResolvePath: %w", err)
+	}
+	if _, err := os.Stat(repoFilePath); !os.IsNotExist(err) {
+		repoFileString, err := PTFilesystem.PTReadFileAsString(repoFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("读取repo.yml文件失败: %w", err)
+		}
+		configMap := make(map[string]any)
+		err = yaml.Unmarshal([]byte(repoFileString), &configMap)
+		if err != nil {
+			return nil, fmt.Errorf("解析配置内容出错: %w", err)
+		}
+		if repoIdValue, ok := configMap["REPOID"]; ok {
+			if repoIdStr, ok := repoIdValue.(string); ok && helpers.IsUuid(repoIdStr) {
+				worker.repoId = repoIdStr
+			}
+		}
+	}
+	if worker.repoId == "" {
+		worker.repoId = helpers.MustUuid()
+	}
 
 	return worker, nil
 }
@@ -53,6 +84,20 @@ func (w *ArticleWorker) StartWork() {
 	if err != nil {
 		logrus.Fatalln("error walking the path", w.rootPath, err)
 	}
+}
+
+// 通过rootPath和文件相对路径计算出一个唯一的文件UID，保证同一目录结构下相同文件路径的UID一致
+func (w *ArticleWorker) calcFileUid(path string) (string, error) {
+	rawStr := fmt.Sprintf("%s-%s", w.repoId, path)
+	md5Val, err := PTHash.PTCalculateMD5String(rawStr)
+	if err != nil {
+		return "", fmt.Errorf("计算文件UID失败: %w", err)
+	}
+	uid, err := PTHash.PTMd5ToUuid(md5Val)
+	if err != nil {
+		return "", fmt.Errorf("MD5转换为UUID失败: %w", err)
+	}
+	return uid, nil
 }
 
 func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error) error {
@@ -76,7 +121,11 @@ func (w *ArticleWorker) visitFile(path string, info os.FileInfo, visitErr error)
 	}
 	sumValue := ""
 	mimeType := ""
-	newUid := helpers.MustUuid()
+	newUid, err := w.calcFileUid(path)
+	if err != nil {
+		logrus.Errorf("CalcFileUid Uid err: %+v", err)
+		return nil
+	}
 	parentUid := ""
 	parentDir := filepath.Dir(path)
 	parentDirStat := w.dirStatMap[parentDir]

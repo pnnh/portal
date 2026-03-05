@@ -1,6 +1,7 @@
-package mtFilesystem
+package PTFilesystem
 
 import (
+	"os"
 	"path/filepath"
 )
 
@@ -29,4 +30,13 @@ func IsTextFile(fileName string) (bool, error) {
 	}
 	_, exists := textFileExts[extName]
 	return exists, nil
+}
+
+// PTReadFileAsString reads a file and returns its content as a string
+func PTReadFileAsString(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
