@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"portal/business/account/userauth"
 	"strings"
 	"time"
+
+	"portal/business/account/userauth"
 
 	"portal/business/account"
 	"portal/business/channels"
@@ -117,21 +118,11 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
 	s.router.GET("/portal/articles", notes.NoteSelectHandler)
-	//notesConsoleHandler := &community.ConsoleNotesHandler{}
-	//notesConsoleHandler.RegisterRouter(s.router)
 	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
 	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
-	//s.router.GET("/portal/console/channels", channels.ConsoleChannelSelectHandler)
-	//s.router.GET("/portal/console/libraries", libraries.ConsoleLibrarySelectHandler)
-	//s.router.POST("/portal/console/channels", channels.ConsoleChannelInsertHandler)
 	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler)
 	s.router.GET("/portal/channels/:uid", channels.ChannelGetByUidHandler)
-	s.router.GET("/portal/:lang/channels/uid/:uid", channels.ChannelGetByUidHandler)
-	//s.router.GET("/portal/:lang/channels/cid/:cid/:wantLang", channels.ChannelGetByCidHandler)
-	//s.router.GET("/portal/console/channels/:uid", channels.ConsoleChannelGetHandler)
-	//s.router.PUT("/portal/console/channels/:uid", channels.ConsoleChannelUpdateHandler)
-	//s.router.DELETE("/portal/console/channels/:uid", channels.ConsoleChannelDeleteHandler)
 	s.router.POST("/portal/articles/:uid/viewer", viewers.NoteViewerInsertHandler)
 
 	s.router.POST("/portal/account/signup", account.SignupHandler)
@@ -143,23 +134,9 @@ func (s *WebServer) Init() error {
 	s.router.POST("/portal/account/auth/permit", account.PermitAppLoginHandler)
 	s.router.GET("/portal/auth/userinfo", userauth.UserinfoHandler)
 
-	//s.router.GET("/portal/console/userinfo", usercon.UserinfoHandler)
-	//s.router.POST("/portal/console/userinfo/edit", account.UserinfoEditHandler)
-	//s.router.GET("/portal/console/images", imgcon.ConsoleImageSelectHandler)
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
 
-	// 访问本地文件系统的接口，测试目的
-	//if config.Debug() {
-	//	s.router.GET("/portal/host/notebook/notes", notebook.HostNoteSelectHandler)
-	//	s.router.GET("/portal/host/notebook/notes/file", notebook.HostNoteFileHandler)
-	//	s.router.GET("/portal/host/notebook/notes/content", notebook.HostNoteContentHandler)
-	//	s.router.GET("/portal/host/album/images", album.HostImageSelectHandler)
-	//	s.router.GET("/portal/host/album/images/file", album.HostImageFileHandler)
-	//	s.router.GET("/portal/host/storage/files", storage.HostFileSelectHandler)
-	//	s.router.GET("/portal/host/storage/files/desc", storage.HostFileDescHandler)
-	//	s.router.GET("/portal/host/storage/files/data/:uid", storage.HostFileDataHandler)
-	//}
 	s.router.GET("/portal/cloud/files", files.CloudFileSelectHandler)
 	s.router.POST("/portal/cloud/files/:uid", files.CloudFileUpdateHandler)
 	s.router.GET("/portal/cloud/files/path", files.CloudFilePathSelectHandler)
