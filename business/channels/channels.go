@@ -46,10 +46,6 @@ func SelectChannels(keyword string, page int, size int, lang string) (*helpers.P
 		whereText += ` and (name like :keyword or description like :keyword) `
 		baseSqlParams["keyword"] = "%" + keyword + "%"
 	}
-	//if lang != "" {
-	//	whereText += ` and lang = :lang `
-	//	baseSqlParams["lang"] = lang
-	//}
 	orderText := ` order by create_time desc `
 
 	pageSqlText := fmt.Sprintf("%s %s %s %s", baseSqlText, whereText, orderText, ` offset :offset limit :limit; `)

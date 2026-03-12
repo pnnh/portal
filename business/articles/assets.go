@@ -1,4 +1,4 @@
-package notes
+package articles
 
 import (
 	"encoding/base64"

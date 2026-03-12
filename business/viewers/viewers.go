@@ -132,7 +132,7 @@ do update set title=excluded.title, source=excluded.source, target=excluded.targ
 
 func updateObjectDiscover(sqlTx *datastore.SqlxTransaction, model *MTViewerTable) error {
 
-	discoverSqlText := `update articles set discover = COALESCE(discover, 0) + 1 where uid = :uid;`
+	discoverSqlText := `update community.articles set discover = COALESCE(discover, 0) + 1 where uid = :uid;`
 	if model.Class == "comment" {
 		discoverSqlText = `update comments set discover = COALESCE(discover, 0) + 1 where uid = :uid;`
 	}

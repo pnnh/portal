@@ -54,7 +54,7 @@ func listNoteFiles(targetDir string) ([]*jsonmap.JsonMap, error) {
 			return nil, fmt.Errorf("读取文件失败: %w", err)
 		}
 		noteText := string(noteData)
-		matter := &notes.MTNoteMatter{}
+		matter := &articles.MTNoteMatter{}
 		restData, err := frontmatter.Parse(strings.NewReader(string(noteText)), matter)
 		if err != nil {
 			return nil, fmt.Errorf("解析文章元数据失败: %w", err)
@@ -176,7 +176,7 @@ func HostNoteContentHandler(gctx *gin.Context) {
 		return
 	}
 	noteText := string(noteData)
-	matter := &notes.MTNoteMatter{}
+	matter := &articles.MTNoteMatter{}
 	restData, err := frontmatter.Parse(strings.NewReader(string(noteText)), matter)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错5"))

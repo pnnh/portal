@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"portal/models"
 	"strconv"
 	"strings"
 	"time"
+
+	"portal/models"
 
 	"portal/business"
 
@@ -316,7 +317,7 @@ func CloudFileUpdateHandler(gctx *gin.Context) {
 
 func pgUpdateFile(dataRow *datastore.DataRow) error {
 
-	sqlText := `insert into files(uid, title, header, body, create_time, update_time, keywords, description, status, 
+	sqlText := `insert into community.files(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, discover, version, url, 
 	lang, name, checksum, syncno, mimetype, parent, path)
 values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
@@ -368,7 +369,7 @@ func GetNullString(m *datastore.DataRow, key string) string {
 
 func pgUpdateImage(dataRow *datastore.DataRow) error {
 
-	sqlText := `insert into images(uid, title, create_time, update_time, keywords, description, status, 
+	sqlText := `insert into community.images(uid, title, create_time, update_time, keywords, description, status, 
 	owner, discover)
 values(:uid, :title, :create_time, :update_time, :keywords, :description, :status,:owner, 
 	:discover);`
@@ -385,7 +386,7 @@ values(:uid, :title, :create_time, :update_time, :keywords, :description, :statu
 
 func pgUpdateNote(dataRow *datastore.DataRow) error {
 
-	sqlText := `insert into notes(uid, title, header, body, create_time, update_time, keywords, description, status, 
+	sqlText := `insert into community.articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, discover)
 values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
 	:discover);`
@@ -430,7 +431,7 @@ func pgDeleteFile(owner, uid string) error {
 	if uid == "" {
 		return fmt.Errorf("PGConsoleDeleteChannel uid is empty")
 	}
-	pageSqlText := ` delete from files where (owner = :owner and uid = :uid); `
+	pageSqlText := ` delete from community.files where (owner = :owner and uid = :uid); `
 
 	pageSqlParams := map[string]interface{}{
 		"uid":   uid,

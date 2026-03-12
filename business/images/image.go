@@ -56,7 +56,7 @@ type MTImageView struct {
 }
 
 func PGInsertImage(model *MTImageModel) error {
-	sqlText := `insert into images(uid, title, keywords, description, create_time, update_time, channel, status, 
+	sqlText := `insert into community.images(uid, title, keywords, description, create_time, update_time, channel, status, 
                    discover, owner, file_path, ext_name, checksum)
 values(:uid, :title, :keywords, :description, now(), now(), :channel, :status, :discover, :owner, :file_path, :ext_name, :checksum)
 on conflict (checksum)
@@ -86,7 +86,7 @@ do nothing;`
 func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from images `
+	baseSqlText := ` select * from community.images `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
@@ -159,7 +159,7 @@ func SelectImages(keyword string, page int, size int) (*helpers.Pagination,
 
 func PGGetImage(uid string) (*datastore.DataRow, error) {
 
-	pageSqlText := ` select f.*, m.* from images m, files f where m.status = 1 and f.status = 1 
+	pageSqlText := ` select f.*, m.* from community.images m, community.files f where m.status = 1 and f.status = 1 
                                           and m.uid = f.uid and m.uid = :uid; `
 	pageSqlParams := map[string]interface{}{
 		"uid": uid,

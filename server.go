@@ -7,13 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"portal/business/account/userauth"
-
 	"portal/business/account"
+	"portal/business/account/userauth"
+	"portal/business/articles"
 	"portal/business/channels"
 	"portal/business/comments"
 	"portal/business/images"
-	"portal/business/notes"
 	"portal/business/viewers"
 	"portal/cloud/files"
 
@@ -117,9 +116,9 @@ func (s *WebServer) Init() error {
 
 	s.router.POST("/portal/comments", comments.CommentInsertHandler)
 	s.router.GET("/portal/comments", comments.CommentSelectHandler)
-	s.router.GET("/portal/articles", notes.NoteSelectHandler)
-	s.router.GET("/portal/articles/:uid", notes.NoteGetHandler)
-	s.router.GET("/portal/articles/:uid/assets", notes.NoteAssetsSelectHandler)
+	s.router.GET("/portal/articles", articles.NoteSelectHandler)
+	s.router.GET("/portal/articles/:uid", articles.NoteGetHandler)
+	s.router.GET("/portal/articles/:uid/assets", articles.NoteAssetsSelectHandler)
 	s.router.GET("/portal/channels", channels.ChannelSelectHandler)
 	s.router.GET("/portal/channels/complete", channels.ChannelCompleteHandler)
 	s.router.GET("/portal/channels/:uid", channels.ChannelGetByUidHandler)
@@ -132,7 +131,7 @@ func (s *WebServer) Init() error {
 	s.router.GET("/portal/account/session", account.SessionQueryHandler)
 	s.router.GET("/portal/account/auth/app", account.AppQueryHandler)
 	s.router.POST("/portal/account/auth/permit", account.PermitAppLoginHandler)
-	s.router.GET("/portal/auth/userinfo", userauth.UserinfoHandler)
+	s.router.GET("/portal/account/auth/userinfo", userauth.UserinfoHandler)
 
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)

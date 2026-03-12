@@ -1,4 +1,4 @@
-package notes
+package articles
 
 import (
 	"net/http"
@@ -40,6 +40,7 @@ func noteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) 
 	outView["checksum"] = dataRow.GetStringOrDefault("checksum", "")
 	outView["syncno"] = dataRow.GetStringOrDefault("syncno", "")
 	outView["repo_first_commit"] = dataRow.GetStringOrDefault("repo_first_commit", "")
+	outView["mimetype"] = dataRow.GetStringOrDefault("mimetype", "")
 
 	return outView, nil
 }
@@ -61,7 +62,7 @@ func NoteSelectHandler(gctx *gin.Context) {
 	if lang == "" {
 		lang = nemodels.DefaultLanguage
 	}
-	pagination, selectResult, err := SelectNotes(channel, keyword, pageInt, sizeInt, lang)
+	pagination, selectResult, err := PGSelectNotes(channel, keyword, pageInt, sizeInt, lang)
 	if err != nil {
 		gctx.JSON(http.StatusOK, nemodels.NEErrorResultMessage(err, "查询笔记出错"))
 		return

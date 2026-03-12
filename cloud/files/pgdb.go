@@ -16,7 +16,7 @@ type FileSelectParams struct {
 func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from files `
+	baseSqlText := ` select * from community.files `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
@@ -148,7 +148,7 @@ func PGGetFile(owner, uid string) (*datastore.DataRow, error) {
 	}
 	var pageSqlText string
 
-	pageSqlText = ` select * from files where owner = :owner and uid = :uid; `
+	pageSqlText = ` select * from community.files where owner = :owner and uid = :uid; `
 	pageSqlParams["uid"] = uid
 
 	rows, err := datastore.NamedQuery(pageSqlText, pageSqlParams)
