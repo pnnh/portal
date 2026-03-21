@@ -41,6 +41,9 @@ func noteGetOutView(dataRow *datastore.DataRow) (map[string]interface{}, error) 
 	outView["syncno"] = dataRow.GetStringOrDefault("syncno", "")
 	outView["repo_first_commit"] = dataRow.GetStringOrDefault("repo_first_commit", "")
 	outView["mimetype"] = dataRow.GetStringOrDefault("mimetype", "")
+	outView["content"] = dataRow.GetStringOrDefault("content", "")
+	outView["styles"] = dataRow.GetStringOrDefault("styles", "")
+	outView["convert_time"] = dataRow.GetTimeOrDefault("convert_time", datetime.UtcMinTime)
 
 	return outView, nil
 }
