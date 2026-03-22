@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"portal/business/notes"
+	"portal/business/articles"
 	"portal/services/base58"
 
 	"github.com/pnnh/neutron/helpers/jsonmap"

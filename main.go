@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"portal/syncer"
-	"portal/worker"
 
 	"github.com/pnnh/neutron/config"
 	"github.com/pnnh/neutron/services/datastore"
@@ -44,9 +43,6 @@ func main() {
 	}
 
 	switch svcroleFlag {
-	case "worker":
-		logrus.Println("portal worker mode")
-		worker.WorkerMain(configFlag)
 	case "syncer":
 		logrus.Println("portal syncer mode")
 		syncer.SyncerMain(configFlag)

@@ -21,8 +21,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"portal/handlers"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -90,9 +88,6 @@ func devHandler(c *gin.Context) {
 }
 
 func (s *WebServer) Init() error {
-	indexHandler := handlers.NewIndexHandler()
-	s.router.GET("/portal/healthz", indexHandler.Query)
-
 	//authHandler := &handlers.WebauthnHandler{}
 	//s.router.POST("/account/signup/webauthn/begin/:username", authHandler.BeginRegistration)
 	//s.router.POST("/account/signup/webauthn/finish/:username", authHandler.FinishRegistration)
