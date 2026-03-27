@@ -95,8 +95,8 @@ func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (
 
 func SelectFilePath(uid string) ([]*datastore.DataRow, error) {
 	baseSqlText := ` SELECT ancestors.uid, ancestors.title, ancestors.name
-FROM files AS target,
-     files AS ancestors
+FROM community.files AS target,
+     community.files AS ancestors
 WHERE target.uid = :uid
   AND ancestors.path @> target.path
 ORDER BY nlevel(ancestors.path); `
