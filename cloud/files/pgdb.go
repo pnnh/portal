@@ -10,7 +10,9 @@ import (
 )
 
 type FileSelectParams struct {
-	Parent string
+	Parent  string
+	Channel string
+	SkipDir bool
 }
 
 func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (*helpers.Pagination,
@@ -23,6 +25,13 @@ func SelectFiles(keyword string, page int, size int, params *FileSelectParams) (
 	if params != nil && params.Parent != "" {
 		whereText += ` and parent = :parent `
 		baseSqlParams["parent"] = params.Parent
+	}
+	if params != nil && params.Channel != "" {
+		whereText += ` and channel = :channel `
+		baseSqlParams["channel"] = params.Channel
+	}
+	if params != nil && params.SkipDir {
+		whereText += ` and mimetype <> 'directory' and mimetype <> 'folder' `
 	}
 	if keyword != "" {
 		whereText += ` and (title ilike :keyword or description ilike :keyword) `

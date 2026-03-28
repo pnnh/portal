@@ -50,6 +50,7 @@ func fileGetOutView(storageUrl string, dataRow *datastore.DataRow) (map[string]i
 	outView["channel_name"] = dataRow.GetStringOrDefault("channel_name", "")
 	outView["mimetype"] = dataRow.GetStringOrDefault("mimetype", "")
 	outView["object_uid"] = dataRow.GetStringOrDefault("object_uid", "")
+	outView["channel"] = dataRow.GetStringOrDefault("channel", "")
 
 	return outView, nil
 }
@@ -60,6 +61,8 @@ func CloudFileSelectHandler(gctx *gin.Context) {
 	page := gctx.Query("page")
 	size := gctx.Query("size")
 	parent := gctx.Query("parent")
+	channel := gctx.Query("channel")
+	skipDir := gctx.Query("skipDir")
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
 		logrus.Warningln("pageInt warning", err)
@@ -84,7 +87,11 @@ func CloudFileSelectHandler(gctx *gin.Context) {
 		viewParam = "library"
 	}
 	selectParams := &FileSelectParams{
-		Parent: parent,
+		Parent:  parent,
+		Channel: channel,
+	}
+	if skipDir == "true" {
+		selectParams.SkipDir = true
 	}
 	pagination, selectResult, err := SelectFiles(keyword, pageInt, sizeInt, selectParams)
 	if err != nil {
@@ -188,11 +195,12 @@ func CloudFileDescHandler(gctx *gin.Context) {
 	gctx.JSON(http.StatusOK, responseResult)
 }
 
-const RootFileUid = "76de121c-0fab-11f1-a643-6c02e0549f86"
+// 根文件UID代表最顶级目录
+const RootDirectoryUid = "76de121c-0fab-11f1-a643-6c02e0549f86"
 
 func GetRootFileInfo() *datastore.DataRow {
 	dataRow := datastore.NewDataRow()
-	dataRow.SetString("uid", RootFileUid)
+	dataRow.SetString("uid", RootDirectoryUid)
 	dataRow.SetString("title", "RootFile")
 	dataRow.SetString("header", "{}")
 	dataRow.SetString("body", "{}")
@@ -214,7 +222,7 @@ func GetRootFileInfo() *datastore.DataRow {
 	dataRow.SetNullString("syncno", "")
 	dataRow.SetNullString("mimetype", "directory")
 	dataRow.SetString("url", "")
-	dataRow.SetString("path", RootFileUid)
+	dataRow.SetString("path", RootDirectoryUid)
 	return dataRow
 }
 
@@ -248,7 +256,7 @@ func CloudFileUpdateHandler(gctx *gin.Context) {
 	}
 
 	var parentPath string
-	if parent == RootFileUid {
+	if parent == RootDirectoryUid {
 		parentPath = GetRootFileInfo().GetString("path")
 	} else {
 		parentInfo, err := PGGetFile(accountModel.Uid, parent)

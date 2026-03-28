@@ -12,7 +12,7 @@ import (
 )
 
 func PGChanGetByUid(uid string) (*datastore.DataRow, error) {
-	getMap, err := datastore.NewGetQuery("channels",
+	getMap, err := datastore.NewGetQuery("community.channels",
 		"status = 1 and uid = :uid", "", "",
 		map[string]any{"uid": uid})
 	if err != nil {
@@ -38,7 +38,7 @@ type MTChannelModel struct {
 func SelectChannels(keyword string, page int, size int, lang string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from channels `
+	baseSqlText := ` select * from community.channels `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
@@ -117,7 +117,7 @@ func PGCompleteChannels(keyword string, lang string) ([]*datastore.DataRow, erro
 	if keyword == "" {
 		return nil, fmt.Errorf("keyword cannot be empty")
 	}
-	baseSqlText := ` select * from channels `
+	baseSqlText := ` select * from community.channels `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
