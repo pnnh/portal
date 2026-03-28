@@ -377,7 +377,7 @@ func GetNullString(m *datastore.DataRow, key string) string {
 
 func pgUpdateImage(dataRow *datastore.DataRow) error {
 
-	sqlText := `insert into community.images(uid, title, create_time, update_time, keywords, description, status, 
+	sqlText := `insert into community.files(uid, title, create_time, update_time, keywords, description, status, 
 	owner, discover)
 values(:uid, :title, :create_time, :update_time, :keywords, :description, :status,:owner, 
 	:discover);`
@@ -394,7 +394,7 @@ values(:uid, :title, :create_time, :update_time, :keywords, :description, :statu
 
 func pgUpdateNote(dataRow *datastore.DataRow) error {
 
-	sqlText := `insert into community.articles(uid, title, header, body, create_time, update_time, keywords, description, status, 
+	sqlText := `insert into community.files(uid, title, header, body, create_time, update_time, keywords, description, status, 
 	cover, owner, discover)
 values(:uid, :title, :header, :body, :create_time, :update_time, :keywords, :description, :status, :cover, :owner, 
 	:discover);`

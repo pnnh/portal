@@ -13,6 +13,7 @@ import (
 	"portal/business/channels"
 	"portal/business/comments"
 	"portal/business/images"
+	"portal/business/tools"
 	"portal/business/viewers"
 	"portal/cloud/files"
 
@@ -130,6 +131,8 @@ func (s *WebServer) Init() error {
 
 	s.router.GET("/portal/images", images.ImageSelectHandler)
 	s.router.GET("/portal/images/:uid", images.ImageGetHandler)
+
+	s.router.GET("/portal/tools", tools.ToolSelectHandler)
 
 	s.router.GET("/portal/cloud/files", files.CloudFileSelectHandler)
 	s.router.POST("/portal/cloud/files/:uid", files.CloudFileUpdateHandler)

@@ -147,7 +147,7 @@ type MTNoteView struct {
 func PGSelectNotes(channel, keyword string, page int, size int, lang string) (*helpers.Pagination,
 	[]*datastore.DataRow, error) {
 	pagination := helpers.CalcPaginationByPage(page, size)
-	baseSqlText := ` select * from community.articles `
+	baseSqlText := ` select * from community.files `
 	baseSqlParams := map[string]interface{}{}
 
 	whereText := ` where status = 1 `
@@ -228,7 +228,7 @@ func PGGetNoteByChecksum(checksum string) (*MTNoteTable, error) {
 	if checksum == "" {
 		return nil, fmt.Errorf("PGGetNote uid is empty")
 	}
-	pageSqlText := ` select * from community.articles where checksum= :checksum limit 1; `
+	pageSqlText := ` select * from community.files where checksum= :checksum limit 1; `
 
 	pageSqlParams := map[string]interface{}{
 		"checksum": checksum,
@@ -254,7 +254,7 @@ func PGGetNote(uid string, lang string) (*datastore.DataRow, error) {
 	if uid == "" {
 		return nil, fmt.Errorf("PGGetNote uid is empty")
 	}
-	pageSqlText := ` select * from community.articles where status = 1 and uid = :uid; `
+	pageSqlText := ` select * from community.files where status = 1 and uid = :uid; `
 
 	pageSqlParams := map[string]interface{}{
 		"uid":  uid,
